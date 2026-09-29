@@ -5,7 +5,7 @@
  */
 
 /** @type {string} */
-export const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+export const SUPABASE_URL = "https://uqlqgkwaqsikydckydau.supabase.co";
 
 /** @type {string} */
-export const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+export const SUPABASE_ANON_KEY = "sb_publishable_oFS0iAj_odgi_QEIA2-A7Q_G1i59Bvf";

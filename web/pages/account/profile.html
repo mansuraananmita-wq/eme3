@@ -12,16 +12,14 @@
         }
       })();
     </script>
-    <title>Wishlist — EME</title>
-    <link rel="icon" href="../assets/favicon.svg">
+    <title>Profile — EME</title>
+    <link rel="icon" href="../../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/tokens.css">
-    <link rel="stylesheet" href="../css/base.css">
-    <link rel="stylesheet" href="../css/catalog.css">
-    <link rel="stylesheet" href="../css/marketplace.css">
-    <link rel="stylesheet" href="../css/account.css">
+    <link rel="stylesheet" href="../../css/tokens.css">
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../css/account.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -30,9 +28,8 @@
       <div class="wrap account-layout">
         <aside id="account-nav"></aside>
         <div class="account-main">
-          <h1>Wishlist</h1>
-          <div class="product-grid" id="wishlist-root" aria-busy="true">
-            <div class="skeleton skeleton-card"></div>
+          <h1>Profile</h1>
+          <div id="profile-root" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
           </div>
         </div>
@@ -42,6 +39,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/wishlist.js"></script>
+    <script type="module" src="../../js/account/profile.js"></script>
   </body>
 </html>

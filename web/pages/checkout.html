@@ -12,7 +12,7 @@
         }
       })();
     </script>
-    <title>Wishlist — EME</title>
+    <title>Checkout — EME</title>
     <link rel="icon" href="../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,21 +20,17 @@
     <link rel="stylesheet" href="../css/tokens.css">
     <link rel="stylesheet" href="../css/base.css">
     <link rel="stylesheet" href="../css/catalog.css">
-    <link rel="stylesheet" href="../css/marketplace.css">
     <link rel="stylesheet" href="../css/account.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
-      <div class="wrap account-layout">
-        <aside id="account-nav"></aside>
-        <div class="account-main">
-          <h1>Wishlist</h1>
-          <div class="product-grid" id="wishlist-root" aria-busy="true">
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
-          </div>
+      <div class="wrap">
+        <h1>Checkout</h1>
+        <div id="checkout-root" aria-busy="true">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
         </div>
       </div>
     </main>
@@ -42,6 +38,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/wishlist.js"></script>
+    <script type="module" src="../js/checkout.js"></script>
   </body>
 </html>

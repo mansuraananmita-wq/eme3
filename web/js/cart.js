@@ -99,7 +99,7 @@ function render(lines, signedIn) {
       <aside class="summary">
         ${totals}
         <p class="muted">Unavailable and out-of-stock items are left out of the subtotal.</p>
-        <button class="button button-primary" type="button" disabled>Checkout coming soon</button>
+        <button class="button button-primary" type="button" id="go-checkout">Proceed to checkout</button>
       </aside>
     </div>
   `;
@@ -121,6 +121,10 @@ function render(lines, signedIn) {
       if (!(input instanceof HTMLInputElement)) return;
       change(input.getAttribute("data-qty"), Number(input.value));
     });
+  });
+
+  root.querySelector("#go-checkout")?.addEventListener("click", () => {
+    window.location.assign(url("pages/checkout.html"));
   });
 }
 

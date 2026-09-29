@@ -12,16 +12,14 @@
         }
       })();
     </script>
-    <title>Wishlist — EME</title>
-    <link rel="icon" href="../assets/favicon.svg">
+    <title>Orders — EME</title>
+    <link rel="icon" href="../../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/tokens.css">
-    <link rel="stylesheet" href="../css/base.css">
-    <link rel="stylesheet" href="../css/catalog.css">
-    <link rel="stylesheet" href="../css/marketplace.css">
-    <link rel="stylesheet" href="../css/account.css">
+    <link rel="stylesheet" href="../../css/tokens.css">
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../css/account.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -30,11 +28,27 @@
       <div class="wrap account-layout">
         <aside id="account-nav"></aside>
         <div class="account-main">
-          <h1>Wishlist</h1>
-          <div class="product-grid" id="wishlist-root" aria-busy="true">
+          <h1>Orders</h1>
+          <form class="filters-bar" id="order-filters">
+            <label>Status
+              <select name="status">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="refunded">Refunded</option>
+              </select>
+            </label>
+            <button class="button button-primary" type="submit">Filter</button>
+          </form>
+          <div id="orders-root" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
             <div class="skeleton skeleton-card"></div>
           </div>
+          <div class="load-more" id="orders-more"></div>
         </div>
       </div>
     </main>
@@ -42,6 +56,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/wishlist.js"></script>
+    <script type="module" src="../../js/account/orders.js"></script>
   </body>
 </html>

@@ -1,0 +1,188 @@
+import { mountAccountNav } from "../accountShell.js";
+import { addToCart } from "../api/cartApi.js";
+import { getMyOrder } from "../api/ordersApi.js";
+import { authErrorMessage, requireUser } from "../auth.js";
+import { mountShell, toast } from "../components.js";
+import { formatMoney } from "../format.js";
+import { escapeHtml } from "../html.js";
+import { pickProductImage, productImageUrl } from "../media.js";
+import { url } from "../paths.js";
+import { showState } from "../ui-state.js";
+
+const root = document.querySelector("#order-root");
+
+/** Order flow steps for the timeline. Cancelled / refunded are handled separately. */
+const FLOW = ["pending", "paid", "processing", "shipped", "delivered"];
+
+boot();
+
+async function boot() {
+  const profile = await requireUser();
+  if (!profile) return;
+  mountShell({ page: "account" });
+  mountAccountNav("orders");
+  await load();
+}
+
+async function load() {
+  if (!root) return;
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (!id) {
+    showState(root, "Choose an order from your order list.", () => {
+      window.location.assign(url("pages/account/orders.html"));
+    });
+    return;
+  }
+
+  root.setAttribute("aria-busy", "true");
+  try {
+    const order = await getMyOrder(id);
+    if (!order) {
+      showState(root, "This order was not found.");
+      return;
+    }
+    document.title = `Order ${shortId(order.id)} — EME`;
+    render(order);
+  } catch (error) {
+    const message = authErrorMessage(error);
+    toast(message, "error");
+    showState(root, escapeHtml(message), () => load());
+  }
+}
+
+/**
+ * @param {object} order
+ */
+function render(order) {
+  if (!root) return;
+  const address = order.shipping_address || {};
+  const payment = Array.isArray(order.payments) ? order.payments[0] : null;
+
+  root.setAttribute("aria-busy", "false");
+  root.innerHTML = `
+    <div class="address-card-head">
+      <h1>Order ${escapeHtml(shortId(order.id))}</h1>
+      <span class="status-badge is-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
+    </div>
+    <p class="muted">${escapeHtml(formatDate(order.created_at))}</p>
+
+    <section class="account-card">
+      <h2>Status</h2>
+      <ol class="timeline">${timelineHtml(order.status)}</ol>
+      <p class="muted">Payment: <span class="status-badge is-${escapeHtml(order.payment_status)}">${escapeHtml(order.payment_status)}</span>
+        ${payment ? ` · ${escapeHtml(payment.provider)}` : ""}</p>
+    </section>
+
+    <section class="account-card">
+      <h2>Shipping address</h2>
+      <p><strong>${escapeHtml(address.recipient_name || "")}</strong> · ${escapeHtml(address.phone || "")}</p>
+      <p>${escapeHtml(address.line1 || "")}${address.line2 ? `, ${escapeHtml(address.line2)}` : ""}</p>
+      <p class="muted">${escapeHtml(address.city || "")}, ${escapeHtml(address.district || "")}${address.postal_code ? ` · ${escapeHtml(address.postal_code)}` : ""}</p>
+    </section>
+
+    ${(order.shops || []).map((group) => `
+      <section class="account-card">
+        <h2>${escapeHtml(group.shop?.shop_name || "Shop")}</h2>
+        ${group.items.map((item) => itemHtml(item, order.currency)).join("")}
+      </section>
+    `).join("")}
+
+    <section class="account-card">
+      <h2>Totals</h2>
+      <p class="checkout-line"><span>Subtotal</span><strong>${escapeHtml(formatMoney(order.subtotal, order.currency))}</strong></p>
+      <p class="checkout-line"><span>Shipping</span><strong>${escapeHtml(formatMoney(order.shipping_fee, order.currency))}</strong></p>
+      <p class="checkout-line"><span>Total</span><strong>${escapeHtml(formatMoney(order.total, order.currency))}</strong></p>
+      <div class="order-actions">
+        <button class="button button-primary" type="button" id="buy-again">Buy again</button>
+        <a class="button button-ghost" href="${url("pages/account/orders.html")}">Back to orders</a>
+      </div>
+      <p class="muted">Customers cannot cancel orders from the browser. Contact support if you need help.</p>
+    </section>
+  `;
+
+  root.querySelector("#buy-again")?.addEventListener("click", async () => {
+    const button = root.querySelector("#buy-again");
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+    try {
+      const flat = order.order_items || [];
+      let added = 0;
+      for (const item of flat) {
+        try {
+          await addToCart(item.product_id, item.quantity);
+          added += 1;
+        } catch {
+          // Skip unavailable lines; continue with the rest.
+        }
+      }
+      if (!added) throw new Error("None of these products could be added to the cart.");
+      toast(`Added ${added} item${added === 1 ? "" : "s"} to your cart.`, "success");
+      window.location.assign(url("pages/cart.html"));
+    } catch (error) {
+      toast(authErrorMessage(error), "error");
+      if (button instanceof HTMLButtonElement) button.disabled = false;
+    }
+  });
+}
+
+/**
+ * @param {object} item
+ * @param {string} currency
+ * @returns {string}
+ */
+function itemHtml(item, currency) {
+  const product = Array.isArray(item.products) ? item.products[0] : item.products;
+  const image = pickProductImage(product?.product_images);
+  const src = image ? productImageUrl(image.storage_path) : "";
+  const thumb = src
+    ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" onerror="this.hidden=true">`
+    : `<span class="product-fallback">${escapeHtml((item.title || "?").slice(0, 1))}</span>`;
+
+  return `
+    <article class="order-item-row">
+      <div class="order-item-thumb">${thumb}</div>
+      <div>
+        <p><strong>${escapeHtml(item.title)}</strong></p>
+        <p class="muted">Qty ${escapeHtml(String(item.quantity))} · ${escapeHtml(item.item_status)}</p>
+      </div>
+      <p>${escapeHtml(formatMoney(item.line_total, currency))}</p>
+    </article>
+  `;
+}
+
+/**
+ * @param {string} status
+ * @returns {string}
+ */
+function timelineHtml(status) {
+  if (status === "cancelled" || status === "refunded") {
+    return `<li class="is-done">${escapeHtml(status)}</li>`;
+  }
+  const index = FLOW.indexOf(status);
+  return FLOW.map((step, i) => `
+    <li class="${i <= index ? "is-done" : ""}">${escapeHtml(step)}</li>
+  `).join("");
+}
+
+/**
+ * @param {string} id
+ * @returns {string}
+ */
+function shortId(id) {
+  return String(id || "").slice(0, 8);
+}
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

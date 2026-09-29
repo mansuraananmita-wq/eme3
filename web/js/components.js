@@ -270,8 +270,8 @@ function renderChrome(profile, counts, page, categories) {
     <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>Home</span></a>
     <a class="${page === "categories" || page === "products" ? "is-active" : ""}" href="${categoriesPage}">${icon("grid")}<span>Categories</span></a>
     <a class="${page === "shops" || page === "shop" ? "is-active" : ""}" href="${shops}">${icon("grid")}<span>Stores</span></a>
-    <a class="${page === "cart" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
-    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" ? "is-active" : ""}" href="${profile ? wishlist : login}">
+    <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
+    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" ? "is-active" : ""}" href="${profile ? url("pages/account/profile.html") : login}">
       ${icon("user")}<span>Account</span>
     </a>
   `;
@@ -316,6 +316,9 @@ function renderChrome(profile, counts, page, categories) {
  * @returns {string}
  */
 function accountMenu(name, roleLabel, cart, wishlist) {
+  const profile = url("pages/account/profile.html");
+  const addresses = url("pages/account/addresses.html");
+  const orders = url("pages/account/orders.html");
   return `
     <div class="account">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
@@ -325,8 +328,11 @@ function accountMenu(name, roleLabel, cart, wishlist) {
       <div class="account-menu">
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
-        <a href="${cart}">Cart</a>
+        <a href="${profile}">Profile</a>
+        <a href="${orders}">Orders</a>
+        <a href="${addresses}">Addresses</a>
         <a href="${wishlist}">Wishlist</a>
+        <a href="${cart}">Cart</a>
         <button class="button button-ghost" type="button" data-sign-out>Sign out</button>
       </div>
     </div>

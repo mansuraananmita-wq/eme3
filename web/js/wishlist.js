@@ -1,3 +1,4 @@
+import { mountAccountNav } from "./accountShell.js";
 import { moveWishlistToCart, listWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, requireUser } from "./auth.js";
 import { mountShell, toast } from "./components.js";
@@ -5,6 +6,7 @@ import { escapeHtml } from "./html.js";
 import { imageHtml, priceHtml, productHref } from "./productView.js";
 import { soldByHtml } from "./shopView.js";
 import { url } from "./paths.js";
+import { showState } from "./ui-state.js";
 
 const root = document.querySelector("#wishlist-root");
 
@@ -15,15 +17,14 @@ async function start() {
     const profile = await requireUser();
     if (!profile) return;
     mountShell({ page: "wishlist" });
+    mountAccountNav("wishlist");
     await load();
   } catch (error) {
     mountShell({ page: "wishlist" });
+    mountAccountNav("wishlist");
     const message = authErrorMessage(error);
     toast(message, "error");
-    if (root) {
-      root.innerHTML = `<p class="empty">${escapeHtml(message)}</p>`;
-      root.setAttribute("aria-busy", "false");
-    }
+    if (root) showState(root, escapeHtml(message), () => load());
   }
 }
 

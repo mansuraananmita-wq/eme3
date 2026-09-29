@@ -28,25 +28,37 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 
 ## Pages
 
+### Shop
+
 - `/` — home: categories, featured stores, top stores, trending, new arrivals, become-a-seller banner
-- `/pages/shops.html` — approved store directory (search by shop name)
-- `/pages/shop.html?slug=` — storefront (`?id=` also works). Tabs: Products, About, Reels, Live
-- `/pages/sell.html` — Sell on EME landing + vendor apply form (RLS allows pending insert when signed in)
-- `/pages/categories.html` — active category tree
-- `/pages/products.html` — filters for category, **store**, price, and sort. Search uses `?q=`; with a query, Products | Stores tabs appear
-- `/pages/product.html?slug=` — product details, seller card, more from store, related (`?id=` also works)
-- `/pages/cart.html` — cart grouped by store (logo, link, per-store subtotal, shipping note)
-- `/pages/wishlist.html` — requires sign-in (`?redirect=`)
+- `/pages/shops.html` — approved store directory
+- `/pages/shop.html?slug=` — storefront
+- `/pages/sell.html` — Sell on EME + vendor apply form
+- `/pages/categories.html` — category tree
+- `/pages/products.html` — catalog filters + search (`?q=` has Products | Stores tabs)
+- `/pages/product.html?slug=` — product details
+- `/pages/cart.html` — cart grouped by store → checkout
+- `/pages/checkout.html` — address, delivery fee, payment method UI, order summary (**does not write orders**)
 - `/pages/login.html` and `/pages/register.html`
 
-Checkout, full reels/live players, vendor dashboard, and admin screens are not built yet. Buy now and proceed to checkout stay disabled.
+### Account (requires login, `?redirect=` on guests)
+
+- `/pages/account/profile.html` — name, phone, avatar, password
+- `/pages/account/addresses.html` — CRUD + default address
+- `/pages/account/orders.html` — order list with status filter
+- `/pages/account/order.html?id=` — order details + Buy again
+- `/pages/wishlist.html` — wishlist inside the account layout
+
+Full reels/live players, vendor dashboard, admin screens, and the secure `place_order` function are not built yet.
 
 ## Marketplace notes
 
 - Shops come from `vendor_profiles` (approved only in public lists).
 - Product cards show store logo + “Sold by …” linking to the storefront.
-- There is **no** shop rating or verified badge column in the schema, so those UI bits are omitted.
-- Platform commission is read from `platform_settings.commission_rate` on the sell page when present.
+- There is **no** shop rating or verified badge column in the schema.
+- Checkout `placeOrder` validates a payload and shows a friendly message. It never inserts into `orders`, `order_items`, or `payments`.
+- Shipping fee comes from `platform_settings.default_shipping_fee`. There is no `shipping_methods` or `coupons` table.
+- Payment method choices are UI-only (no `payment_method` enum; `payments.provider` is free text).
 
 ## Auth notes
 

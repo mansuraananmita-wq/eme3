@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t3 d3">
+  <title id="t3">New Arrivals</title>
+  <desc id="d3">Fresh indigo banner with shoe illustration</desc>
+  <defs>
+    <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g3)"/>
+  <circle cx="200" cy="80" r="60" fill="#fff" opacity=".1"/>
+  <circle cx="1100" cy="60" r="90" fill="#67e8f9" opacity=".25"/>
+  <g transform="translate(820,140) rotate(-12)">
+    <ellipse cx="120" cy="90" rx="150" ry="48" fill="#0f172a" opacity=".25"/>
+    <path d="M20 70 C60 20 180 10 250 55 C270 70 260 95 220 100 L40 105 C15 100 5 85 20 70Z" fill="#fff"/>
+    <path d="M70 55 C110 40 180 42 220 62" fill="none" stroke="#0ea5e9" stroke-width="8"/>
+    <circle cx="90" cy="78" r="6" fill="#1e3a8a"/>
+    <circle cx="130" cy="74" r="6" fill="#1e3a8a"/>
+    <circle cx="170" cy="74" r="6" fill="#1e3a8a"/>
+  </g>
+  <text x="72" y="150" fill="#e0f2fe" font-family="Inter,Segoe UI,sans-serif" font-size="26" font-weight="700">JUST DROPPED</text>
+  <text x="72" y="220" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="60" font-weight="800">New Arrivals</text>
+  <text x="72" y="285" fill="#bae6fd" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="28" font-weight="600">®§¡® ïæ≤«ï∂® è∏«õ«</text>
+</svg>

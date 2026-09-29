@@ -7,6 +7,7 @@ import {
 import { cartCount, mergeGuestCart } from "./api/cartApi.js";
 import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
+import { ANNOUNCEMENTS } from "./data/banners.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";
@@ -16,8 +17,10 @@ import { syncConfigBanner } from "./ui-state.js";
 /** @type {number} */
 let toastId = 0;
 
-/** @type {Array<{ name: string, slug: string }> | null} */
+/** @type {Array<{ id: string, parent_id: string | null, name: string, slug: string, image_url: string | null }> | null} */
 let categoryCache = null;
+
+const ANNOUNCE_KEY = "eme_announce_closed";
 
 /**
  * Shows a short message. type is "info", "success", or "error".
@@ -107,6 +110,7 @@ export function mountShell(options = {}) {
     const header = document.querySelector("#site-header");
     if (!(event.target instanceof Node) || !header?.contains(event.target)) {
       header?.querySelector(".account-menu")?.classList.remove("is-open");
+      header?.querySelector(".mega-wrap")?.classList.remove("is-open");
     }
   });
 }
@@ -122,9 +126,7 @@ async function refreshShell(page) {
   try {
     syncConfigBanner(isSupabaseConfigured());
     if (isSupabaseConfigured()) {
-      if (!categoryCache) {
-        categoryCache = (await listCategories()).filter((row) => !row.parent_id).slice(0, 12);
-      }
+      if (!categoryCache) categoryCache = await listCategories();
       categories = categoryCache;
       profile = await getCurrentProfile();
       if (profile) await mergeGuestCart(profile.id);
@@ -145,7 +147,7 @@ async function refreshShell(page) {
  * @param {import("./auth.js").Profile | null} profile
  * @param {{ cart: number, wishlist: number }} counts
  * @param {string} page
- * @param {Array<{ name: string, slug: string }>} categories
+ * @param {Array<{ id: string, parent_id: string | null, name: string, slug: string, image_url: string | null }>} categories
  */
 function renderChrome(profile, counts, page, categories) {
   const header = document.querySelector("#site-header");
@@ -160,25 +162,31 @@ function renderChrome(profile, counts, page, categories) {
   const categoriesPage = url("pages/categories.html");
   const shops = url("pages/shops.html");
   const sell = url("pages/sell.html");
+  const reels = url("pages/reels.html");
   const cart = url("pages/cart.html");
   const wishlist = url("pages/wishlist.html");
+  const orders = url("pages/account/orders.html");
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q") || "";
   const category = params.get("category") || "";
   const name = profile?.full_name?.trim() || "Account";
   const roleLabel = profile ? roleName(profile.role) : "";
+  const roots = categories.filter((row) => !row.parent_id);
+  const announceHidden = isAnnounceClosed();
 
   header.innerHTML = `
-    <div class="top-bar">
-      <div class="top-bar-inner">
-        <div class="chrome-links">
-          <a href="${shops}">Stores</a>
+    <div class="announce-bar${announceHidden ? " is-hidden" : ""}" data-announce>
+      <div class="announce-bar-inner">
+        <button class="announce-close" type="button" data-announce-close aria-label="Close announcement">×</button>
+        <p class="announce-msg" data-announce-msg>${escapeHtml(ANNOUNCEMENTS[0] || "")}</p>
+        <div class="announce-links">
+          <a href="${orders}">Track order</a>
           <a href="${sell}">Sell on EME</a>
-          <span>Free delivery over ৳999</span>
-        </div>
-        <div class="lang-toggle" role="group" aria-label="Language">
-          <button type="button" data-lang="bn">BN</button>
-          <button type="button" class="is-active" data-lang="en">EN</button>
+          <button type="button" data-help>Help</button>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" data-lang="bn">BN</button>
+            <button type="button" class="is-active" data-lang="en">EN</button>
+          </div>
         </div>
       </div>
     </div>
@@ -188,7 +196,7 @@ function renderChrome(profile, counts, page, categories) {
         <label class="sr-only" for="search-category">Category</label>
         <select id="search-category" name="category">
           <option value="">All</option>
-          ${categories.map((row) => `
+          ${roots.map((row) => `
             <option value="${escapeHtml(row.slug)}" ${row.slug === category ? "selected" : ""}>
               ${escapeHtml(row.name)}
             </option>
@@ -214,16 +222,27 @@ function renderChrome(profile, counts, page, categories) {
         </a>
       </div>
     </div>
-    <nav class="cat-strip" aria-label="Categories">
-      <div class="cat-strip-inner">
-        <a href="${categoriesPage}">All</a>
-        <a class="${page === "shops" || page === "shop" ? "is-active" : ""}" href="${shops}">Stores</a>
-        <a class="${page === "sell" ? "is-active" : ""}" href="${sell}">Sell on EME</a>
-        ${categories.map((row) => `
-          <a class="${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
+    <nav class="cat-nav" aria-label="Categories">
+      <div class="cat-nav-inner">
+        <div class="mega-wrap">
+          <button class="mega-trigger" type="button" data-mega-toggle aria-expanded="false" aria-haspopup="true">
+            ${icon("grid")} All categories
+          </button>
+          <div class="mega-panel" hidden data-mega-panel>
+            ${megaMenuHtml(categories, products, categoriesPage)}
+          </div>
+        </div>
+        <a class="cat-nav-link" href="${shops}">Stores</a>
+        <a class="cat-nav-link ${page === "reels" ? "is-active" : ""}" href="${reels}">Reels</a>
+        <a class="cat-nav-link ${page === "sell" ? "is-active" : ""}" href="${sell}">Sell on EME</a>
+        ${roots.slice(0, 8).map((row) => `
+          <a class="cat-nav-link desktop-only ${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
             ${escapeHtml(row.name)}
           </a>
         `).join("")}
+      </div>
+      <div class="cat-round-strip" aria-label="Browse categories">
+        ${roots.slice(0, 12).map((row) => categoryRoundHtml(row, products)).join("")}
       </div>
     </nav>
   `;
@@ -238,6 +257,7 @@ function renderChrome(profile, counts, page, categories) {
       </div>
       <div class="footer-col">
         <h3>Customer service</h3>
+        <a href="${orders}">Track order</a>
         <a href="${cart}">Your cart</a>
         <a href="${wishlist}">Wishlist</a>
         <a href="${products}">Browse products</a>
@@ -269,12 +289,38 @@ function renderChrome(profile, counts, page, categories) {
   bottom.innerHTML = `
     <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>Home</span></a>
     <a class="${page === "categories" || page === "products" ? "is-active" : ""}" href="${categoriesPage}">${icon("grid")}<span>Categories</span></a>
-    <a class="${page === "shops" || page === "shop" ? "is-active" : ""}" href="${shops}">${icon("grid")}<span>Stores</span></a>
+    <a class="${page === "reels" ? "is-active" : ""}" href="${reels}">${icon("reels")}<span>Reels</span></a>
     <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
     <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" ? "is-active" : ""}" href="${profile ? url("pages/account/profile.html") : login}">
       ${icon("user")}<span>Account</span>
     </a>
   `;
+
+  bindHeaderInteractions(header, home);
+}
+
+/**
+ * @param {HTMLElement} header
+ * @param {string} home
+ */
+function bindHeaderInteractions(header, home) {
+  let announceIndex = 0;
+  const msg = header.querySelector("[data-announce-msg]");
+  if (msg && ANNOUNCEMENTS.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.setInterval(() => {
+      announceIndex = (announceIndex + 1) % ANNOUNCEMENTS.length;
+      msg.textContent = ANNOUNCEMENTS[announceIndex];
+    }, 4500);
+  }
+
+  header.querySelector("[data-announce-close]")?.addEventListener("click", () => {
+    header.querySelector("[data-announce]")?.classList.add("is-hidden");
+    try {
+      localStorage.setItem(ANNOUNCE_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  });
 
   header.querySelectorAll("[data-lang]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -282,6 +328,31 @@ function renderChrome(profile, counts, page, categories) {
       button.classList.add("is-active");
       toast("Language switching comes in a later step.", "info");
     });
+  });
+
+  header.querySelector("[data-help]")?.addEventListener("click", () => {
+    toast("Email support@eme.test — help center comes later.", "info");
+  });
+
+  const megaWrap = header.querySelector(".mega-wrap");
+  const megaPanel = header.querySelector("[data-mega-panel]");
+  const megaToggle = header.querySelector("[data-mega-toggle]");
+
+  const openMega = (open) => {
+    megaWrap?.classList.toggle("is-open", open);
+    megaToggle?.setAttribute("aria-expanded", open ? "true" : "false");
+    if (megaPanel instanceof HTMLElement) megaPanel.hidden = !open;
+  };
+
+  megaToggle?.addEventListener("click", () => {
+    openMega(!megaWrap?.classList.contains("is-open"));
+  });
+
+  megaWrap?.addEventListener("mouseenter", () => {
+    if (window.matchMedia("(hover: hover) and (min-width: 900px)").matches) openMega(true);
+  });
+  megaWrap?.addEventListener("mouseleave", () => {
+    if (window.matchMedia("(hover: hover) and (min-width: 900px)").matches) openMega(false);
   });
 
   header.querySelector("[data-account-toggle]")?.addEventListener("click", (event) => {
@@ -302,10 +373,66 @@ function renderChrome(profile, counts, page, categories) {
       },
     });
   });
+}
 
-  document.querySelectorAll("[data-soon='reels']").forEach((node) => {
-    node.addEventListener("click", () => toast("Reels opens in a later step.", "info"));
-  });
+/**
+ * @returns {boolean}
+ */
+function isAnnounceClosed() {
+  try {
+    return localStorage.getItem(ANNOUNCE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {Array<{ id: string, parent_id: string | null, name: string, slug: string }>} categories
+ * @param {string} products
+ * @param {string} categoriesPage
+ * @returns {string}
+ */
+function megaMenuHtml(categories, products, categoriesPage) {
+  const roots = categories.filter((row) => !row.parent_id).slice(0, 10);
+  if (!roots.length) {
+    return `<p class="muted">No categories yet. <a href="${categoriesPage}">Browse</a></p>`;
+  }
+
+  return `
+    <div class="mega-grid">
+      ${roots.map((root) => {
+        const children = categories.filter((row) => row.parent_id === root.id).slice(0, 8);
+        return `
+          <div class="mega-col">
+            <a class="mega-parent" href="${products}?category=${encodeURIComponent(root.slug)}">${escapeHtml(root.name)}</a>
+            ${children.length
+              ? `<ul>${children.map((child) => `
+                  <li><a href="${products}?category=${encodeURIComponent(child.slug)}">${escapeHtml(child.name)}</a></li>
+                `).join("")}</ul>`
+              : ""}
+          </div>
+        `;
+      }).join("")}
+    </div>
+    <a class="mega-all" href="${categoriesPage}">See all categories</a>
+  `;
+}
+
+/**
+ * @param {{ name: string, slug: string, image_url: string | null }} category
+ * @param {string} products
+ * @returns {string}
+ */
+function categoryRoundHtml(category, products) {
+  const mark = category.image_url
+    ? `<img src="${escapeHtml(category.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
+    : `<span>${escapeHtml(category.name.slice(0, 1))}</span>`;
+  return `
+    <a class="cat-round" href="${products}?category=${encodeURIComponent(category.slug)}">
+      <span class="cat-round-icon">${mark}</span>
+      <span class="cat-round-label">${escapeHtml(category.name)}</span>
+    </a>
+  `;
 }
 
 /**

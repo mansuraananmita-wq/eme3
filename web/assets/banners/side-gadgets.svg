@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="190" viewBox="0 0 400 190" role="img" aria-labelledby="ts2 ds2">
+  <title id="ts2">Gadget Deals</title>
+  <desc id="ds2">Blue gadget promo with phone shape</desc>
+  <defs>
+    <linearGradient id="gs2" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0e7490"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="190" fill="url(#gs2)"/>
+  <rect x="280" y="35" width="80" height="120" rx="14" fill="#fff" opacity=".95"/>
+  <rect x="292" y="50" width="56" height="80" rx="4" fill="#0e7490"/>
+  <circle cx="320" cy="142" r="6" fill="#0e7490"/>
+  <text x="24" y="70" fill="#cffafe" font-family="Inter,Segoe UI,sans-serif" font-size="18" font-weight="700">TECH</text>
+  <text x="24" y="110" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="32" font-weight="800">Gadget Deals</text>
+  <text x="24" y="150" fill="#a5f3fc" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="16" font-weight="600">—Í¯¾œÇŸ ¡¿²¸</text>
+</svg>

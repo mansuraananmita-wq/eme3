@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t1 d1">
+  <title id="t1">Mega Sale up to 70% OFF</title>
+  <desc id="d1">Bold teal and orange sale banner with shopping bag</desc>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="55%" stop-color="#115e59"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g1)"/>
+  <circle cx="980" cy="80" r="140" fill="#f97316" opacity=".35"/>
+  <circle cx="1080" cy="320" r="100" fill="#99f6e4" opacity=".25"/>
+  <polygon points="720,40 860,120 720,200 580,120" fill="#fff" opacity=".08"/>
+  <g transform="translate(860,110)">
+    <rect x="30" y="50" width="140" height="120" rx="16" fill="#fff" opacity=".95"/>
+    <path d="M50 50 C50 10 150 10 150 50" fill="none" stroke="#0f766e" stroke-width="14"/>
+    <rect x="70" y="90" width="60" height="12" rx="6" fill="#ea580c"/>
+  </g>
+  <text x="72" y="140" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="64" font-weight="800">Mega Sale</text>
+  <text x="72" y="210" fill="#ffedd5" font-family="Inter,Segoe UI,sans-serif" font-size="42" font-weight="700">up to 70% OFF</text>
+  <text x="72" y="270" fill="#ccfbf1" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="28" font-weight="600">®Ç—¾ ¸Ç²  íæ% ª°Í¯¨Í¤ ›¾Ü</text>
+  <rect x="72" y="300" width="220" height="48" rx="24" fill="#fff"/>
+  <text x="182" y="332" text-anchor="middle" fill="#0f766e" font-family="Inter,Segoe UI,sans-serif" font-size="18" font-weight="700">Shop deals</text>
+</svg>

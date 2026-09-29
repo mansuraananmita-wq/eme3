@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t5 d5">
+  <title id="t5">Sell on EME, open your store</title>
+  <desc id="d5">Purple seller recruitment banner with storefront</desc>
+  <defs>
+    <linearGradient id="g5" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g5)"/>
+  <circle cx="1050" cy="300" r="160" fill="#a78bfa" opacity=".25"/>
+  <g transform="translate(860,90)">
+    <path d="M20 80 L120 20 L220 80 Z" fill="#fde68a"/>
+    <rect x="40" y="80" width="160" height="140" fill="#fff"/>
+    <rect x="70" y="120" width="40" height="40" fill="#0f766e"/>
+    <rect x="130" y="120" width="40" height="40" fill="#0f766e"/>
+    <rect x="100" y="160" width="40" height="60" fill="#ea580c"/>
+  </g>
+  <text x="72" y="140" fill="#ddd6fe" font-family="Inter,Segoe UI,sans-serif" font-size="26" font-weight="700">GROW WITH EME</text>
+  <text x="72" y="210" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="52" font-weight="800">Sell on EME</text>
+  <text x="72" y="270" fill="#c4b5fd" font-family="Inter,Segoe UI,sans-serif" font-size="30" font-weight="700">open your store</text>
+  <text x="72" y="330" fill="#ede9fe" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="26" font-weight="600">EME-¤Ç ¦Ë•¾¨ –Á²Á¨</text>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t2 d2">
+  <title id="t2">Flash Sale ends tonight</title>
+  <desc id="d2">Orange flash sale banner with lightning and gift</desc>
+  <defs>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#9a3412"/>
+      <stop offset="50%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g2)"/>
+  <path d="M0 320 Q300 260 600 320 T1200 300 L1200 400 L0 400 Z" fill="#7c2d12" opacity=".35"/>
+  <polygon points="920,50 970,180 900,180 980,340 860,190 930,190" fill="#fff" opacity=".9"/>
+  <g transform="translate(1000,220)">
+    <rect x="0" y="20" width="110" height="90" rx="10" fill="#fff"/>
+    <rect x="-8" y="50" width="126" height="22" fill="#b91c1c"/>
+    <rect x="48" y="0" width="14" height="110" fill="#b91c1c"/>
+  </g>
+  <text x="72" y="130" fill="#fff7ed" font-family="Inter,Segoe UI,sans-serif" font-size="28" font-weight="700">LIMITED TIME</text>
+  <text x="72" y="200" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="58" font-weight="800">Flash Sale</text>
+  <text x="72" y="260" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="36" font-weight="700">ends tonight</text>
+  <text x="72" y="320" fill="#ffedd5" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="26" font-weight="600">†œ °¾¤Ç‡ ¶Ç·  «Í²Í¯¾¶ ¸Ç²</text>
+</svg>

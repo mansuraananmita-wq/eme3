@@ -72,15 +72,16 @@ export function imageHtml(product) {
 /**
  * Catalog card with seller link, wishlist, and add-to-cart.
  * @param {object} product
- * @param {{ saved?: boolean }} [options]
+ * @param {{ saved?: boolean, flash?: boolean }} [options]
  * @returns {string}
  */
 export function productCardHtml(product, options = {}) {
   const saved = options.saved ? "is-saved" : "";
   const pressed = options.saved ? "true" : "false";
   const discount = discountPercent(product);
+  const soldBar = options.flash ? soldProgressHtml(product) : "";
   return `
-    <article class="product-card">
+    <article class="product-card${options.flash ? " product-card-flash" : ""}">
       <a class="product-media" href="${productHref(product)}">
         ${discount != null ? `<span class="discount-badge">-${discount}%</span>` : ""}
         ${imageHtml(product)}
@@ -92,11 +93,31 @@ export function productCardHtml(product, options = {}) {
         ${soldByHtml(product)}
         <h3><a href="${productHref(product)}">${escapeHtml(product.title)}</a></h3>
         ${priceHtml(product)}
+        ${soldBar}
         <div class="card-actions">
           <button class="button button-primary" type="button" data-add-cart="${escapeHtml(product.id)}">Add to cart</button>
         </div>
       </div>
     </article>
+  `;
+}
+
+/**
+ * Sold progress from sales_count + stock (both real columns). Hidden if no sales yet.
+ * @param {object} product
+ * @returns {string}
+ */
+function soldProgressHtml(product) {
+  const sold = Number(product.sales_count);
+  const stock = Number(product.stock);
+  if (!Number.isFinite(sold) || sold <= 0) return "";
+  const total = sold + (Number.isFinite(stock) && stock > 0 ? stock : 0);
+  const pct = total > 0 ? Math.min(100, Math.round((sold / total) * 100)) : 0;
+  return `
+    <div class="sold-progress" aria-label="${sold} sold">
+      <div class="sold-progress-bar"><span style="width:${pct}%"></span></div>
+      <p class="muted">${sold} sold</p>
+    </div>
   `;
 }
 

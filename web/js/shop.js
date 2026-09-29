@@ -120,10 +120,10 @@ async function renderPanel(tab) {
       panel.innerHTML = `
         <div class="content-grid">
           ${reels.map((reel) => `
-            <article class="content-card">
+            <a class="content-card" href="${url("pages/reels.html")}?start=${encodeURIComponent(reel.id)}">
               <div class="content-thumb">${reel.thumbnail_path ? `<img src="${escapeHtml(reel.thumbnail_path)}" alt="" loading="lazy">` : `<span class="thumb-fallback"></span>`}</div>
               <p>${escapeHtml(reel.caption || "Reel")}</p>
-            </article>
+            </a>
           `).join("")}
         </div>
       `;

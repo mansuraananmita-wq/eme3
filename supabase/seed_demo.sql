@@ -1,125 +1,73 @@
 -- seed_demo.sql
--- Demo catalog for frontend testing. Run once in the Supabase SQL editor as postgres.
--- Requires: migrations 0001-0019 and supabase/seed.sql (categories).
--- Idempotent. Commits. Does not disable triggers or foreign keys.
--- Demo vendors cannot sign in (no usable password).
-
--- Fixed demo vendor auth user ids.
---   d1111111-d111-4111-8111-000000000001 .. 0004
--- Products: d2222222-d222-4222-8222-000000000001 .. 0040
--- Images:  d3333333-d333-4333-8333-000000000001 .. 0120
+-- Rich demo catalog for frontend testing. Run once in the Supabase SQL editor as postgres.
+-- Requires: migrations 0001-0019 and supabase/seed.sql (base categories).
+-- Idempotent (fixed uuids, ON CONFLICT DO NOTHING). Commits. Does not disable triggers or FKs.
+-- Demo vendors cannot sign in (unusable random password; plaintext discarded).
+--
+-- Fixed ids:
+--   vendors:  d1111111-d111-4111-8111-000000000001 .. 0010
+--   products: d2222222-d222-4222-8222-000000000001 .. 0150
+--   images:   d3333333-d333-4333-8333-000000000001 .. ~0525
+--   cats:     d4444444-d444-4444-8444-... (demo-only tops/subs; seed.sql cats reused by slug)
+--   reels:    d5555555-d555-4555-8555-000000000001 .. 0030
+--   live:     d7777777-d777-4777-8777-000000000001 .. 0002
+-- Skipped: product_reviews (needs customer users), variants (no table), featured flags (no column).
+-- Note: sales_count / reel likes_count / views_count are trigger-guarded and stay 0.
 
 begin;
 
 -- ---------------------------------------------------------------------------
--- Auth users (password is a throwaway bcrypt of random bytes; plaintext is discarded)
+-- Auth users (10)
 -- ---------------------------------------------------------------------------
 do $$
 declare
   person record;
 begin
   for person in
-    select *
-    from (
-      values
-        (
-          'd1111111-d111-4111-8111-000000000001'::uuid,
-          'demo-vendor-1@eme.demo',
-          'Style Lane Owner'
-        ),
-        (
-          'd1111111-d111-4111-8111-000000000002'::uuid,
-          'demo-vendor-2@eme.demo',
-          'Tech Hub Owner'
-        ),
-        (
-          'd1111111-d111-4111-8111-000000000003'::uuid,
-          'demo-vendor-3@eme.demo',
-          'Home Nest Owner'
-        ),
-        (
-          'd1111111-d111-4111-8111-000000000004'::uuid,
-          'demo-vendor-4@eme.demo',
-          'Glow Lab Owner'
-        )
-    ) as t (id, email, full_name)
+    select * from (values
+      ('d1111111-d111-4111-8111-000000000001'::uuid, 'demo-vendor-1@eme.demo', 'Purush Fashion Owner'),
+      ('d1111111-d111-4111-8111-000000000002'::uuid, 'demo-vendor-2@eme.demo', 'Nari Style Owner'),
+      ('d1111111-d111-4111-8111-000000000003'::uuid, 'demo-vendor-3@eme.demo', 'Gadget Bazar Owner'),
+      ('d1111111-d111-4111-8111-000000000004'::uuid, 'demo-vendor-4@eme.demo', 'Case Corner Owner'),
+      ('d1111111-d111-4111-8111-000000000005'::uuid, 'demo-vendor-5@eme.demo', 'Ghor Kitchen Owner'),
+      ('d1111111-d111-4111-8111-000000000006'::uuid, 'demo-vendor-6@eme.demo', 'Rupchaya Owner'),
+      ('d1111111-d111-4111-8111-000000000007'::uuid, 'demo-vendor-7@eme.demo', 'Bazaar Basket Owner'),
+      ('d1111111-d111-4111-8111-000000000008'::uuid, 'demo-vendor-8@eme.demo', 'Boighar Owner'),
+      ('d1111111-d111-4111-8111-000000000009'::uuid, 'demo-vendor-9@eme.demo', 'Khelaghar Owner'),
+      ('d1111111-d111-4111-8111-000000000010'::uuid, 'demo-vendor-10@eme.demo', 'Choto Bondhu Owner')
+    ) as t(id, email, full_name)
   loop
     insert into auth.users (
-      instance_id,
-      id,
-      aud,
-      role,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      created_at,
-      updated_at,
-      confirmation_token,
-      email_change,
-      email_change_token_new,
-      recovery_token
+      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, email_change, email_change_token_new, recovery_token
     ) values (
       '00000000-0000-0000-0000-000000000000',
-      person.id,
-      'authenticated',
-      'authenticated',
-      person.email,
-      -- Unusable: bcrypt of random bytes; the plaintext is never stored.
+      person.id, 'authenticated', 'authenticated', person.email,
       extensions.crypt(encode(extensions.gen_random_bytes(32), 'hex'), extensions.gen_salt('bf')),
       null,
       '{"provider":"email","providers":["email"]}'::jsonb,
       jsonb_build_object('full_name', person.full_name),
-      now(),
-      now(),
-      '',
-      '',
-      '',
-      ''
-    )
-    on conflict (id) do nothing;
+      now(), now(), '', '', '', ''
+    ) on conflict (id) do nothing;
 
     begin
       insert into auth.identities (
-        id,
-        user_id,
-        identity_data,
-        provider,
-        provider_id,
-        last_sign_in_at,
-        created_at,
-        updated_at
+        id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
       ) values (
-        person.id,
-        person.id,
+        person.id, person.id,
         jsonb_build_object('sub', person.id::text, 'email', person.email),
-        'email',
-        person.id::text,
-        now(),
-        now(),
-        now()
-      )
-      on conflict do nothing;
-    exception
-      when others then
-        null;
+        'email', person.id::text, now(), now(), now()
+      ) on conflict do nothing;
+    exception when others then null;
     end;
   end loop;
 end;
 $$;
 
--- Trigger handle_new_user creates customer profiles. Promote to vendor (SQL editor is postgres).
 update public.profiles
-set
-  role = 'vendor',
-  full_name = coalesce(full_name, 'Demo Vendor')
-where id in (
-  'd1111111-d111-4111-8111-000000000001',
-  'd1111111-d111-4111-8111-000000000002',
-  'd1111111-d111-4111-8111-000000000003',
-  'd1111111-d111-4111-8111-000000000004'
-);
+set role = 'vendor', full_name = coalesce(full_name, 'Demo Vendor')
+where id in ('d1111111-d111-4111-8111-000000000001', 'd1111111-d111-4111-8111-000000000002', 'd1111111-d111-4111-8111-000000000003', 'd1111111-d111-4111-8111-000000000004', 'd1111111-d111-4111-8111-000000000005', 'd1111111-d111-4111-8111-000000000006', 'd1111111-d111-4111-8111-000000000007', 'd1111111-d111-4111-8111-000000000008', 'd1111111-d111-4111-8111-000000000009', 'd1111111-d111-4111-8111-000000000010');
 
 -- ---------------------------------------------------------------------------
 -- Approved shops
@@ -127,297 +75,958 @@ where id in (
 insert into public.vendor_profiles (
   profile_id, shop_name, slug, description, logo_url, banner_url, status
 ) values
-  (
-    'd1111111-d111-4111-8111-000000000001',
-    'Style Lane',
-    'demo-style-lane',
-    'ফ্যাশন ও পোশাক। Everyday fashion for men, women, and kids.',
-    'https://picsum.photos/seed/demo-style-lane-logo/200/200',
-    'https://picsum.photos/seed/demo-style-lane-banner/1200/400',
-    'approved'
-  ),
-  (
-    'd1111111-d111-4111-8111-000000000002',
-    'Tech Hub',
-    'demo-tech-hub',
-    'ইলেকট্রনিক্স ও গ্যাজেট। Phones, laptops, and accessories.',
-    'https://picsum.photos/seed/demo-tech-hub-logo/200/200',
-    'https://picsum.photos/seed/demo-tech-hub-banner/1200/400',
-    'approved'
-  ),
-  (
-    'd1111111-d111-4111-8111-000000000003',
-    'Home Nest',
-    'demo-home-nest',
-    'ঘর ও রান্নাঘর। Furniture, kitchen tools, and decor.',
-    'https://picsum.photos/seed/demo-home-nest-logo/200/200',
-    'https://picsum.photos/seed/demo-home-nest-banner/1200/400',
-    'approved'
-  ),
-  (
-    'd1111111-d111-4111-8111-000000000004',
-    'Glow Lab',
-    'demo-glow-lab',
-    'সৌন্দর্য ও যত্ন। Skincare, makeup, and hair care.',
-    'https://picsum.photos/seed/demo-glow-lab-logo/200/200',
-    'https://picsum.photos/seed/demo-glow-lab-banner/1200/400',
-    'approved'
-  )
+  ('d1111111-d111-4111-8111-000000000001', 'Purush Lane', 'demo-purush-lane', 'পুরুষদের ফ্যাশন। Men''s shirts, panjabi, jeans, and footwear from Dhaka makers.',
+   'https://picsum.photos/seed/demo-purush-lane-logo/200/200',
+   'https://picsum.photos/seed/demo-purush-lane-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000002', 'Nari Atelier', 'demo-nari-atelier', 'নারীদের পোশাক। Salwar, kurti, hijab, and heels for everyday elegance.',
+   'https://picsum.photos/seed/demo-nari-atelier-logo/200/200',
+   'https://picsum.photos/seed/demo-nari-atelier-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000003', 'Gadget Bazar BD', 'demo-gadget-bazar', 'ইলেকট্রনিক্স ও গ্যাজেট। Phones, laptops, and smart devices.',
+   'https://picsum.photos/seed/demo-gadget-bazar-logo/200/200',
+   'https://picsum.photos/seed/demo-gadget-bazar-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000004', 'Case Corner', 'demo-case-corner', 'মোবাইল একসেসরিজ। Cases, chargers, cables, and earbud gear.',
+   'https://picsum.photos/seed/demo-case-corner-logo/200/200',
+   'https://picsum.photos/seed/demo-case-corner-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000005', 'Ghor O Ranna', 'demo-ghor-o-ranna', 'ঘর ও রান্নাঘর। Cookware, furniture, and home comforts.',
+   'https://picsum.photos/seed/demo-ghor-o-ranna-logo/200/200',
+   'https://picsum.photos/seed/demo-ghor-o-ranna-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000006', 'Rupchaya Beauty', 'demo-rupchaya-beauty', 'সৌন্দর্য ও যত্ন। Skincare, makeup, and hair care for BD weather.',
+   'https://picsum.photos/seed/demo-rupchaya-beauty-logo/200/200',
+   'https://picsum.photos/seed/demo-rupchaya-beauty-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000007', 'Bazaar Basket', 'demo-bazaar-basket', 'মুদি ও খাবার। Tea, spices, snacks, and pantry staples.',
+   'https://picsum.photos/seed/demo-bazaar-basket-logo/200/200',
+   'https://picsum.photos/seed/demo-bazaar-basket-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000008', 'Boighar Stationery', 'demo-boighar', 'বই ও স্টেশনারি। Novels, notebooks, pens, and school supplies.',
+   'https://picsum.photos/seed/demo-boighar-logo/200/200',
+   'https://picsum.photos/seed/demo-boighar-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000009', 'Khelaghar Fitness', 'demo-khelaghar', 'খেলা ও ফিটনেস। Yoga mats, dumbbells, jerseys, and sports gear.',
+   'https://picsum.photos/seed/demo-khelaghar-logo/200/200',
+   'https://picsum.photos/seed/demo-khelaghar-banner/1200/400',
+   'approved'),
+  ('d1111111-d111-4111-8111-000000000010', 'Choto Bondhu Toys', 'demo-choto-bondhu', 'শিশু ও খেলনা। Soft toys, learning sets, and outdoor play.',
+   'https://picsum.photos/seed/demo-choto-bondhu-logo/200/200',
+   'https://picsum.photos/seed/demo-choto-bondhu-banner/1200/400',
+   'approved')
 on conflict (profile_id) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Products (40 active). Category ids come from seed.sql by slug.
+-- Extra categories (12 tops total with seed.sql: electronics, fashion,
+-- home-and-living, beauty + 8 new). Match existing by slug; no duplicates.
+-- ---------------------------------------------------------------------------
+insert into public.categories (id, parent_id, name, slug, image_url, sort_order, is_active) values
+  ('d4444444-d444-4444-8444-000000000001', null, 'Grocery & Food', 'grocery-and-food', 'https://picsum.photos/seed/cat-grocery-and-food/200/200', 50, true),
+  ('d4444444-d444-4444-8444-000000000002', null, 'Books & Stationery', 'books-and-stationery', 'https://picsum.photos/seed/cat-books-and-stationery/200/200', 60, true),
+  ('d4444444-d444-4444-8444-000000000003', null, 'Sports & Fitness', 'sports-and-fitness', 'https://picsum.photos/seed/cat-sports-and-fitness/200/200', 70, true),
+  ('d4444444-d444-4444-8444-000000000004', null, 'Kids & Toys', 'kids-and-toys', 'https://picsum.photos/seed/cat-kids-and-toys/200/200', 80, true),
+  ('d4444444-d444-4444-8444-000000000005', null, 'Mobile Accessories', 'mobile-accessories', 'https://picsum.photos/seed/cat-mobile-accessories/200/200', 15, true),
+  ('d4444444-d444-4444-8444-000000000006', null, 'Health & Wellness', 'health-and-wellness', 'https://picsum.photos/seed/cat-health-and-wellness/200/200', 90, true),
+  ('d4444444-d444-4444-8444-000000000007', null, 'Bags & Luggage', 'bags-and-luggage', 'https://picsum.photos/seed/cat-bags-and-luggage/200/200', 100, true),
+  ('d4444444-d444-4444-8444-000000000008', null, 'Watches & Jewellery', 'watches-and-jewellery', 'https://picsum.photos/seed/cat-watches-and-jewellery/200/200', 110, true),
+  ('d4444444-d444-4444-8444-000000000011', 'd4444444-d444-4444-8444-000000000001', 'Tea & Coffee', 'grocery-tea', 'https://picsum.photos/seed/cat-grocery-tea/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000012', 'd4444444-d444-4444-8444-000000000001', 'Oils & Ghee', 'grocery-oils', 'https://picsum.photos/seed/cat-grocery-oils/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000013', 'd4444444-d444-4444-8444-000000000001', 'Staples', 'grocery-staples', 'https://picsum.photos/seed/cat-grocery-staples/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000014', 'd4444444-d444-4444-8444-000000000001', 'Spices', 'grocery-spices', 'https://picsum.photos/seed/cat-grocery-spices/200/200', 40, true),
+  ('d4444444-d444-4444-8444-000000000015', 'd4444444-d444-4444-8444-000000000001', 'Snacks', 'grocery-snacks', 'https://picsum.photos/seed/cat-grocery-snacks/200/200', 50, true),
+  ('d4444444-d444-4444-8444-000000000021', 'd4444444-d444-4444-8444-000000000002', 'Fiction', 'books-fiction', 'https://picsum.photos/seed/cat-books-fiction/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000022', 'd4444444-d444-4444-8444-000000000002', 'Education', 'books-education', 'https://picsum.photos/seed/cat-books-education/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000023', 'd4444444-d444-4444-8444-000000000002', 'Paper', 'stationery-paper', 'https://picsum.photos/seed/cat-stationery-paper/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000024', 'd4444444-d444-4444-8444-000000000002', 'Pens', 'stationery-pens', 'https://picsum.photos/seed/cat-stationery-pens/200/200', 40, true),
+  ('d4444444-d444-4444-8444-000000000025', 'd4444444-d444-4444-8444-000000000002', 'School', 'stationery-school', 'https://picsum.photos/seed/cat-stationery-school/200/200', 50, true),
+  ('d4444444-d444-4444-8444-000000000031', 'd4444444-d444-4444-8444-000000000003', 'Yoga', 'sports-yoga', 'https://picsum.photos/seed/cat-sports-yoga/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000032', 'd4444444-d444-4444-8444-000000000003', 'Gym', 'sports-gym', 'https://picsum.photos/seed/cat-sports-gym/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000033', 'd4444444-d444-4444-8444-000000000003', 'Outdoor', 'sports-outdoor', 'https://picsum.photos/seed/cat-sports-outdoor/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000034', 'd4444444-d444-4444-8444-000000000003', 'Apparel', 'sports-apparel', 'https://picsum.photos/seed/cat-sports-apparel/200/200', 40, true),
+  ('d4444444-d444-4444-8444-000000000041', 'd4444444-d444-4444-8444-000000000004', 'Plush', 'toys-plush', 'https://picsum.photos/seed/cat-toys-plush/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000042', 'd4444444-d444-4444-8444-000000000004', 'Learning', 'toys-learning', 'https://picsum.photos/seed/cat-toys-learning/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000043', 'd4444444-d444-4444-8444-000000000004', 'Outdoor Play', 'toys-outdoor', 'https://picsum.photos/seed/cat-toys-outdoor/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000051', 'd4444444-d444-4444-8444-000000000005', 'Mounts & Holders', 'mobile-mounts', 'https://picsum.photos/seed/cat-mobile-mounts/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000052', 'd4444444-d444-4444-8444-000000000005', 'Cables & Adapters', 'mobile-cables', 'https://picsum.photos/seed/cat-mobile-cables/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000053', 'd4444444-d444-4444-8444-000000000005', 'Creator Gear', 'mobile-creator', 'https://picsum.photos/seed/cat-mobile-creator/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000061', 'd4444444-d444-4444-8444-000000000006', 'Supplements', 'health-supplements', 'https://picsum.photos/seed/cat-health-supplements/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000062', 'd4444444-d444-4444-8444-000000000006', 'Personal Care', 'health-personal-care', 'https://picsum.photos/seed/cat-health-personal-care/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000063', 'd4444444-d444-4444-8444-000000000006', 'First Aid', 'health-first-aid', 'https://picsum.photos/seed/cat-health-first-aid/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000071', 'd4444444-d444-4444-8444-000000000007', 'Handbags', 'bags-handbags', 'https://picsum.photos/seed/cat-bags-handbags/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000072', 'd4444444-d444-4444-8444-000000000007', 'Backpacks', 'bags-backpacks', 'https://picsum.photos/seed/cat-bags-backpacks/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000073', 'd4444444-d444-4444-8444-000000000007', 'Travel', 'bags-travel', 'https://picsum.photos/seed/cat-bags-travel/200/200', 30, true),
+  ('d4444444-d444-4444-8444-000000000081', 'd4444444-d444-4444-8444-000000000008', 'Watches', 'jewellery-watches', 'https://picsum.photos/seed/cat-jewellery-watches/200/200', 10, true),
+  ('d4444444-d444-4444-8444-000000000082', 'd4444444-d444-4444-8444-000000000008', 'Fashion Jewellery', 'jewellery-fashion', 'https://picsum.photos/seed/cat-jewellery-fashion/200/200', 20, true),
+  ('d4444444-d444-4444-8444-000000000083', 'd4444444-d444-4444-8444-000000000008', 'Traditional', 'jewellery-traditional', 'https://picsum.photos/seed/cat-jewellery-traditional/200/200', 30, true)
+on conflict (slug) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Products (~150 active). created_at spread over last 60 days.
 -- ---------------------------------------------------------------------------
 insert into public.products (
   id, vendor_id, category_id, title, slug, description,
-  price, compare_at_price, currency, stock, sku, status
+  price, compare_at_price, currency, stock, sku, status, created_at
 )
 select
-  seed.id,
-  seed.vendor_id,
-  category.id,
-  seed.title,
-  seed.slug,
-  seed.description,
-  seed.price,
-  seed.compare_at_price,
-  'BDT',
-  seed.stock,
-  seed.sku,
-  'active'::public.product_status
-from (
-  values
-    -- Style Lane (fashion) — 10
-    ('d2222222-d222-4222-8222-000000000001'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Cotton Panjabi / সুতি পাঞ্জাবি', 'demo-cotton-panjabi', 'Lightweight cotton panjabi for Eid and Friday prayers.', 1890.00, 2490.00, 40, 'SL-PANJ-01'),
-    ('d2222222-d222-4222-8222-000000000002'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Slim Fit Jeans', 'demo-slim-fit-jeans', 'Stretch denim, mid wash. Daily wear jeans.', 2200.00, 2800.00, 25, 'SL-JEAN-02'),
-    ('d2222222-d222-4222-8222-000000000003'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Leather Sandals / চামড়ার স্যান্ডেল', 'demo-leather-sandals', 'Hand-finished leather sandals for warm weather.', 1450.00, null, 18, 'SL-SAND-03'),
-    ('d2222222-d222-4222-8222-000000000004'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'womens-clothing', 'Cotton Salwar Kameez', 'demo-salwar-kameez', 'Three-piece cotton set with soft dupatta.', 2650.00, 3200.00, 30, 'SL-SALW-04'),
-    ('d2222222-d222-4222-8222-000000000005'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'womens-clothing', 'Linen Kurti / লিনেন কুর্তি', 'demo-linen-kurti', 'Breathable linen kurti for office and weekend.', 1590.00, 1990.00, 0, 'SL-KURT-05'),
-    ('d2222222-d222-4222-8222-000000000006'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'womens-footwear', 'Block Heel Sandals', 'demo-block-heel-sandals', 'Comfort block heel, 2 inch. Black and nude.', 2100.00, 2600.00, 12, 'SL-HEEL-06'),
-    ('d2222222-d222-4222-8222-000000000007'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'boys', 'Boys Polo Shirt', 'demo-boys-polo', 'Soft jersey polo for ages 6–12.', 890.00, 1100.00, 45, 'SL-POLO-07'),
-    ('d2222222-d222-4222-8222-000000000008'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'girls', 'Girls Frock / মেয়েদের ফ্রক', 'demo-girls-frock', 'Printed cotton frock with bow detail.', 1250.00, 1500.00, 22, 'SL-FROC-08'),
-    ('d2222222-d222-4222-8222-000000000009'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Canvas Sneakers', 'demo-canvas-sneakers', 'Everyday white sneakers with rubber sole.', 1750.00, null, 8, 'SL-SNEK-09'),
-    ('d2222222-d222-4222-8222-000000000010'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'womens-clothing', 'Hijab Jersey Set', 'demo-hijab-jersey', 'Soft jersey hijab, two-pack. Neutral colours.', 690.00, 850.00, 60, 'SL-HIJA-10'),
-
-    -- Tech Hub (electronics) — 10
-    ('d2222222-d222-4222-8222-000000000011'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'smartphones', 'Android Phone 128GB', 'demo-android-phone-128', '৬.৫ ইঞ্চি ডিসপ্লে, ৫০MP ক্যামেরা। Mid-range Android phone.', 24990.00, 27990.00, 15, 'TH-PHON-11'),
-    ('d2222222-d222-4222-8222-000000000012'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'smartphones', 'Budget Smartphone 64GB', 'demo-budget-phone-64', 'Reliable dual-SIM phone for everyday calls and apps.', 12990.00, 14990.00, 28, 'TH-PHON-12'),
-    ('d2222222-d222-4222-8222-000000000013'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'feature-phones', 'Feature Phone / বাটন মোবাইল', 'demo-feature-phone', 'Long battery, torch, FM radio. Dual SIM.', 1890.00, null, 50, 'TH-FEAT-13'),
-    ('d2222222-d222-4222-8222-000000000014'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'ultrabooks', '14" Ultrabook i5', 'demo-ultrabook-i5', 'Thin laptop, 16GB RAM, 512GB SSD. Office and study.', 72990.00, 79990.00, 6, 'TH-ULTB-14'),
-    ('d2222222-d222-4222-8222-000000000015'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'gaming-laptops', 'Gaming Laptop RTX', 'demo-gaming-laptop-rtx', '144Hz screen, dedicated GPU. For games and design.', 129990.00, 139990.00, 0, 'TH-GAME-15'),
-    ('d2222222-d222-4222-8222-000000000016'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'chargers', '20W USB-C Fast Charger', 'demo-usbc-charger-20w', 'PD charger with 1m cable. Phone and earbud friendly.', 890.00, 1200.00, 80, 'TH-CHAR-16'),
-    ('d2222222-d222-4222-8222-000000000017'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'chargers', 'Power Bank 20000mAh', 'demo-power-bank-20k', 'দুই পোর্ট পাওয়ার ব্যাংক। Dual USB output.', 1890.00, 2290.00, 35, 'TH-POWR-17'),
-    ('d2222222-d222-4222-8222-000000000018'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'cases-and-covers', 'Clear Phone Case', 'demo-clear-phone-case', 'Shock-absorb corners. Fits popular mid-range phones.', 450.00, 650.00, 100, 'TH-CASE-18'),
-    ('d2222222-d222-4222-8222-000000000019'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'cases-and-covers', 'Silicone Case Pack', 'demo-silicone-case-pack', 'Matte silicone case, three colours in one pack.', 990.00, null, 40, 'TH-CASE-19'),
-    ('d2222222-d222-4222-8222-000000000020'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'ultrabooks', 'Wireless Mouse', 'demo-wireless-mouse', 'Silent click mouse with USB receiver.', 690.00, 850.00, 55, 'TH-MOUS-20'),
-
-    -- Home Nest — 10
-    ('d2222222-d222-4222-8222-000000000021'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'furniture', 'Study Table / পড়ার টেবিল', 'demo-study-table', 'Compact wooden study table with drawer.', 6500.00, 7500.00, 9, 'HN-TABL-21'),
-    ('d2222222-d222-4222-8222-000000000022'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'furniture', 'Folding Chair', 'demo-folding-chair', 'Metal folding chair for guests and balcony.', 1850.00, null, 20, 'HN-CHAI-22'),
-    ('d2222222-d222-4222-8222-000000000023'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'kitchen', 'Non-stick Fry Pan 24cm', 'demo-fry-pan-24', 'নাসটিক ফ্রাইপ্যান। Even heat, easy clean.', 1290.00, 1600.00, 40, 'HN-PANS-23'),
-    ('d2222222-d222-4222-8222-000000000024'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'kitchen', 'Pressure Cooker 5L', 'demo-pressure-cooker-5l', 'Aluminium pressure cooker with safety valve.', 3200.00, 3800.00, 14, 'HN-COOK-24'),
-    ('d2222222-d222-4222-8222-000000000025'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'kitchen', 'Spice Jar Set / মসলার জার', 'demo-spice-jar-set', '12 glass jars with labels and stand.', 1450.00, 1800.00, 0, 'HN-SPIC-25'),
-    ('d2222222-d222-4222-8222-000000000026'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'decor', 'Wall Clock Minimal', 'demo-wall-clock', 'Silent quartz wall clock, 30cm.', 990.00, 1250.00, 25, 'HN-CLOK-26'),
-    ('d2222222-d222-4222-8222-000000000027'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'decor', 'Cotton Cushion Cover', 'demo-cushion-cover', 'Set of 2 printed cushion covers, 16x16.', 750.00, null, 48, 'HN-CUSH-27'),
-    ('d2222222-d222-4222-8222-000000000028'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'decor', 'Table Lamp / টেবিল ল্যাম্প', 'demo-table-lamp', 'Warm LED table lamp with fabric shade.', 1890.00, 2300.00, 16, 'HN-LAMP-28'),
-    ('d2222222-d222-4222-8222-000000000029'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'furniture', 'Shoe Rack 3 Tier', 'demo-shoe-rack', 'Open shoe rack for hallway storage.', 2100.00, 2600.00, 11, 'HN-SHOE-29'),
-    ('d2222222-d222-4222-8222-000000000030'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'kitchen', 'Water Bottle Set 1L', 'demo-water-bottle-set', 'Tritan bottles, BPA free, pack of 3.', 990.00, 1200.00, 70, 'HN-BTTL-30'),
-
-    -- Glow Lab (beauty) — 10
-    ('d2222222-d222-4222-8222-000000000031'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'skincare', 'Vitamin C Serum 30ml', 'demo-vitamin-c-serum', 'Brightening serum for dull skin. Morning use.', 1450.00, 1800.00, 32, 'GL-SERU-31'),
-    ('d2222222-d222-4222-8222-000000000032'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'skincare', 'Aloe Face Wash / অ্যালো ফেস ওয়াশ', 'demo-aloe-face-wash', 'Gentle gel cleanser for oily and combination skin.', 590.00, 750.00, 55, 'GL-FACE-32'),
-    ('d2222222-d222-4222-8222-000000000033'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'skincare', 'SPF 50 Sunscreen', 'demo-spf50-sunscreen', 'Lightweight sunscreen, no white cast.', 890.00, null, 40, 'GL-SUNS-33'),
-    ('d2222222-d222-4222-8222-000000000034'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'makeup', 'Matte Lipstick Set', 'demo-matte-lipstick-set', 'Three everyday shades. Long wear formula.', 1290.00, 1600.00, 24, 'GL-LIPS-34'),
-    ('d2222222-d222-4222-8222-000000000035'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'makeup', 'Kajal Pencil / কাজল', 'demo-kajal-pencil', 'Smudge-resistant black kajal.', 350.00, 450.00, 90, 'GL-KAJA-35'),
-    ('d2222222-d222-4222-8222-000000000036'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'makeup', 'Compact Powder', 'demo-compact-powder', 'Oil-control compact with mirror.', 780.00, 950.00, 0, 'GL-POWD-36'),
-    ('d2222222-d222-4222-8222-000000000037'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'hair', 'Coconut Hair Oil 200ml', 'demo-coconut-hair-oil', 'নারকেল তেল। Cold-pressed coconut oil for hair.', 420.00, null, 75, 'GL-OIL-37'),
-    ('d2222222-d222-4222-8222-000000000038'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'hair', 'Anti-Dandruff Shampoo', 'demo-anti-dandruff-shampoo', 'Cooling menthol shampoo, 340ml.', 690.00, 850.00, 38, 'GL-SHAM-38'),
-    ('d2222222-d222-4222-8222-000000000039'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'hair', 'Hair Serum Shine', 'demo-hair-serum', 'Frizz control serum for humid weather.', 990.00, 1250.00, 20, 'GL-SERH-39'),
-    ('d2222222-d222-4222-8222-000000000040'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'skincare', 'Night Cream 50g', 'demo-night-cream', 'Nourishing night cream with shea butter.', 1150.00, 1400.00, 18, 'GL-NITE-40')
-) as seed (
-  id, vendor_id, category_slug, title, slug, description,
-  price, compare_at_price, stock, sku
-)
-join public.categories as category
-  on category.slug = seed.category_slug
+  seed.id, seed.vendor_id, category.id, seed.title, seed.slug, seed.description,
+  seed.price, seed.compare_at_price, 'BDT', seed.stock, seed.sku,
+  'active'::public.product_status, seed.created_at
+from (values
+  ('d2222222-d222-4222-8222-000000000001'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Cotton Panjabi / সুতি পাঞ্জাবি', 'demo-purush-lane-p01', 'Lightweight cotton panjabi for Eid and Jummah.', 1890.00, 2490.00, 42, 'DM-1-P01', now() - interval '7 days'),
+  ('d2222222-d222-4222-8222-000000000002'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Slim Fit Jeans', 'demo-purush-lane-p02', 'Stretch denim, mid wash for daily wear.', 2200.00, 2800.00, 25, 'DM-1-P02', now() - interval '14 days'),
+  ('d2222222-d222-4222-8222-000000000003'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Oxford Shirt / অক্সফোর্ড শার্ট', 'demo-purush-lane-p03', 'Breathable oxford shirt, office ready.', 1450.00, null, 30, 'DM-1-P03', now() - interval '21 days'),
+  ('d2222222-d222-4222-8222-000000000004'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Leather Sandals / চামড়ার স্যান্ডেল', 'demo-purush-lane-p04', 'Hand-finished leather sandals.', 1450.00, 1800.00, 18, 'DM-1-P04', now() - interval '28 days'),
+  ('d2222222-d222-4222-8222-000000000005'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Canvas Sneakers', 'demo-purush-lane-p05', 'Everyday white sneakers with rubber sole.', 1750.00, 2100.00, 8, 'DM-1-P05', now() - interval '35 days'),
+  ('d2222222-d222-4222-8222-000000000006'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Formal Belt', 'demo-purush-lane-p06', 'Genuine look PU belt with silver buckle.', 690.00, 850.00, 40, 'DM-1-P06', now() - interval '42 days'),
+  ('d2222222-d222-4222-8222-000000000007'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Winter Hoodie', 'demo-purush-lane-p07', 'Fleece hoodie for Dhaka evenings.', 2100.00, 2590.00, 0, 'DM-1-P07', now() - interval '49 days'),
+  ('d2222222-d222-4222-8222-000000000008'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Sports Shorts', 'demo-purush-lane-p08', 'Quick-dry shorts for gym and cricket.', 890.00, 1100.00, 55, 'DM-1-P08', now() - interval '56 days'),
+  ('d2222222-d222-4222-8222-000000000009'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Loafer Shoes', 'demo-purush-lane-p09', 'Comfort loafers for office and travel.', 3200.00, 3800.00, 12, 'DM-1-P09', now() - interval '3 days'),
+  ('d2222222-d222-4222-8222-000000000010'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Cotton Undershirt Pack', 'demo-purush-lane-p10', '3-pack soft cotton vests.', 590.00, null, 70, 'DM-1-P10', now() - interval '10 days'),
+  ('d2222222-d222-4222-8222-000000000011'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Linen Shirt', 'demo-purush-lane-p11', 'Breathable linen for summer.', 1690.00, 1990.00, 22, 'DM-1-P11', now() - interval '17 days'),
+  ('d2222222-d222-4222-8222-000000000012'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Track Pants', 'demo-purush-lane-p12', 'Tapered track pants with zip pocket.', 1250.00, 1500.00, 28, 'DM-1-P12', now() - interval '24 days'),
+  ('d2222222-d222-4222-8222-000000000013'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Cap / টুপি', 'demo-purush-lane-p13', 'Adjustable cotton baseball cap.', 450.00, 600.00, 60, 'DM-1-P13', now() - interval '31 days'),
+  ('d2222222-d222-4222-8222-000000000014'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-footwear', 'Ankle Socks Pack', 'demo-purush-lane-p14', '5-pair ankle socks, mixed colours.', 390.00, null, 90, 'DM-1-P14', now() - interval '38 days'),
+  ('d2222222-d222-4222-8222-000000000015'::uuid, 'd1111111-d111-4111-8111-000000000001'::uuid, 'mens-clothing', 'Casual Blazer', 'demo-purush-lane-p15', 'Lightweight blazer for smart casual.', 4500.00, 5200.00, 6, 'DM-1-P15', now() - interval '45 days'),
+  ('d2222222-d222-4222-8222-000000000016'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Cotton Salwar Kameez', 'demo-nari-atelier-w01', 'Three-piece cotton set with soft dupatta.', 2650.00, 3200.00, 30, 'DM-2-W01', now() - interval '52 days'),
+  ('d2222222-d222-4222-8222-000000000017'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Linen Kurti / লিনেন কুর্তি', 'demo-nari-atelier-w02', 'Breathable linen kurti for office days.', 1590.00, 1990.00, 0, 'DM-2-W02', now() - interval '59 days'),
+  ('d2222222-d222-4222-8222-000000000018'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-footwear', 'Block Heel Sandals', 'demo-nari-atelier-w03', 'Comfort 2-inch block heel.', 2100.00, 2600.00, 12, 'DM-2-W03', now() - interval '6 days'),
+  ('d2222222-d222-4222-8222-000000000019'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Hijab Jersey Set', 'demo-nari-atelier-w04', 'Soft jersey hijab, two-pack.', 690.00, 850.00, 60, 'DM-2-W04', now() - interval '13 days'),
+  ('d2222222-d222-4222-8222-000000000020'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Embroidered Saree / শাড়ি', 'demo-nari-atelier-w05', 'Lightweight saree with blouse piece.', 4800.00, 5500.00, 10, 'DM-2-W05', now() - interval '20 days'),
+  ('d2222222-d222-4222-8222-000000000021'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Maxi Dress', 'demo-nari-atelier-w06', 'Flowy maxi for gatherings.', 2290.00, 2790.00, 18, 'DM-2-W06', now() - interval '27 days'),
+  ('d2222222-d222-4222-8222-000000000022'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-footwear', 'Ballet Flats', 'demo-nari-atelier-w07', 'Soft ballet flats for all-day wear.', 1350.00, null, 24, 'DM-2-W07', now() - interval '34 days'),
+  ('d2222222-d222-4222-8222-000000000023'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Denim Jacket', 'demo-nari-atelier-w08', 'Classic blue denim jacket.', 2450.00, 2990.00, 14, 'DM-2-W08', now() - interval '41 days'),
+  ('d2222222-d222-4222-8222-000000000024'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Handbag / হ্যান্ডব্যাগ', 'demo-nari-atelier-w09', 'Structured handbag with zip pocket.', 1890.00, 2300.00, 20, 'DM-2-W09', now() - interval '48 days'),
+  ('d2222222-d222-4222-8222-000000000025'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Leggings Pack', 'demo-nari-atelier-w10', '2-pack stretch cotton leggings.', 790.00, 990.00, 50, 'DM-2-W10', now() - interval '55 days'),
+  ('d2222222-d222-4222-8222-000000000026'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Pearl Stud Earrings', 'demo-nari-atelier-w11', 'Everyday pearl studs.', 450.00, null, 40, 'DM-2-W11', now() - interval '2 days'),
+  ('d2222222-d222-4222-8222-000000000027'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Palazzo Pants', 'demo-nari-atelier-w12', 'Wide-leg palazzo, soft rayon.', 1290.00, 1590.00, 26, 'DM-2-W12', now() - interval '9 days'),
+  ('d2222222-d222-4222-8222-000000000028'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-footwear', 'Wedge Sandals', 'demo-nari-atelier-w13', 'Comfort wedge with ankle strap.', 1980.00, 2400.00, 9, 'DM-2-W13', now() - interval '16 days'),
+  ('d2222222-d222-4222-8222-000000000029'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Abaya Plain', 'demo-nari-atelier-w14', 'Simple abaya with soft lining.', 2100.00, 2500.00, 16, 'DM-2-W14', now() - interval '23 days'),
+  ('d2222222-d222-4222-8222-000000000030'::uuid, 'd1111111-d111-4111-8111-000000000002'::uuid, 'womens-clothing', 'Silk Scarf', 'demo-nari-atelier-w15', 'Printed silk-feel scarf.', 890.00, 1100.00, 35, 'DM-2-W15', now() - interval '30 days'),
+  ('d2222222-d222-4222-8222-000000000031'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'smartphones', 'Android Phone 128GB', 'demo-gadget-bazar-e01', '৬.৫ ইঞ্চি ডিসপ্লে, ৫০MP ক্যামেরা।', 24990.00, 27990.00, 15, 'DM-3-E01', now() - interval '37 days'),
+  ('d2222222-d222-4222-8222-000000000032'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'smartphones', 'Budget Smartphone 64GB', 'demo-gadget-bazar-e02', 'Reliable dual-SIM daily driver.', 12990.00, 14990.00, 28, 'DM-3-E02', now() - interval '44 days'),
+  ('d2222222-d222-4222-8222-000000000033'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'feature-phones', 'Feature Phone / বাটন মোবাইল', 'demo-gadget-bazar-e03', 'Long battery, torch, FM radio.', 1890.00, null, 50, 'DM-3-E03', now() - interval '51 days'),
+  ('d2222222-d222-4222-8222-000000000034'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'ultrabooks', '14" Ultrabook i5', 'demo-gadget-bazar-e04', '16GB RAM, 512GB SSD for study and office.', 72990.00, 79990.00, 6, 'DM-3-E04', now() - interval '58 days'),
+  ('d2222222-d222-4222-8222-000000000035'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'gaming-laptops', 'Gaming Laptop RTX', 'demo-gadget-bazar-e05', '144Hz screen with dedicated GPU.', 129990.00, 139990.00, 0, 'DM-3-E05', now() - interval '5 days'),
+  ('d2222222-d222-4222-8222-000000000036'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Bluetooth Speaker', 'demo-gadget-bazar-e06', 'Portable speaker with deep bass.', 2450.00, 2990.00, 22, 'DM-3-E06', now() - interval '12 days'),
+  ('d2222222-d222-4222-8222-000000000037'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Smart Watch Basic', 'demo-gadget-bazar-e07', 'Heart-rate and step tracking.', 3490.00, 3990.00, 18, 'DM-3-E07', now() - interval '19 days'),
+  ('d2222222-d222-4222-8222-000000000038'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Wireless Earbuds', 'demo-gadget-bazar-e08', 'ENC earbuds with charging case.', 1890.00, 2290.00, 40, 'DM-3-E08', now() - interval '26 days'),
+  ('d2222222-d222-4222-8222-000000000039'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics', 'Tablet 10 inch', 'demo-gadget-bazar-e09', 'Wi-Fi tablet for reading and video.', 18990.00, 21990.00, 8, 'DM-3-E09', now() - interval '33 days'),
+  ('d2222222-d222-4222-8222-000000000040'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'USB Hub 4-Port', 'demo-gadget-bazar-e10', 'USB 3.0 hub for laptop docks.', 690.00, 850.00, 55, 'DM-3-E10', now() - interval '40 days'),
+  ('d2222222-d222-4222-8222-000000000041'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Webcam HD', 'demo-gadget-bazar-e11', '1080p webcam with mic.', 2450.00, null, 14, 'DM-3-E11', now() - interval '47 days'),
+  ('d2222222-d222-4222-8222-000000000042'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Mechanical Keyboard', 'demo-gadget-bazar-e12', 'Hot-swap keys, RGB backlight.', 4200.00, 4800.00, 11, 'DM-3-E12', now() - interval '54 days'),
+  ('d2222222-d222-4222-8222-000000000043'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics', 'Monitor 24 inch', 'demo-gadget-bazar-e13', 'IPS 75Hz office monitor.', 15990.00, 17990.00, 7, 'DM-3-E13', now() - interval '1 days'),
+  ('d2222222-d222-4222-8222-000000000044'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'External SSD 1TB', 'demo-gadget-bazar-e14', 'USB-C portable SSD.', 8990.00, 9990.00, 19, 'DM-3-E14', now() - interval '8 days'),
+  ('d2222222-d222-4222-8222-000000000045'::uuid, 'd1111111-d111-4111-8111-000000000003'::uuid, 'electronics-accessories', 'Wi-Fi Router Dual Band', 'demo-gadget-bazar-e15', 'AC1200 dual-band router.', 3200.00, 3800.00, 25, 'DM-3-E15', now() - interval '15 days'),
+  ('d2222222-d222-4222-8222-000000000046'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'chargers', '20W USB-C Fast Charger', 'demo-case-corner-m01', 'PD charger with 1m cable.', 890.00, 1200.00, 80, 'DM-4-M01', now() - interval '22 days'),
+  ('d2222222-d222-4222-8222-000000000047'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'chargers', 'Power Bank 20000mAh', 'demo-case-corner-m02', 'দুই পোর্ট পাওয়ার ব্যাংক।', 1890.00, 2290.00, 35, 'DM-4-M02', now() - interval '29 days'),
+  ('d2222222-d222-4222-8222-000000000048'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'cases-and-covers', 'Clear Phone Case', 'demo-case-corner-m03', 'Shock-absorb corners.', 450.00, 650.00, 100, 'DM-4-M03', now() - interval '36 days'),
+  ('d2222222-d222-4222-8222-000000000049'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'cases-and-covers', 'Silicone Case Pack', 'demo-case-corner-m04', 'Three matte colours in one pack.', 990.00, null, 40, 'DM-4-M04', now() - interval '43 days'),
+  ('d2222222-d222-4222-8222-000000000050'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'cases-and-covers', 'Tempered Glass Pack', 'demo-case-corner-m05', '2-pack 9H screen protectors.', 390.00, 550.00, 120, 'DM-4-M05', now() - interval '50 days'),
+  ('d2222222-d222-4222-8222-000000000051'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Magnetic Car Mount', 'demo-case-corner-m06', 'Dashboard magnetic phone holder.', 690.00, 850.00, 45, 'DM-4-M06', now() - interval '57 days'),
+  ('d2222222-d222-4222-8222-000000000052'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'chargers', 'Braided USB-C Cable', 'demo-case-corner-m07', '1.5m nylon braided cable.', 350.00, 450.00, 90, 'DM-4-M07', now() - interval '4 days'),
+  ('d2222222-d222-4222-8222-000000000053'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Ring Light Mini', 'demo-case-corner-m08', 'Clip ring light for creators.', 1250.00, 1500.00, 20, 'DM-4-M08', now() - interval '11 days'),
+  ('d2222222-d222-4222-8222-000000000054'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Phone Tripod', 'demo-case-corner-m09', 'Foldable tripod with remote.', 890.00, 1100.00, 28, 'DM-4-M09', now() - interval '18 days'),
+  ('d2222222-d222-4222-8222-000000000055'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'chargers', 'Wireless Charger Pad', 'demo-case-corner-m10', '15W Qi charging pad.', 1450.00, 1790.00, 0, 'DM-4-M10', now() - interval '25 days'),
+  ('d2222222-d222-4222-8222-000000000056'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Earphone Wired', 'demo-case-corner-m11', '3.5mm earbuds with mic.', 290.00, null, 150, 'DM-4-M11', now() - interval '32 days'),
+  ('d2222222-d222-4222-8222-000000000057'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'chargers', 'OTG Adapter', 'demo-case-corner-m12', 'USB-C to USB-A OTG.', 180.00, 250.00, 200, 'DM-4-M12', now() - interval '39 days'),
+  ('d2222222-d222-4222-8222-000000000058'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Selfie Stick', 'demo-case-corner-m13', 'Bluetooth selfie stick.', 590.00, 750.00, 60, 'DM-4-M13', now() - interval '46 days'),
+  ('d2222222-d222-4222-8222-000000000059'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Phone Camera Lens Kit', 'demo-case-corner-m14', 'Wide and macro clip lenses.', 1590.00, 1990.00, 15, 'DM-4-M14', now() - interval '53 days'),
+  ('d2222222-d222-4222-8222-000000000060'::uuid, 'd1111111-d111-4111-8111-000000000004'::uuid, 'mobile-accessories', 'Cable Organiser Box', 'demo-case-corner-m15', 'Desk cable tidy box.', 450.00, null, 70, 'DM-4-M15', now() - interval '0 days'),
+  ('d2222222-d222-4222-8222-000000000061'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'furniture', 'Study Table / পড়ার টেবিল', 'demo-ghor-o-ranna-h01', 'Compact wooden table with drawer.', 6500.00, 7500.00, 9, 'DM-5-H01', now() - interval '7 days'),
+  ('d2222222-d222-4222-8222-000000000062'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'furniture', 'Folding Chair', 'demo-ghor-o-ranna-h02', 'Metal folding chair for guests.', 1850.00, null, 20, 'DM-5-H02', now() - interval '14 days'),
+  ('d2222222-d222-4222-8222-000000000063'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Non-stick Fry Pan 24cm', 'demo-ghor-o-ranna-h03', 'নাসটিক ফ্রাইপ্যান। Even heat.', 1290.00, 1600.00, 40, 'DM-5-H03', now() - interval '21 days'),
+  ('d2222222-d222-4222-8222-000000000064'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Pressure Cooker 5L', 'demo-ghor-o-ranna-h04', 'Aluminium cooker with safety valve.', 3200.00, 3800.00, 14, 'DM-5-H04', now() - interval '28 days'),
+  ('d2222222-d222-4222-8222-000000000065'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Spice Jar Set / মসলার জার', 'demo-ghor-o-ranna-h05', '12 glass jars with stand.', 1450.00, 1800.00, 0, 'DM-5-H05', now() - interval '35 days'),
+  ('d2222222-d222-4222-8222-000000000066'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'decor', 'Wall Clock', 'demo-ghor-o-ranna-h06', 'Silent sweep wall clock.', 890.00, 1100.00, 35, 'DM-5-H06', now() - interval '42 days'),
+  ('d2222222-d222-4222-8222-000000000067'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'decor', 'Cushion Cover Set', 'demo-ghor-o-ranna-h07', '4 printed cushion covers.', 790.00, 990.00, 48, 'DM-5-H07', now() - interval '49 days'),
+  ('d2222222-d222-4222-8222-000000000068'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'decor', 'Table Lamp', 'demo-ghor-o-ranna-h08', 'Warm LED table lamp.', 1650.00, 1990.00, 16, 'DM-5-H08', now() - interval '56 days'),
+  ('d2222222-d222-4222-8222-000000000069'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'furniture', 'Shoe Rack', 'demo-ghor-o-ranna-h09', '4-tier metal shoe rack.', 2450.00, 2900.00, 12, 'DM-5-H09', now() - interval '3 days'),
+  ('d2222222-d222-4222-8222-000000000070'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Steel Water Bottle', 'demo-ghor-o-ranna-h10', '1L insulated bottle.', 690.00, 850.00, 55, 'DM-5-H10', now() - interval '10 days'),
+  ('d2222222-d222-4222-8222-000000000071'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Dinner Plate Set', 'demo-ghor-o-ranna-h11', '6 ceramic dinner plates.', 1890.00, 2300.00, 22, 'DM-5-H11', now() - interval '17 days'),
+  ('d2222222-d222-4222-8222-000000000072'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Kitchen Knife Set', 'demo-ghor-o-ranna-h12', '3 knives with wooden block.', 2100.00, 2600.00, 18, 'DM-5-H12', now() - interval '24 days'),
+  ('d2222222-d222-4222-8222-000000000073'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'decor', 'Floor Mat / পাপোশ', 'demo-ghor-o-ranna-h13', 'Washable anti-slip mat.', 990.00, null, 30, 'DM-5-H13', now() - interval '31 days'),
+  ('d2222222-d222-4222-8222-000000000074'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'furniture', 'Storage Box Pack', 'demo-ghor-o-ranna-h14', '3 stackable plastic boxes.', 1250.00, 1500.00, 26, 'DM-5-H14', now() - interval '38 days'),
+  ('d2222222-d222-4222-8222-000000000075'::uuid, 'd1111111-d111-4111-8111-000000000005'::uuid, 'kitchen', 'Electric Kettle', 'demo-ghor-o-ranna-h15', '1.8L auto-off kettle.', 1450.00, 1750.00, 24, 'DM-5-H15', now() - interval '45 days'),
+  ('d2222222-d222-4222-8222-000000000076'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Vitamin C Serum', 'demo-rupchaya-beauty-b01', 'Brightening serum for dull skin.', 890.00, 1200.00, 40, 'DM-6-B01', now() - interval '52 days'),
+  ('d2222222-d222-4222-8222-000000000077'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Aloe Face Wash', 'demo-rupchaya-beauty-b02', 'Gentle aloe cleanser.', 450.00, 600.00, 70, 'DM-6-B02', now() - interval '59 days'),
+  ('d2222222-d222-4222-8222-000000000078'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Sunscreen SPF50', 'demo-rupchaya-beauty-b03', 'Matte sunscreen for humid days.', 790.00, 990.00, 55, 'DM-6-B03', now() - interval '6 days'),
+  ('d2222222-d222-4222-8222-000000000079'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'makeup', 'Matte Lipstick', 'demo-rupchaya-beauty-b04', 'Long-wear matte lipstick.', 550.00, 700.00, 45, 'DM-6-B04', now() - interval '13 days'),
+  ('d2222222-d222-4222-8222-000000000080'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'makeup', 'Kajal / কাজল', 'demo-rupchaya-beauty-b05', 'Smudge-resistant kajal pencil.', 290.00, null, 80, 'DM-6-B05', now() - interval '20 days'),
+  ('d2222222-d222-4222-8222-000000000081'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'makeup', 'Compact Powder', 'demo-rupchaya-beauty-b06', 'Oil-control compact.', 650.00, 800.00, 36, 'DM-6-B06', now() - interval '27 days'),
+  ('d2222222-d222-4222-8222-000000000082'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'hair', 'Coconut Hair Oil', 'demo-rupchaya-beauty-b07', 'Pure coconut oil 200ml.', 390.00, 500.00, 90, 'DM-6-B07', now() - interval '34 days'),
+  ('d2222222-d222-4222-8222-000000000083'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'hair', 'Herbal Shampoo', 'demo-rupchaya-beauty-b08', 'Sulphate-free herbal shampoo.', 480.00, 620.00, 60, 'DM-6-B08', now() - interval '41 days'),
+  ('d2222222-d222-4222-8222-000000000084'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'hair', 'Hair Serum', 'demo-rupchaya-beauty-b09', 'Anti-frizz shine serum.', 720.00, 900.00, 28, 'DM-6-B09', now() - interval '48 days'),
+  ('d2222222-d222-4222-8222-000000000085'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Night Cream', 'demo-rupchaya-beauty-b10', 'Hydrating overnight cream.', 950.00, 1190.00, 0, 'DM-6-B10', now() - interval '55 days'),
+  ('d2222222-d222-4222-8222-000000000086'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Body Lotion', 'demo-rupchaya-beauty-b11', 'Cocoa butter body lotion.', 590.00, 750.00, 50, 'DM-6-B11', now() - interval '2 days'),
+  ('d2222222-d222-4222-8222-000000000087'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'makeup', 'Nail Polish Set', 'demo-rupchaya-beauty-b12', '5-colour mini nail set.', 680.00, 850.00, 33, 'DM-6-B12', now() - interval '9 days'),
+  ('d2222222-d222-4222-8222-000000000088'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'skincare', 'Face Mask Pack', 'demo-rupchaya-beauty-b13', 'Sheet masks, pack of 5.', 420.00, null, 65, 'DM-6-B13', now() - interval '16 days'),
+  ('d2222222-d222-4222-8222-000000000089'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'makeup', 'Eyebrow Pencil', 'demo-rupchaya-beauty-b14', 'Dual-tip brow pencil.', 320.00, 400.00, 48, 'DM-6-B14', now() - interval '23 days'),
+  ('d2222222-d222-4222-8222-000000000090'::uuid, 'd1111111-d111-4111-8111-000000000006'::uuid, 'hair', 'Hair Clip Set', 'demo-rupchaya-beauty-b15', 'Assorted clips and pins.', 250.00, 350.00, 100, 'DM-6-B15', now() - interval '30 days'),
+  ('d2222222-d222-4222-8222-000000000091'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-tea', 'Premium Tea / চা পাতা ৫০০g', 'demo-bazaar-basket-g01', 'CTC tea for everyday cups.', 320.00, null, 80, 'DM-7-G01', now() - interval '37 days'),
+  ('d2222222-d222-4222-8222-000000000092'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-oils', 'Mustard Oil 1L / সরিষার তেল', 'demo-bazaar-basket-g02', 'Cold-pressed mustard oil.', 280.00, 340.00, 60, 'DM-7-G02', now() - interval '44 days'),
+  ('d2222222-d222-4222-8222-000000000093'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-staples', 'Basmati Rice 5kg', 'demo-bazaar-basket-g03', 'Aged basmati for biryani.', 890.00, 990.00, 40, 'DM-7-G03', now() - interval '51 days'),
+  ('d2222222-d222-4222-8222-000000000094'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-spices', 'Masala Combo Pack', 'demo-bazaar-basket-g04', 'Turmeric, chilli, cumin set.', 450.00, 550.00, 55, 'DM-7-G04', now() - interval '58 days'),
+  ('d2222222-d222-4222-8222-000000000095'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-staples', 'Honey 500g / মধু', 'demo-bazaar-basket-g05', 'Natural honey jar.', 520.00, 650.00, 35, 'DM-7-G05', now() - interval '5 days'),
+  ('d2222222-d222-4222-8222-000000000096'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-snacks', 'Biscuits Assorted', 'demo-bazaar-basket-g06', 'Family biscuit tin.', 180.00, null, 120, 'DM-7-G06', now() - interval '12 days'),
+  ('d2222222-d222-4222-8222-000000000097'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-snacks', 'Instant Noodles Pack', 'demo-bazaar-basket-g07', '8-pack masala noodles.', 240.00, 300.00, 90, 'DM-7-G07', now() - interval '19 days'),
+  ('d2222222-d222-4222-8222-000000000098'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-staples', 'Lentils Mix 1kg / ডাল', 'demo-bazaar-basket-g08', 'Moong and masoor mix.', 210.00, 250.00, 70, 'DM-7-G08', now() - interval '26 days'),
+  ('d2222222-d222-4222-8222-000000000099'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-spices', 'Pickle Jar / আচার', 'demo-bazaar-basket-g09', 'Mango pickle 400g.', 190.00, null, 45, 'DM-7-G09', now() - interval '33 days'),
+  ('d2222222-d222-4222-8222-000000000100'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-tea', 'Coffee Jar 200g', 'demo-bazaar-basket-g10', 'Medium roast instant coffee.', 650.00, 780.00, 0, 'DM-7-G10', now() - interval '40 days'),
+  ('d2222222-d222-4222-8222-000000000101'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-snacks', 'Sugar Free Dates', 'demo-bazaar-basket-g11', 'Seedless dates 500g.', 390.00, 480.00, 38, 'DM-7-G11', now() - interval '47 days'),
+  ('d2222222-d222-4222-8222-000000000102'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-oils', 'Ghee 500g', 'demo-bazaar-basket-g12', 'Pure cow ghee.', 780.00, 900.00, 28, 'DM-7-G12', now() - interval '54 days'),
+  ('d2222222-d222-4222-8222-000000000103'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-snacks', 'Chanachur Large', 'demo-bazaar-basket-g13', 'Spicy chanachur pack.', 150.00, null, 100, 'DM-7-G13', now() - interval '1 days'),
+  ('d2222222-d222-4222-8222-000000000104'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-staples', 'Salt Iodised 1kg', 'demo-bazaar-basket-g14', 'Iodised table salt.', 40.00, null, 200, 'DM-7-G14', now() - interval '8 days'),
+  ('d2222222-d222-4222-8222-000000000105'::uuid, 'd1111111-d111-4111-8111-000000000007'::uuid, 'grocery-tea', 'Green Tea Bags', 'demo-bazaar-basket-g15', '25 green tea bags.', 290.00, 360.00, 50, 'DM-7-G15', now() - interval '15 days'),
+  ('d2222222-d222-4222-8222-000000000106'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'books-fiction', 'Bangla Novel Set', 'demo-boighar-k01', 'Two contemporary Bangla novels.', 650.00, 800.00, 25, 'DM-8-K01', now() - interval '22 days'),
+  ('d2222222-d222-4222-8222-000000000107'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'books-fiction', 'English Storybook', 'demo-boighar-k02', 'Illustrated short stories.', 420.00, null, 40, 'DM-8-K02', now() - interval '29 days'),
+  ('d2222222-d222-4222-8222-000000000108'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-paper', 'Notebook A5 Pack', 'demo-boighar-k03', '3 ruled A5 notebooks.', 180.00, 220.00, 100, 'DM-8-K03', now() - interval '36 days'),
+  ('d2222222-d222-4222-8222-000000000109'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-pens', 'Gel Pen Set', 'demo-boighar-k04', '10 smooth gel pens.', 120.00, 150.00, 150, 'DM-8-K04', now() - interval '43 days'),
+  ('d2222222-d222-4222-8222-000000000110'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-school', 'Geometry Box', 'demo-boighar-k05', 'Metal geometry set.', 250.00, 320.00, 60, 'DM-8-K05', now() - interval '50 days'),
+  ('d2222222-d222-4222-8222-000000000111'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-school', 'Colour Pencil Pack', 'demo-boighar-k06', '24-shade colour pencils.', 190.00, null, 80, 'DM-8-K06', now() - interval '57 days'),
+  ('d2222222-d222-4222-8222-000000000112'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'books-education', 'SSC Guide Math', 'demo-boighar-k07', 'Math guide for SSC.', 380.00, 450.00, 30, 'DM-8-K07', now() - interval '4 days'),
+  ('d2222222-d222-4222-8222-000000000113'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'books-education', 'Dictionary Pocket', 'demo-boighar-k08', 'English-Bangla pocket dictionary.', 290.00, 350.00, 45, 'DM-8-K08', now() - interval '11 days'),
+  ('d2222222-d222-4222-8222-000000000114'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-paper', 'Sticky Notes Pack', 'demo-boighar-k09', 'Assorted sticky notes.', 90.00, null, 120, 'DM-8-K09', now() - interval '18 days'),
+  ('d2222222-d222-4222-8222-000000000115'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-pens', 'Fountain Pen', 'demo-boighar-k10', 'Student fountain pen with ink.', 850.00, 990.00, 0, 'DM-8-K10', now() - interval '25 days'),
+  ('d2222222-d222-4222-8222-000000000116'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-paper', 'Sketch Pad A4', 'demo-boighar-k11', '120gsm sketch pad.', 220.00, 280.00, 55, 'DM-8-K11', now() - interval '32 days'),
+  ('d2222222-d222-4222-8222-000000000117'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-pens', 'Marker Set', 'demo-boighar-k12', '12 permanent markers.', 340.00, 400.00, 48, 'DM-8-K12', now() - interval '39 days'),
+  ('d2222222-d222-4222-8222-000000000118'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'books-education', 'Children Alphabet Book', 'demo-boighar-k13', 'Bangla-English alphabet book.', 160.00, null, 70, 'DM-8-K13', now() - interval '46 days'),
+  ('d2222222-d222-4222-8222-000000000119'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-paper', 'Planner 2026', 'demo-boighar-k14', 'Weekly planner hardcover.', 450.00, 550.00, 22, 'DM-8-K14', now() - interval '53 days'),
+  ('d2222222-d222-4222-8222-000000000120'::uuid, 'd1111111-d111-4111-8111-000000000008'::uuid, 'stationery-school', 'Exam Pad', 'demo-boighar-k15', 'Ruled exam pad 80 sheets.', 60.00, 80.00, 200, 'DM-8-K15', now() - interval '0 days'),
+  ('d2222222-d222-4222-8222-000000000121'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-yoga', 'Yoga Mat / যোগা ম্যাট', 'demo-khelaghar-s01', 'Non-slip 6mm yoga mat.', 890.00, 1100.00, 40, 'DM-9-S01', now() - interval '7 days'),
+  ('d2222222-d222-4222-8222-000000000122'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-gym', 'Dumbbell Pair 5kg', 'demo-khelaghar-s02', 'Neoprene dumbbell pair.', 1450.00, 1750.00, 20, 'DM-9-S02', now() - interval '14 days'),
+  ('d2222222-d222-4222-8222-000000000123'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-outdoor', 'Football Size 5', 'demo-khelaghar-s03', 'Match football.', 1200.00, 1500.00, 18, 'DM-9-S03', now() - interval '21 days'),
+  ('d2222222-d222-4222-8222-000000000124'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-outdoor', 'Cricket Bat Kashmir', 'demo-khelaghar-s04', 'Kashmir willow bat.', 2800.00, 3400.00, 10, 'DM-9-S04', now() - interval '28 days'),
+  ('d2222222-d222-4222-8222-000000000125'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-gym', 'Skipping Rope', 'demo-khelaghar-s05', 'Ball-bearing skipping rope.', 250.00, null, 70, 'DM-9-S05', now() - interval '35 days'),
+  ('d2222222-d222-4222-8222-000000000126'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-apparel', 'Sports Jersey', 'demo-khelaghar-s06', 'Breathable match jersey.', 990.00, 1250.00, 35, 'DM-9-S06', now() - interval '42 days'),
+  ('d2222222-d222-4222-8222-000000000127'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-apparel', 'Running Shoes', 'demo-khelaghar-s07', 'Cushioned road runners.', 3200.00, 3800.00, 14, 'DM-9-S07', now() - interval '49 days'),
+  ('d2222222-d222-4222-8222-000000000128'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-gym', 'Resistance Band Set', 'demo-khelaghar-s08', '3 resistance levels.', 690.00, 850.00, 45, 'DM-9-S08', now() - interval '56 days'),
+  ('d2222222-d222-4222-8222-000000000129'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-outdoor', 'Water Bottle Sports', 'demo-khelaghar-s09', 'Squeeze sports bottle 750ml.', 450.00, null, 60, 'DM-9-S09', now() - interval '3 days'),
+  ('d2222222-d222-4222-8222-000000000130'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-gym', 'Gym Gloves', 'demo-khelaghar-s10', 'Padded lifting gloves.', 580.00, 720.00, 0, 'DM-9-S10', now() - interval '10 days'),
+  ('d2222222-d222-4222-8222-000000000131'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-outdoor', 'Badminton Racket', 'demo-khelaghar-s11', 'Lightweight graphite racket.', 1100.00, 1400.00, 22, 'DM-9-S11', now() - interval '17 days'),
+  ('d2222222-d222-4222-8222-000000000132'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-outdoor', 'Shuttlecock Pack', 'demo-khelaghar-s12', '12 nylon shuttles.', 320.00, 400.00, 50, 'DM-9-S12', now() - interval '24 days'),
+  ('d2222222-d222-4222-8222-000000000133'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-apparel', 'Compression Tights', 'demo-khelaghar-s13', 'Men compression tights.', 1450.00, 1790.00, 16, 'DM-9-S13', now() - interval '31 days'),
+  ('d2222222-d222-4222-8222-000000000134'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-yoga', 'Foam Roller', 'demo-khelaghar-s14', 'Muscle recovery roller.', 890.00, 1100.00, 19, 'DM-9-S14', now() - interval '38 days'),
+  ('d2222222-d222-4222-8222-000000000135'::uuid, 'd1111111-d111-4111-8111-000000000009'::uuid, 'sports-apparel', 'Sports Cap Pack', 'demo-khelaghar-s15', '2 breathable sports caps.', 390.00, null, 55, 'DM-9-S15', now() - interval '45 days'),
+  ('d2222222-d222-4222-8222-000000000136'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-plush', 'Soft Teddy / টেডি', 'demo-choto-bondhu-t01', 'Washable soft teddy bear.', 890.00, 1100.00, 30, 'DM-10-T01', now() - interval '52 days'),
+  ('d2222222-d222-4222-8222-000000000137'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Building Blocks 100pc', 'demo-choto-bondhu-t02', 'Colourful building blocks.', 1250.00, 1500.00, 25, 'DM-10-T02', now() - interval '59 days'),
+  ('d2222222-d222-4222-8222-000000000138'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-outdoor', 'Remote Car', 'demo-choto-bondhu-t03', 'Rechargeable remote car.', 1450.00, 1800.00, 18, 'DM-10-T03', now() - interval '6 days'),
+  ('d2222222-d222-4222-8222-000000000139'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Puzzle Map BD', 'demo-choto-bondhu-t04', 'Bangladesh map puzzle.', 450.00, null, 40, 'DM-10-T04', now() - interval '13 days'),
+  ('d2222222-d222-4222-8222-000000000140'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Colouring Kit', 'demo-choto-bondhu-t05', 'Crayons and colouring book.', 390.00, 500.00, 55, 'DM-10-T05', now() - interval '20 days'),
+  ('d2222222-d222-4222-8222-000000000141'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-outdoor', 'Kids Football Mini', 'demo-choto-bondhu-t06', 'Soft mini football.', 590.00, 750.00, 28, 'DM-10-T06', now() - interval '27 days'),
+  ('d2222222-d222-4222-8222-000000000142'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-plush', 'Doll Set', 'demo-choto-bondhu-t07', 'Fashion doll with outfits.', 1100.00, 1400.00, 0, 'DM-10-T07', now() - interval '34 days'),
+  ('d2222222-d222-4222-8222-000000000143'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Stacking Rings', 'demo-choto-bondhu-t08', 'Classic stacking toy.', 320.00, null, 60, 'DM-10-T08', now() - interval '41 days'),
+  ('d2222222-d222-4222-8222-000000000144'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-outdoor', 'Scooter Kids', 'demo-choto-bondhu-t09', '3-wheel kids scooter.', 3200.00, 3800.00, 8, 'DM-10-T09', now() - interval '48 days'),
+  ('d2222222-d222-4222-8222-000000000145'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Story Flashcards', 'demo-choto-bondhu-t10', 'Bangla-English flashcards.', 280.00, 350.00, 70, 'DM-10-T10', now() - interval '55 days'),
+  ('d2222222-d222-4222-8222-000000000146'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-plush', 'Bath Toy Set', 'demo-choto-bondhu-t11', 'Floating bath animals.', 450.00, 550.00, 35, 'DM-10-T11', now() - interval '2 days'),
+  ('d2222222-d222-4222-8222-000000000147'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Drawing Board LCD', 'demo-choto-bondhu-t12', 'Reusable LCD writing tablet.', 890.00, 1100.00, 22, 'DM-10-T12', now() - interval '9 days'),
+  ('d2222222-d222-4222-8222-000000000148'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-outdoor', 'Outdoor Bubble Gun', 'demo-choto-bondhu-t13', 'Battery bubble blaster.', 390.00, null, 48, 'DM-10-T13', now() - interval '16 days'),
+  ('d2222222-d222-4222-8222-000000000149'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-plush', 'Plush Elephant', 'demo-choto-bondhu-t14', 'Large plush elephant.', 750.00, 900.00, 20, 'DM-10-T14', now() - interval '23 days'),
+  ('d2222222-d222-4222-8222-000000000150'::uuid, 'd1111111-d111-4111-8111-000000000010'::uuid, 'toys-learning', 'Board Game Family', 'demo-choto-bondhu-t15', 'Simple family board game.', 1290.00, 1590.00, 15, 'DM-10-T15', now() - interval '30 days')
+) as seed (id, vendor_id, category_slug, title, slug, description, price, compare_at_price, stock, sku, created_at)
+join public.categories as category on category.slug = seed.category_slug
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Product images (2–4 per product). storage_path accepts full public URLs.
+-- Product images (3–4 picsum URLs each)
+-- Clear existing demo images first so a re-run does not hit
+-- product_images_one_primary_idx (old primary rows from a previous seed).
 -- ---------------------------------------------------------------------------
-insert into public.product_images (
-  id, product_id, storage_path, sort_order, is_primary
-)
-select
-  seed.id,
-  seed.product_id,
-  seed.storage_path,
-  seed.sort_order,
-  seed.is_primary
-from (
-  values
-    -- product 1
-    ('d3333333-d333-4333-8333-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-cotton-panjabi-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-cotton-panjabi-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000003'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-cotton-panjabi-3/800/800', 2, false),
-    -- 2
-    ('d3333333-d333-4333-8333-000000000004'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 'https://picsum.photos/seed/demo-slim-fit-jeans-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000005'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 'https://picsum.photos/seed/demo-slim-fit-jeans-2/800/800', 1, false),
-    -- 3
-    ('d3333333-d333-4333-8333-000000000006'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-leather-sandals-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000007'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-leather-sandals-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000008'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-leather-sandals-3/800/800', 2, false),
-    -- 4
-    ('d3333333-d333-4333-8333-000000000009'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-salwar-kameez-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000010'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-salwar-kameez-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000011'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-salwar-kameez-3/800/800', 2, false),
-    ('d3333333-d333-4333-8333-000000000012'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-salwar-kameez-4/800/800', 3, false),
-    -- 5
-    ('d3333333-d333-4333-8333-000000000013'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-linen-kurti-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000014'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-linen-kurti-2/800/800', 1, false),
-    -- 6
-    ('d3333333-d333-4333-8333-000000000015'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-block-heel-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000016'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-block-heel-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000017'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-block-heel-3/800/800', 2, false),
-    -- 7
-    ('d3333333-d333-4333-8333-000000000018'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-boys-polo-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000019'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-boys-polo-2/800/800', 1, false),
-    -- 8
-    ('d3333333-d333-4333-8333-000000000020'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-girls-frock-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000021'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-girls-frock-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000022'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-girls-frock-3/800/800', 2, false),
-    -- 9
-    ('d3333333-d333-4333-8333-000000000023'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-canvas-sneakers-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000024'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-canvas-sneakers-2/800/800', 1, false),
-    -- 10
-    ('d3333333-d333-4333-8333-000000000025'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-hijab-jersey-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000026'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-hijab-jersey-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000027'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-hijab-jersey-3/800/800', 2, false),
-    -- 11
-    ('d3333333-d333-4333-8333-000000000028'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-android-phone-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000029'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-android-phone-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000030'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-android-phone-3/800/800', 2, false),
-    ('d3333333-d333-4333-8333-000000000031'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-android-phone-4/800/800', 3, false),
-    -- 12
-    ('d3333333-d333-4333-8333-000000000032'::uuid, 'd2222222-d222-4222-8222-000000000012'::uuid, 'https://picsum.photos/seed/demo-budget-phone-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000033'::uuid, 'd2222222-d222-4222-8222-000000000012'::uuid, 'https://picsum.photos/seed/demo-budget-phone-2/800/800', 1, false),
-    -- 13
-    ('d3333333-d333-4333-8333-000000000034'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-feature-phone-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000035'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-feature-phone-2/800/800', 1, false),
-    -- 14
-    ('d3333333-d333-4333-8333-000000000036'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-ultrabook-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000037'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-ultrabook-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000038'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-ultrabook-3/800/800', 2, false),
-    -- 15
-    ('d3333333-d333-4333-8333-000000000039'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-gaming-laptop-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000040'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-gaming-laptop-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000041'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-gaming-laptop-3/800/800', 2, false),
-    ('d3333333-d333-4333-8333-000000000042'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-gaming-laptop-4/800/800', 3, false),
-    -- 16
-    ('d3333333-d333-4333-8333-000000000043'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 'https://picsum.photos/seed/demo-usbc-charger-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000044'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 'https://picsum.photos/seed/demo-usbc-charger-2/800/800', 1, false),
-    -- 17
-    ('d3333333-d333-4333-8333-000000000045'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-power-bank-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000046'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-power-bank-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000047'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-power-bank-3/800/800', 2, false),
-    -- 18
-    ('d3333333-d333-4333-8333-000000000048'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 'https://picsum.photos/seed/demo-clear-case-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000049'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 'https://picsum.photos/seed/demo-clear-case-2/800/800', 1, false),
-    -- 19
-    ('d3333333-d333-4333-8333-000000000050'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-silicone-case-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000051'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-silicone-case-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000052'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-silicone-case-3/800/800', 2, false),
-    -- 20
-    ('d3333333-d333-4333-8333-000000000053'::uuid, 'd2222222-d222-4222-8222-000000000020'::uuid, 'https://picsum.photos/seed/demo-wireless-mouse-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000054'::uuid, 'd2222222-d222-4222-8222-000000000020'::uuid, 'https://picsum.photos/seed/demo-wireless-mouse-2/800/800', 1, false),
-    -- 21
-    ('d3333333-d333-4333-8333-000000000055'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-study-table-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000056'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-study-table-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000057'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-study-table-3/800/800', 2, false),
-    -- 22
-    ('d3333333-d333-4333-8333-000000000058'::uuid, 'd2222222-d222-4222-8222-000000000022'::uuid, 'https://picsum.photos/seed/demo-folding-chair-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000059'::uuid, 'd2222222-d222-4222-8222-000000000022'::uuid, 'https://picsum.photos/seed/demo-folding-chair-2/800/800', 1, false),
-    -- 23
-    ('d3333333-d333-4333-8333-000000000060'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-fry-pan-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000061'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-fry-pan-2/800/800', 1, false),
-    -- 24
-    ('d3333333-d333-4333-8333-000000000062'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-pressure-cooker-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000063'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-pressure-cooker-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000064'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-pressure-cooker-3/800/800', 2, false),
-    -- 25
-    ('d3333333-d333-4333-8333-000000000065'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-spice-jar-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000066'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-spice-jar-2/800/800', 1, false),
-    -- 26
-    ('d3333333-d333-4333-8333-000000000067'::uuid, 'd2222222-d222-4222-8222-000000000026'::uuid, 'https://picsum.photos/seed/demo-wall-clock-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000068'::uuid, 'd2222222-d222-4222-8222-000000000026'::uuid, 'https://picsum.photos/seed/demo-wall-clock-2/800/800', 1, false),
-    -- 27
-    ('d3333333-d333-4333-8333-000000000069'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-cushion-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000070'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-cushion-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000071'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-cushion-3/800/800', 2, false),
-    -- 28
-    ('d3333333-d333-4333-8333-000000000072'::uuid, 'd2222222-d222-4222-8222-000000000028'::uuid, 'https://picsum.photos/seed/demo-table-lamp-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000073'::uuid, 'd2222222-d222-4222-8222-000000000028'::uuid, 'https://picsum.photos/seed/demo-table-lamp-2/800/800', 1, false),
-    -- 29
-    ('d3333333-d333-4333-8333-000000000074'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-shoe-rack-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000075'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-shoe-rack-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000076'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-shoe-rack-3/800/800', 2, false),
-    -- 30
-    ('d3333333-d333-4333-8333-000000000077'::uuid, 'd2222222-d222-4222-8222-000000000030'::uuid, 'https://picsum.photos/seed/demo-water-bottle-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000078'::uuid, 'd2222222-d222-4222-8222-000000000030'::uuid, 'https://picsum.photos/seed/demo-water-bottle-2/800/800', 1, false),
-    -- 31
-    ('d3333333-d333-4333-8333-000000000079'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-vitamin-c-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000080'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-vitamin-c-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000081'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-vitamin-c-3/800/800', 2, false),
-    -- 32
-    ('d3333333-d333-4333-8333-000000000082'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 'https://picsum.photos/seed/demo-aloe-wash-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000083'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 'https://picsum.photos/seed/demo-aloe-wash-2/800/800', 1, false),
-    -- 33
-    ('d3333333-d333-4333-8333-000000000084'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-sunscreen-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000085'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-sunscreen-2/800/800', 1, false),
-    -- 34
-    ('d3333333-d333-4333-8333-000000000086'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-lipstick-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000087'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-lipstick-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000088'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-lipstick-3/800/800', 2, false),
-    -- 35
-    ('d3333333-d333-4333-8333-000000000089'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-kajal-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000090'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-kajal-2/800/800', 1, false),
-    -- 36
-    ('d3333333-d333-4333-8333-000000000091'::uuid, 'd2222222-d222-4222-8222-000000000036'::uuid, 'https://picsum.photos/seed/demo-compact-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000092'::uuid, 'd2222222-d222-4222-8222-000000000036'::uuid, 'https://picsum.photos/seed/demo-compact-2/800/800', 1, false),
-    -- 37
-    ('d3333333-d333-4333-8333-000000000093'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-coconut-oil-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000094'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-coconut-oil-2/800/800', 1, false),
-    -- 38
-    ('d3333333-d333-4333-8333-000000000095'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-shampoo-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000096'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-shampoo-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000097'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-shampoo-3/800/800', 2, false),
-    -- 39
-    ('d3333333-d333-4333-8333-000000000098'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-hair-serum-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000099'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-hair-serum-2/800/800', 1, false),
-    -- 40
-    ('d3333333-d333-4333-8333-000000000100'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-night-cream-1/800/800', 0, true),
-    ('d3333333-d333-4333-8333-000000000101'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-night-cream-2/800/800', 1, false),
-    ('d3333333-d333-4333-8333-000000000102'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-night-cream-3/800/800', 2, false)
+delete from public.product_images
+where product_id between 'd2222222-d222-4222-8222-000000000001'
+                    and 'd2222222-d222-4222-8222-000000000150'
+   or id between 'd3333333-d333-4333-8333-000000000001'
+            and 'd3333333-d333-4333-8333-000000000525';
+
+insert into public.product_images (id, product_id, storage_path, sort_order, is_primary)
+select seed.id, seed.product_id, seed.storage_path, seed.sort_order, seed.is_primary
+from (values
+  ('d3333333-d333-4333-8333-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000003'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000004'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p01-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000005'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000006'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000007'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000008'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000009'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000010'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000011'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p03-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000012'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000013'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000014'::uuid, 'd2222222-d222-4222-8222-000000000004'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000015'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000016'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000017'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000018'::uuid, 'd2222222-d222-4222-8222-000000000005'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p05-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000019'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000020'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000021'::uuid, 'd2222222-d222-4222-8222-000000000006'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000022'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000023'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000024'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000025'::uuid, 'd2222222-d222-4222-8222-000000000007'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p07-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000026'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000027'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000028'::uuid, 'd2222222-d222-4222-8222-000000000008'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000029'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000030'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000031'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000032'::uuid, 'd2222222-d222-4222-8222-000000000009'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p09-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000033'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000034'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000035'::uuid, 'd2222222-d222-4222-8222-000000000010'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000036'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000037'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000038'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000039'::uuid, 'd2222222-d222-4222-8222-000000000011'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p11-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000040'::uuid, 'd2222222-d222-4222-8222-000000000012'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000041'::uuid, 'd2222222-d222-4222-8222-000000000012'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000042'::uuid, 'd2222222-d222-4222-8222-000000000012'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000043'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000044'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000045'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000046'::uuid, 'd2222222-d222-4222-8222-000000000013'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p13-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000047'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000048'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000049'::uuid, 'd2222222-d222-4222-8222-000000000014'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000050'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000051'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000052'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000053'::uuid, 'd2222222-d222-4222-8222-000000000015'::uuid, 'https://picsum.photos/seed/demo-purush-lane-p15-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000054'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000055'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000056'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000057'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000058'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000059'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000060'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w02-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000061'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000062'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000063'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000064'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000065'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000066'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000067'::uuid, 'd2222222-d222-4222-8222-000000000019'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w04-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000068'::uuid, 'd2222222-d222-4222-8222-000000000020'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000069'::uuid, 'd2222222-d222-4222-8222-000000000020'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000070'::uuid, 'd2222222-d222-4222-8222-000000000020'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000071'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000072'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000073'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000074'::uuid, 'd2222222-d222-4222-8222-000000000021'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w06-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000075'::uuid, 'd2222222-d222-4222-8222-000000000022'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000076'::uuid, 'd2222222-d222-4222-8222-000000000022'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000077'::uuid, 'd2222222-d222-4222-8222-000000000022'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000078'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000079'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000080'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000081'::uuid, 'd2222222-d222-4222-8222-000000000023'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w08-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000082'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000083'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000084'::uuid, 'd2222222-d222-4222-8222-000000000024'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000085'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000086'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000087'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000088'::uuid, 'd2222222-d222-4222-8222-000000000025'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w10-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000089'::uuid, 'd2222222-d222-4222-8222-000000000026'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000090'::uuid, 'd2222222-d222-4222-8222-000000000026'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000091'::uuid, 'd2222222-d222-4222-8222-000000000026'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000092'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000093'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000094'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000095'::uuid, 'd2222222-d222-4222-8222-000000000027'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w12-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000096'::uuid, 'd2222222-d222-4222-8222-000000000028'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000097'::uuid, 'd2222222-d222-4222-8222-000000000028'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000098'::uuid, 'd2222222-d222-4222-8222-000000000028'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000099'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000100'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000101'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000102'::uuid, 'd2222222-d222-4222-8222-000000000029'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w14-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000103'::uuid, 'd2222222-d222-4222-8222-000000000030'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000104'::uuid, 'd2222222-d222-4222-8222-000000000030'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000105'::uuid, 'd2222222-d222-4222-8222-000000000030'::uuid, 'https://picsum.photos/seed/demo-nari-atelier-w15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000106'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000107'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000108'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000109'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e01-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000110'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000111'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000112'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000113'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000114'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000115'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000116'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e03-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000117'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000118'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000119'::uuid, 'd2222222-d222-4222-8222-000000000034'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000120'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000121'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000122'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000123'::uuid, 'd2222222-d222-4222-8222-000000000035'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e05-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000124'::uuid, 'd2222222-d222-4222-8222-000000000036'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000125'::uuid, 'd2222222-d222-4222-8222-000000000036'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000126'::uuid, 'd2222222-d222-4222-8222-000000000036'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000127'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000128'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000129'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000130'::uuid, 'd2222222-d222-4222-8222-000000000037'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e07-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000131'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000132'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000133'::uuid, 'd2222222-d222-4222-8222-000000000038'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000134'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000135'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000136'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000137'::uuid, 'd2222222-d222-4222-8222-000000000039'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e09-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000138'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000139'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000140'::uuid, 'd2222222-d222-4222-8222-000000000040'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000141'::uuid, 'd2222222-d222-4222-8222-000000000041'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000142'::uuid, 'd2222222-d222-4222-8222-000000000041'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000143'::uuid, 'd2222222-d222-4222-8222-000000000041'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000144'::uuid, 'd2222222-d222-4222-8222-000000000041'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e11-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000145'::uuid, 'd2222222-d222-4222-8222-000000000042'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000146'::uuid, 'd2222222-d222-4222-8222-000000000042'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000147'::uuid, 'd2222222-d222-4222-8222-000000000042'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000148'::uuid, 'd2222222-d222-4222-8222-000000000043'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000149'::uuid, 'd2222222-d222-4222-8222-000000000043'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000150'::uuid, 'd2222222-d222-4222-8222-000000000043'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000151'::uuid, 'd2222222-d222-4222-8222-000000000043'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e13-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000152'::uuid, 'd2222222-d222-4222-8222-000000000044'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000153'::uuid, 'd2222222-d222-4222-8222-000000000044'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000154'::uuid, 'd2222222-d222-4222-8222-000000000044'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000155'::uuid, 'd2222222-d222-4222-8222-000000000045'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000156'::uuid, 'd2222222-d222-4222-8222-000000000045'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000157'::uuid, 'd2222222-d222-4222-8222-000000000045'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000158'::uuid, 'd2222222-d222-4222-8222-000000000045'::uuid, 'https://picsum.photos/seed/demo-gadget-bazar-e15-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000159'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 'https://picsum.photos/seed/demo-case-corner-m01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000160'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 'https://picsum.photos/seed/demo-case-corner-m01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000161'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 'https://picsum.photos/seed/demo-case-corner-m01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000162'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 'https://picsum.photos/seed/demo-case-corner-m02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000163'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 'https://picsum.photos/seed/demo-case-corner-m02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000164'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 'https://picsum.photos/seed/demo-case-corner-m02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000165'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 'https://picsum.photos/seed/demo-case-corner-m02-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000166'::uuid, 'd2222222-d222-4222-8222-000000000048'::uuid, 'https://picsum.photos/seed/demo-case-corner-m03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000167'::uuid, 'd2222222-d222-4222-8222-000000000048'::uuid, 'https://picsum.photos/seed/demo-case-corner-m03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000168'::uuid, 'd2222222-d222-4222-8222-000000000048'::uuid, 'https://picsum.photos/seed/demo-case-corner-m03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000169'::uuid, 'd2222222-d222-4222-8222-000000000049'::uuid, 'https://picsum.photos/seed/demo-case-corner-m04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000170'::uuid, 'd2222222-d222-4222-8222-000000000049'::uuid, 'https://picsum.photos/seed/demo-case-corner-m04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000171'::uuid, 'd2222222-d222-4222-8222-000000000049'::uuid, 'https://picsum.photos/seed/demo-case-corner-m04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000172'::uuid, 'd2222222-d222-4222-8222-000000000049'::uuid, 'https://picsum.photos/seed/demo-case-corner-m04-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000173'::uuid, 'd2222222-d222-4222-8222-000000000050'::uuid, 'https://picsum.photos/seed/demo-case-corner-m05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000174'::uuid, 'd2222222-d222-4222-8222-000000000050'::uuid, 'https://picsum.photos/seed/demo-case-corner-m05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000175'::uuid, 'd2222222-d222-4222-8222-000000000050'::uuid, 'https://picsum.photos/seed/demo-case-corner-m05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000176'::uuid, 'd2222222-d222-4222-8222-000000000051'::uuid, 'https://picsum.photos/seed/demo-case-corner-m06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000177'::uuid, 'd2222222-d222-4222-8222-000000000051'::uuid, 'https://picsum.photos/seed/demo-case-corner-m06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000178'::uuid, 'd2222222-d222-4222-8222-000000000051'::uuid, 'https://picsum.photos/seed/demo-case-corner-m06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000179'::uuid, 'd2222222-d222-4222-8222-000000000051'::uuid, 'https://picsum.photos/seed/demo-case-corner-m06-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000180'::uuid, 'd2222222-d222-4222-8222-000000000052'::uuid, 'https://picsum.photos/seed/demo-case-corner-m07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000181'::uuid, 'd2222222-d222-4222-8222-000000000052'::uuid, 'https://picsum.photos/seed/demo-case-corner-m07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000182'::uuid, 'd2222222-d222-4222-8222-000000000052'::uuid, 'https://picsum.photos/seed/demo-case-corner-m07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000183'::uuid, 'd2222222-d222-4222-8222-000000000053'::uuid, 'https://picsum.photos/seed/demo-case-corner-m08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000184'::uuid, 'd2222222-d222-4222-8222-000000000053'::uuid, 'https://picsum.photos/seed/demo-case-corner-m08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000185'::uuid, 'd2222222-d222-4222-8222-000000000053'::uuid, 'https://picsum.photos/seed/demo-case-corner-m08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000186'::uuid, 'd2222222-d222-4222-8222-000000000053'::uuid, 'https://picsum.photos/seed/demo-case-corner-m08-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000187'::uuid, 'd2222222-d222-4222-8222-000000000054'::uuid, 'https://picsum.photos/seed/demo-case-corner-m09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000188'::uuid, 'd2222222-d222-4222-8222-000000000054'::uuid, 'https://picsum.photos/seed/demo-case-corner-m09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000189'::uuid, 'd2222222-d222-4222-8222-000000000054'::uuid, 'https://picsum.photos/seed/demo-case-corner-m09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000190'::uuid, 'd2222222-d222-4222-8222-000000000055'::uuid, 'https://picsum.photos/seed/demo-case-corner-m10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000191'::uuid, 'd2222222-d222-4222-8222-000000000055'::uuid, 'https://picsum.photos/seed/demo-case-corner-m10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000192'::uuid, 'd2222222-d222-4222-8222-000000000055'::uuid, 'https://picsum.photos/seed/demo-case-corner-m10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000193'::uuid, 'd2222222-d222-4222-8222-000000000055'::uuid, 'https://picsum.photos/seed/demo-case-corner-m10-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000194'::uuid, 'd2222222-d222-4222-8222-000000000056'::uuid, 'https://picsum.photos/seed/demo-case-corner-m11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000195'::uuid, 'd2222222-d222-4222-8222-000000000056'::uuid, 'https://picsum.photos/seed/demo-case-corner-m11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000196'::uuid, 'd2222222-d222-4222-8222-000000000056'::uuid, 'https://picsum.photos/seed/demo-case-corner-m11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000197'::uuid, 'd2222222-d222-4222-8222-000000000057'::uuid, 'https://picsum.photos/seed/demo-case-corner-m12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000198'::uuid, 'd2222222-d222-4222-8222-000000000057'::uuid, 'https://picsum.photos/seed/demo-case-corner-m12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000199'::uuid, 'd2222222-d222-4222-8222-000000000057'::uuid, 'https://picsum.photos/seed/demo-case-corner-m12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000200'::uuid, 'd2222222-d222-4222-8222-000000000057'::uuid, 'https://picsum.photos/seed/demo-case-corner-m12-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000201'::uuid, 'd2222222-d222-4222-8222-000000000058'::uuid, 'https://picsum.photos/seed/demo-case-corner-m13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000202'::uuid, 'd2222222-d222-4222-8222-000000000058'::uuid, 'https://picsum.photos/seed/demo-case-corner-m13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000203'::uuid, 'd2222222-d222-4222-8222-000000000058'::uuid, 'https://picsum.photos/seed/demo-case-corner-m13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000204'::uuid, 'd2222222-d222-4222-8222-000000000059'::uuid, 'https://picsum.photos/seed/demo-case-corner-m14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000205'::uuid, 'd2222222-d222-4222-8222-000000000059'::uuid, 'https://picsum.photos/seed/demo-case-corner-m14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000206'::uuid, 'd2222222-d222-4222-8222-000000000059'::uuid, 'https://picsum.photos/seed/demo-case-corner-m14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000207'::uuid, 'd2222222-d222-4222-8222-000000000059'::uuid, 'https://picsum.photos/seed/demo-case-corner-m14-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000208'::uuid, 'd2222222-d222-4222-8222-000000000060'::uuid, 'https://picsum.photos/seed/demo-case-corner-m15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000209'::uuid, 'd2222222-d222-4222-8222-000000000060'::uuid, 'https://picsum.photos/seed/demo-case-corner-m15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000210'::uuid, 'd2222222-d222-4222-8222-000000000060'::uuid, 'https://picsum.photos/seed/demo-case-corner-m15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000211'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000212'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000213'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000214'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h01-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000215'::uuid, 'd2222222-d222-4222-8222-000000000062'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000216'::uuid, 'd2222222-d222-4222-8222-000000000062'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000217'::uuid, 'd2222222-d222-4222-8222-000000000062'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000218'::uuid, 'd2222222-d222-4222-8222-000000000063'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000219'::uuid, 'd2222222-d222-4222-8222-000000000063'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000220'::uuid, 'd2222222-d222-4222-8222-000000000063'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000221'::uuid, 'd2222222-d222-4222-8222-000000000063'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h03-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000222'::uuid, 'd2222222-d222-4222-8222-000000000064'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000223'::uuid, 'd2222222-d222-4222-8222-000000000064'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000224'::uuid, 'd2222222-d222-4222-8222-000000000064'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000225'::uuid, 'd2222222-d222-4222-8222-000000000065'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000226'::uuid, 'd2222222-d222-4222-8222-000000000065'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000227'::uuid, 'd2222222-d222-4222-8222-000000000065'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000228'::uuid, 'd2222222-d222-4222-8222-000000000065'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h05-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000229'::uuid, 'd2222222-d222-4222-8222-000000000066'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000230'::uuid, 'd2222222-d222-4222-8222-000000000066'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000231'::uuid, 'd2222222-d222-4222-8222-000000000066'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000232'::uuid, 'd2222222-d222-4222-8222-000000000067'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000233'::uuid, 'd2222222-d222-4222-8222-000000000067'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000234'::uuid, 'd2222222-d222-4222-8222-000000000067'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000235'::uuid, 'd2222222-d222-4222-8222-000000000067'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h07-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000236'::uuid, 'd2222222-d222-4222-8222-000000000068'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000237'::uuid, 'd2222222-d222-4222-8222-000000000068'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000238'::uuid, 'd2222222-d222-4222-8222-000000000068'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000239'::uuid, 'd2222222-d222-4222-8222-000000000069'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000240'::uuid, 'd2222222-d222-4222-8222-000000000069'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000241'::uuid, 'd2222222-d222-4222-8222-000000000069'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000242'::uuid, 'd2222222-d222-4222-8222-000000000069'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h09-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000243'::uuid, 'd2222222-d222-4222-8222-000000000070'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000244'::uuid, 'd2222222-d222-4222-8222-000000000070'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000245'::uuid, 'd2222222-d222-4222-8222-000000000070'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000246'::uuid, 'd2222222-d222-4222-8222-000000000071'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000247'::uuid, 'd2222222-d222-4222-8222-000000000071'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000248'::uuid, 'd2222222-d222-4222-8222-000000000071'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000249'::uuid, 'd2222222-d222-4222-8222-000000000071'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h11-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000250'::uuid, 'd2222222-d222-4222-8222-000000000072'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000251'::uuid, 'd2222222-d222-4222-8222-000000000072'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000252'::uuid, 'd2222222-d222-4222-8222-000000000072'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000253'::uuid, 'd2222222-d222-4222-8222-000000000073'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000254'::uuid, 'd2222222-d222-4222-8222-000000000073'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000255'::uuid, 'd2222222-d222-4222-8222-000000000073'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000256'::uuid, 'd2222222-d222-4222-8222-000000000073'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h13-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000257'::uuid, 'd2222222-d222-4222-8222-000000000074'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000258'::uuid, 'd2222222-d222-4222-8222-000000000074'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000259'::uuid, 'd2222222-d222-4222-8222-000000000074'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000260'::uuid, 'd2222222-d222-4222-8222-000000000075'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000261'::uuid, 'd2222222-d222-4222-8222-000000000075'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000262'::uuid, 'd2222222-d222-4222-8222-000000000075'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000263'::uuid, 'd2222222-d222-4222-8222-000000000075'::uuid, 'https://picsum.photos/seed/demo-ghor-o-ranna-h15-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000264'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000265'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000266'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000267'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000268'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000269'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000270'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b02-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000271'::uuid, 'd2222222-d222-4222-8222-000000000078'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000272'::uuid, 'd2222222-d222-4222-8222-000000000078'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000273'::uuid, 'd2222222-d222-4222-8222-000000000078'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000274'::uuid, 'd2222222-d222-4222-8222-000000000079'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000275'::uuid, 'd2222222-d222-4222-8222-000000000079'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000276'::uuid, 'd2222222-d222-4222-8222-000000000079'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000277'::uuid, 'd2222222-d222-4222-8222-000000000079'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b04-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000278'::uuid, 'd2222222-d222-4222-8222-000000000080'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000279'::uuid, 'd2222222-d222-4222-8222-000000000080'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000280'::uuid, 'd2222222-d222-4222-8222-000000000080'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000281'::uuid, 'd2222222-d222-4222-8222-000000000081'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000282'::uuid, 'd2222222-d222-4222-8222-000000000081'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000283'::uuid, 'd2222222-d222-4222-8222-000000000081'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000284'::uuid, 'd2222222-d222-4222-8222-000000000081'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b06-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000285'::uuid, 'd2222222-d222-4222-8222-000000000082'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000286'::uuid, 'd2222222-d222-4222-8222-000000000082'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000287'::uuid, 'd2222222-d222-4222-8222-000000000082'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000288'::uuid, 'd2222222-d222-4222-8222-000000000083'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000289'::uuid, 'd2222222-d222-4222-8222-000000000083'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000290'::uuid, 'd2222222-d222-4222-8222-000000000083'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000291'::uuid, 'd2222222-d222-4222-8222-000000000083'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b08-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000292'::uuid, 'd2222222-d222-4222-8222-000000000084'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000293'::uuid, 'd2222222-d222-4222-8222-000000000084'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000294'::uuid, 'd2222222-d222-4222-8222-000000000084'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000295'::uuid, 'd2222222-d222-4222-8222-000000000085'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000296'::uuid, 'd2222222-d222-4222-8222-000000000085'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000297'::uuid, 'd2222222-d222-4222-8222-000000000085'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000298'::uuid, 'd2222222-d222-4222-8222-000000000085'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b10-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000299'::uuid, 'd2222222-d222-4222-8222-000000000086'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000300'::uuid, 'd2222222-d222-4222-8222-000000000086'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000301'::uuid, 'd2222222-d222-4222-8222-000000000086'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000302'::uuid, 'd2222222-d222-4222-8222-000000000087'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000303'::uuid, 'd2222222-d222-4222-8222-000000000087'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000304'::uuid, 'd2222222-d222-4222-8222-000000000087'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000305'::uuid, 'd2222222-d222-4222-8222-000000000087'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b12-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000306'::uuid, 'd2222222-d222-4222-8222-000000000088'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000307'::uuid, 'd2222222-d222-4222-8222-000000000088'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000308'::uuid, 'd2222222-d222-4222-8222-000000000088'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000309'::uuid, 'd2222222-d222-4222-8222-000000000089'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000310'::uuid, 'd2222222-d222-4222-8222-000000000089'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000311'::uuid, 'd2222222-d222-4222-8222-000000000089'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000312'::uuid, 'd2222222-d222-4222-8222-000000000089'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b14-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000313'::uuid, 'd2222222-d222-4222-8222-000000000090'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000314'::uuid, 'd2222222-d222-4222-8222-000000000090'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000315'::uuid, 'd2222222-d222-4222-8222-000000000090'::uuid, 'https://picsum.photos/seed/demo-rupchaya-beauty-b15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000316'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000317'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000318'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000319'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g01-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000320'::uuid, 'd2222222-d222-4222-8222-000000000092'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000321'::uuid, 'd2222222-d222-4222-8222-000000000092'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000322'::uuid, 'd2222222-d222-4222-8222-000000000092'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000323'::uuid, 'd2222222-d222-4222-8222-000000000093'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000324'::uuid, 'd2222222-d222-4222-8222-000000000093'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000325'::uuid, 'd2222222-d222-4222-8222-000000000093'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000326'::uuid, 'd2222222-d222-4222-8222-000000000093'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g03-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000327'::uuid, 'd2222222-d222-4222-8222-000000000094'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000328'::uuid, 'd2222222-d222-4222-8222-000000000094'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000329'::uuid, 'd2222222-d222-4222-8222-000000000094'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000330'::uuid, 'd2222222-d222-4222-8222-000000000095'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000331'::uuid, 'd2222222-d222-4222-8222-000000000095'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000332'::uuid, 'd2222222-d222-4222-8222-000000000095'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000333'::uuid, 'd2222222-d222-4222-8222-000000000095'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g05-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000334'::uuid, 'd2222222-d222-4222-8222-000000000096'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000335'::uuid, 'd2222222-d222-4222-8222-000000000096'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000336'::uuid, 'd2222222-d222-4222-8222-000000000096'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000337'::uuid, 'd2222222-d222-4222-8222-000000000097'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000338'::uuid, 'd2222222-d222-4222-8222-000000000097'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000339'::uuid, 'd2222222-d222-4222-8222-000000000097'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000340'::uuid, 'd2222222-d222-4222-8222-000000000097'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g07-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000341'::uuid, 'd2222222-d222-4222-8222-000000000098'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000342'::uuid, 'd2222222-d222-4222-8222-000000000098'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000343'::uuid, 'd2222222-d222-4222-8222-000000000098'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000344'::uuid, 'd2222222-d222-4222-8222-000000000099'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000345'::uuid, 'd2222222-d222-4222-8222-000000000099'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000346'::uuid, 'd2222222-d222-4222-8222-000000000099'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000347'::uuid, 'd2222222-d222-4222-8222-000000000099'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g09-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000348'::uuid, 'd2222222-d222-4222-8222-000000000100'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000349'::uuid, 'd2222222-d222-4222-8222-000000000100'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000350'::uuid, 'd2222222-d222-4222-8222-000000000100'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000351'::uuid, 'd2222222-d222-4222-8222-000000000101'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000352'::uuid, 'd2222222-d222-4222-8222-000000000101'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000353'::uuid, 'd2222222-d222-4222-8222-000000000101'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000354'::uuid, 'd2222222-d222-4222-8222-000000000101'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g11-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000355'::uuid, 'd2222222-d222-4222-8222-000000000102'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000356'::uuid, 'd2222222-d222-4222-8222-000000000102'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000357'::uuid, 'd2222222-d222-4222-8222-000000000102'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000358'::uuid, 'd2222222-d222-4222-8222-000000000103'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000359'::uuid, 'd2222222-d222-4222-8222-000000000103'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000360'::uuid, 'd2222222-d222-4222-8222-000000000103'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000361'::uuid, 'd2222222-d222-4222-8222-000000000103'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g13-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000362'::uuid, 'd2222222-d222-4222-8222-000000000104'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000363'::uuid, 'd2222222-d222-4222-8222-000000000104'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000364'::uuid, 'd2222222-d222-4222-8222-000000000104'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000365'::uuid, 'd2222222-d222-4222-8222-000000000105'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000366'::uuid, 'd2222222-d222-4222-8222-000000000105'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000367'::uuid, 'd2222222-d222-4222-8222-000000000105'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000368'::uuid, 'd2222222-d222-4222-8222-000000000105'::uuid, 'https://picsum.photos/seed/demo-bazaar-basket-g15-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000369'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 'https://picsum.photos/seed/demo-boighar-k01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000370'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 'https://picsum.photos/seed/demo-boighar-k01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000371'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 'https://picsum.photos/seed/demo-boighar-k01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000372'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 'https://picsum.photos/seed/demo-boighar-k02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000373'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 'https://picsum.photos/seed/demo-boighar-k02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000374'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 'https://picsum.photos/seed/demo-boighar-k02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000375'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 'https://picsum.photos/seed/demo-boighar-k02-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000376'::uuid, 'd2222222-d222-4222-8222-000000000108'::uuid, 'https://picsum.photos/seed/demo-boighar-k03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000377'::uuid, 'd2222222-d222-4222-8222-000000000108'::uuid, 'https://picsum.photos/seed/demo-boighar-k03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000378'::uuid, 'd2222222-d222-4222-8222-000000000108'::uuid, 'https://picsum.photos/seed/demo-boighar-k03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000379'::uuid, 'd2222222-d222-4222-8222-000000000109'::uuid, 'https://picsum.photos/seed/demo-boighar-k04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000380'::uuid, 'd2222222-d222-4222-8222-000000000109'::uuid, 'https://picsum.photos/seed/demo-boighar-k04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000381'::uuid, 'd2222222-d222-4222-8222-000000000109'::uuid, 'https://picsum.photos/seed/demo-boighar-k04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000382'::uuid, 'd2222222-d222-4222-8222-000000000109'::uuid, 'https://picsum.photos/seed/demo-boighar-k04-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000383'::uuid, 'd2222222-d222-4222-8222-000000000110'::uuid, 'https://picsum.photos/seed/demo-boighar-k05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000384'::uuid, 'd2222222-d222-4222-8222-000000000110'::uuid, 'https://picsum.photos/seed/demo-boighar-k05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000385'::uuid, 'd2222222-d222-4222-8222-000000000110'::uuid, 'https://picsum.photos/seed/demo-boighar-k05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000386'::uuid, 'd2222222-d222-4222-8222-000000000111'::uuid, 'https://picsum.photos/seed/demo-boighar-k06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000387'::uuid, 'd2222222-d222-4222-8222-000000000111'::uuid, 'https://picsum.photos/seed/demo-boighar-k06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000388'::uuid, 'd2222222-d222-4222-8222-000000000111'::uuid, 'https://picsum.photos/seed/demo-boighar-k06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000389'::uuid, 'd2222222-d222-4222-8222-000000000111'::uuid, 'https://picsum.photos/seed/demo-boighar-k06-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000390'::uuid, 'd2222222-d222-4222-8222-000000000112'::uuid, 'https://picsum.photos/seed/demo-boighar-k07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000391'::uuid, 'd2222222-d222-4222-8222-000000000112'::uuid, 'https://picsum.photos/seed/demo-boighar-k07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000392'::uuid, 'd2222222-d222-4222-8222-000000000112'::uuid, 'https://picsum.photos/seed/demo-boighar-k07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000393'::uuid, 'd2222222-d222-4222-8222-000000000113'::uuid, 'https://picsum.photos/seed/demo-boighar-k08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000394'::uuid, 'd2222222-d222-4222-8222-000000000113'::uuid, 'https://picsum.photos/seed/demo-boighar-k08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000395'::uuid, 'd2222222-d222-4222-8222-000000000113'::uuid, 'https://picsum.photos/seed/demo-boighar-k08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000396'::uuid, 'd2222222-d222-4222-8222-000000000113'::uuid, 'https://picsum.photos/seed/demo-boighar-k08-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000397'::uuid, 'd2222222-d222-4222-8222-000000000114'::uuid, 'https://picsum.photos/seed/demo-boighar-k09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000398'::uuid, 'd2222222-d222-4222-8222-000000000114'::uuid, 'https://picsum.photos/seed/demo-boighar-k09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000399'::uuid, 'd2222222-d222-4222-8222-000000000114'::uuid, 'https://picsum.photos/seed/demo-boighar-k09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000400'::uuid, 'd2222222-d222-4222-8222-000000000115'::uuid, 'https://picsum.photos/seed/demo-boighar-k10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000401'::uuid, 'd2222222-d222-4222-8222-000000000115'::uuid, 'https://picsum.photos/seed/demo-boighar-k10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000402'::uuid, 'd2222222-d222-4222-8222-000000000115'::uuid, 'https://picsum.photos/seed/demo-boighar-k10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000403'::uuid, 'd2222222-d222-4222-8222-000000000115'::uuid, 'https://picsum.photos/seed/demo-boighar-k10-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000404'::uuid, 'd2222222-d222-4222-8222-000000000116'::uuid, 'https://picsum.photos/seed/demo-boighar-k11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000405'::uuid, 'd2222222-d222-4222-8222-000000000116'::uuid, 'https://picsum.photos/seed/demo-boighar-k11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000406'::uuid, 'd2222222-d222-4222-8222-000000000116'::uuid, 'https://picsum.photos/seed/demo-boighar-k11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000407'::uuid, 'd2222222-d222-4222-8222-000000000117'::uuid, 'https://picsum.photos/seed/demo-boighar-k12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000408'::uuid, 'd2222222-d222-4222-8222-000000000117'::uuid, 'https://picsum.photos/seed/demo-boighar-k12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000409'::uuid, 'd2222222-d222-4222-8222-000000000117'::uuid, 'https://picsum.photos/seed/demo-boighar-k12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000410'::uuid, 'd2222222-d222-4222-8222-000000000117'::uuid, 'https://picsum.photos/seed/demo-boighar-k12-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000411'::uuid, 'd2222222-d222-4222-8222-000000000118'::uuid, 'https://picsum.photos/seed/demo-boighar-k13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000412'::uuid, 'd2222222-d222-4222-8222-000000000118'::uuid, 'https://picsum.photos/seed/demo-boighar-k13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000413'::uuid, 'd2222222-d222-4222-8222-000000000118'::uuid, 'https://picsum.photos/seed/demo-boighar-k13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000414'::uuid, 'd2222222-d222-4222-8222-000000000119'::uuid, 'https://picsum.photos/seed/demo-boighar-k14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000415'::uuid, 'd2222222-d222-4222-8222-000000000119'::uuid, 'https://picsum.photos/seed/demo-boighar-k14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000416'::uuid, 'd2222222-d222-4222-8222-000000000119'::uuid, 'https://picsum.photos/seed/demo-boighar-k14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000417'::uuid, 'd2222222-d222-4222-8222-000000000119'::uuid, 'https://picsum.photos/seed/demo-boighar-k14-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000418'::uuid, 'd2222222-d222-4222-8222-000000000120'::uuid, 'https://picsum.photos/seed/demo-boighar-k15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000419'::uuid, 'd2222222-d222-4222-8222-000000000120'::uuid, 'https://picsum.photos/seed/demo-boighar-k15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000420'::uuid, 'd2222222-d222-4222-8222-000000000120'::uuid, 'https://picsum.photos/seed/demo-boighar-k15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000421'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000422'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000423'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000424'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s01-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000425'::uuid, 'd2222222-d222-4222-8222-000000000122'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000426'::uuid, 'd2222222-d222-4222-8222-000000000122'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000427'::uuid, 'd2222222-d222-4222-8222-000000000122'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000428'::uuid, 'd2222222-d222-4222-8222-000000000123'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000429'::uuid, 'd2222222-d222-4222-8222-000000000123'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000430'::uuid, 'd2222222-d222-4222-8222-000000000123'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000431'::uuid, 'd2222222-d222-4222-8222-000000000123'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s03-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000432'::uuid, 'd2222222-d222-4222-8222-000000000124'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000433'::uuid, 'd2222222-d222-4222-8222-000000000124'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000434'::uuid, 'd2222222-d222-4222-8222-000000000124'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000435'::uuid, 'd2222222-d222-4222-8222-000000000125'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000436'::uuid, 'd2222222-d222-4222-8222-000000000125'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000437'::uuid, 'd2222222-d222-4222-8222-000000000125'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000438'::uuid, 'd2222222-d222-4222-8222-000000000125'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s05-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000439'::uuid, 'd2222222-d222-4222-8222-000000000126'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000440'::uuid, 'd2222222-d222-4222-8222-000000000126'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000441'::uuid, 'd2222222-d222-4222-8222-000000000126'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000442'::uuid, 'd2222222-d222-4222-8222-000000000127'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000443'::uuid, 'd2222222-d222-4222-8222-000000000127'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000444'::uuid, 'd2222222-d222-4222-8222-000000000127'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000445'::uuid, 'd2222222-d222-4222-8222-000000000127'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s07-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000446'::uuid, 'd2222222-d222-4222-8222-000000000128'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000447'::uuid, 'd2222222-d222-4222-8222-000000000128'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000448'::uuid, 'd2222222-d222-4222-8222-000000000128'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000449'::uuid, 'd2222222-d222-4222-8222-000000000129'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000450'::uuid, 'd2222222-d222-4222-8222-000000000129'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000451'::uuid, 'd2222222-d222-4222-8222-000000000129'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000452'::uuid, 'd2222222-d222-4222-8222-000000000129'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s09-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000453'::uuid, 'd2222222-d222-4222-8222-000000000130'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000454'::uuid, 'd2222222-d222-4222-8222-000000000130'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000455'::uuid, 'd2222222-d222-4222-8222-000000000130'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000456'::uuid, 'd2222222-d222-4222-8222-000000000131'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000457'::uuid, 'd2222222-d222-4222-8222-000000000131'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000458'::uuid, 'd2222222-d222-4222-8222-000000000131'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000459'::uuid, 'd2222222-d222-4222-8222-000000000131'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s11-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000460'::uuid, 'd2222222-d222-4222-8222-000000000132'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000461'::uuid, 'd2222222-d222-4222-8222-000000000132'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000462'::uuid, 'd2222222-d222-4222-8222-000000000132'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000463'::uuid, 'd2222222-d222-4222-8222-000000000133'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000464'::uuid, 'd2222222-d222-4222-8222-000000000133'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000465'::uuid, 'd2222222-d222-4222-8222-000000000133'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000466'::uuid, 'd2222222-d222-4222-8222-000000000133'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s13-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000467'::uuid, 'd2222222-d222-4222-8222-000000000134'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000468'::uuid, 'd2222222-d222-4222-8222-000000000134'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000469'::uuid, 'd2222222-d222-4222-8222-000000000134'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000470'::uuid, 'd2222222-d222-4222-8222-000000000135'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000471'::uuid, 'd2222222-d222-4222-8222-000000000135'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000472'::uuid, 'd2222222-d222-4222-8222-000000000135'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s15-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000473'::uuid, 'd2222222-d222-4222-8222-000000000135'::uuid, 'https://picsum.photos/seed/demo-khelaghar-s15-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000474'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t01-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000475'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t01-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000476'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t01-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000477'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t02-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000478'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t02-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000479'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t02-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000480'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t02-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000481'::uuid, 'd2222222-d222-4222-8222-000000000138'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t03-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000482'::uuid, 'd2222222-d222-4222-8222-000000000138'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t03-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000483'::uuid, 'd2222222-d222-4222-8222-000000000138'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t03-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000484'::uuid, 'd2222222-d222-4222-8222-000000000139'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t04-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000485'::uuid, 'd2222222-d222-4222-8222-000000000139'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t04-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000486'::uuid, 'd2222222-d222-4222-8222-000000000139'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t04-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000487'::uuid, 'd2222222-d222-4222-8222-000000000139'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t04-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000488'::uuid, 'd2222222-d222-4222-8222-000000000140'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t05-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000489'::uuid, 'd2222222-d222-4222-8222-000000000140'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t05-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000490'::uuid, 'd2222222-d222-4222-8222-000000000140'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t05-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000491'::uuid, 'd2222222-d222-4222-8222-000000000141'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t06-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000492'::uuid, 'd2222222-d222-4222-8222-000000000141'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t06-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000493'::uuid, 'd2222222-d222-4222-8222-000000000141'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t06-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000494'::uuid, 'd2222222-d222-4222-8222-000000000141'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t06-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000495'::uuid, 'd2222222-d222-4222-8222-000000000142'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t07-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000496'::uuid, 'd2222222-d222-4222-8222-000000000142'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t07-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000497'::uuid, 'd2222222-d222-4222-8222-000000000142'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t07-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000498'::uuid, 'd2222222-d222-4222-8222-000000000143'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t08-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000499'::uuid, 'd2222222-d222-4222-8222-000000000143'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t08-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000500'::uuid, 'd2222222-d222-4222-8222-000000000143'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t08-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000501'::uuid, 'd2222222-d222-4222-8222-000000000143'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t08-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000502'::uuid, 'd2222222-d222-4222-8222-000000000144'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t09-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000503'::uuid, 'd2222222-d222-4222-8222-000000000144'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t09-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000504'::uuid, 'd2222222-d222-4222-8222-000000000144'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t09-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000505'::uuid, 'd2222222-d222-4222-8222-000000000145'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t10-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000506'::uuid, 'd2222222-d222-4222-8222-000000000145'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t10-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000507'::uuid, 'd2222222-d222-4222-8222-000000000145'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t10-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000508'::uuid, 'd2222222-d222-4222-8222-000000000145'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t10-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000509'::uuid, 'd2222222-d222-4222-8222-000000000146'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t11-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000510'::uuid, 'd2222222-d222-4222-8222-000000000146'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t11-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000511'::uuid, 'd2222222-d222-4222-8222-000000000146'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t11-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000512'::uuid, 'd2222222-d222-4222-8222-000000000147'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t12-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000513'::uuid, 'd2222222-d222-4222-8222-000000000147'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t12-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000514'::uuid, 'd2222222-d222-4222-8222-000000000147'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t12-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000515'::uuid, 'd2222222-d222-4222-8222-000000000147'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t12-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000516'::uuid, 'd2222222-d222-4222-8222-000000000148'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t13-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000517'::uuid, 'd2222222-d222-4222-8222-000000000148'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t13-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000518'::uuid, 'd2222222-d222-4222-8222-000000000148'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t13-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000519'::uuid, 'd2222222-d222-4222-8222-000000000149'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t14-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000520'::uuid, 'd2222222-d222-4222-8222-000000000149'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t14-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000521'::uuid, 'd2222222-d222-4222-8222-000000000149'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t14-3/800/800', 2, false),
+  ('d3333333-d333-4333-8333-000000000522'::uuid, 'd2222222-d222-4222-8222-000000000149'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t14-4/800/800', 3, false),
+  ('d3333333-d333-4333-8333-000000000523'::uuid, 'd2222222-d222-4222-8222-000000000150'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t15-1/800/800', 0, true),
+  ('d3333333-d333-4333-8333-000000000524'::uuid, 'd2222222-d222-4222-8222-000000000150'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t15-2/800/800', 1, false),
+  ('d3333333-d333-4333-8333-000000000525'::uuid, 'd2222222-d222-4222-8222-000000000150'::uuid, 'https://picsum.photos/seed/demo-choto-bondhu-t15-3/800/800', 2, false)
 ) as seed (id, product_id, storage_path, sort_order, is_primary)
-where exists (
-  select 1 from public.products as p where p.id = seed.product_id
-)
+where exists (select 1 from public.products as p where p.id = seed.product_id)
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Reels (30 published). video_path values are public sample MP4 placeholders
+-- to be replaced by real Storage uploads later.
+-- ---------------------------------------------------------------------------
+insert into public.reels (
+  id, vendor_id, caption, video_path, thumbnail_path, duration_seconds, status, created_at
+) values
+  ('d5555555-d555-4555-8555-000000000001', 'd1111111-d111-4111-8111-000000000001', 'Purush Lane: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'https://picsum.photos/seed/demo-purush-lane-reel-1/720/1280', 15, 'published', now() - interval '1 days'),
+  ('d5555555-d555-4555-8555-000000000002', 'd1111111-d111-4111-8111-000000000001', 'Purush Lane: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://picsum.photos/seed/demo-purush-lane-reel-2/720/1280', 20, 'published', now() - interval '2 days'),
+  ('d5555555-d555-4555-8555-000000000003', 'd1111111-d111-4111-8111-000000000001', 'Purush Lane: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'https://picsum.photos/seed/demo-purush-lane-reel-3/720/1280', 25, 'published', now() - interval '3 days'),
+  ('d5555555-d555-4555-8555-000000000004', 'd1111111-d111-4111-8111-000000000002', 'Nari Atelier: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'https://picsum.photos/seed/demo-nari-atelier-reel-1/720/1280', 15, 'published', now() - interval '4 days'),
+  ('d5555555-d555-4555-8555-000000000005', 'd1111111-d111-4111-8111-000000000002', 'Nari Atelier: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'https://picsum.photos/seed/demo-nari-atelier-reel-2/720/1280', 20, 'published', now() - interval '5 days'),
+  ('d5555555-d555-4555-8555-000000000006', 'd1111111-d111-4111-8111-000000000002', 'Nari Atelier: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'https://picsum.photos/seed/demo-nari-atelier-reel-3/720/1280', 25, 'published', now() - interval '6 days'),
+  ('d5555555-d555-4555-8555-000000000007', 'd1111111-d111-4111-8111-000000000003', 'Gadget Bazar BD: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'https://picsum.photos/seed/demo-gadget-bazar-reel-1/720/1280', 15, 'published', now() - interval '7 days'),
+  ('d5555555-d555-4555-8555-000000000008', 'd1111111-d111-4111-8111-000000000003', 'Gadget Bazar BD: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://picsum.photos/seed/demo-gadget-bazar-reel-2/720/1280', 20, 'published', now() - interval '8 days'),
+  ('d5555555-d555-4555-8555-000000000009', 'd1111111-d111-4111-8111-000000000003', 'Gadget Bazar BD: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'https://picsum.photos/seed/demo-gadget-bazar-reel-3/720/1280', 25, 'published', now() - interval '9 days'),
+  ('d5555555-d555-4555-8555-000000000010', 'd1111111-d111-4111-8111-000000000004', 'Case Corner: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'https://picsum.photos/seed/demo-case-corner-reel-1/720/1280', 15, 'published', now() - interval '10 days'),
+  ('d5555555-d555-4555-8555-000000000011', 'd1111111-d111-4111-8111-000000000004', 'Case Corner: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'https://picsum.photos/seed/demo-case-corner-reel-2/720/1280', 20, 'published', now() - interval '11 days'),
+  ('d5555555-d555-4555-8555-000000000012', 'd1111111-d111-4111-8111-000000000004', 'Case Corner: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'https://picsum.photos/seed/demo-case-corner-reel-3/720/1280', 25, 'published', now() - interval '12 days'),
+  ('d5555555-d555-4555-8555-000000000013', 'd1111111-d111-4111-8111-000000000005', 'Ghor O Ranna: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'https://picsum.photos/seed/demo-ghor-o-ranna-reel-1/720/1280', 15, 'published', now() - interval '13 days'),
+  ('d5555555-d555-4555-8555-000000000014', 'd1111111-d111-4111-8111-000000000005', 'Ghor O Ranna: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://picsum.photos/seed/demo-ghor-o-ranna-reel-2/720/1280', 20, 'published', now() - interval '14 days'),
+  ('d5555555-d555-4555-8555-000000000015', 'd1111111-d111-4111-8111-000000000005', 'Ghor O Ranna: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'https://picsum.photos/seed/demo-ghor-o-ranna-reel-3/720/1280', 25, 'published', now() - interval '15 days'),
+  ('d5555555-d555-4555-8555-000000000016', 'd1111111-d111-4111-8111-000000000006', 'Rupchaya Beauty: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'https://picsum.photos/seed/demo-rupchaya-beauty-reel-1/720/1280', 15, 'published', now() - interval '16 days'),
+  ('d5555555-d555-4555-8555-000000000017', 'd1111111-d111-4111-8111-000000000006', 'Rupchaya Beauty: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'https://picsum.photos/seed/demo-rupchaya-beauty-reel-2/720/1280', 20, 'published', now() - interval '17 days'),
+  ('d5555555-d555-4555-8555-000000000018', 'd1111111-d111-4111-8111-000000000006', 'Rupchaya Beauty: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'https://picsum.photos/seed/demo-rupchaya-beauty-reel-3/720/1280', 25, 'published', now() - interval '18 days'),
+  ('d5555555-d555-4555-8555-000000000019', 'd1111111-d111-4111-8111-000000000007', 'Bazaar Basket: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'https://picsum.photos/seed/demo-bazaar-basket-reel-1/720/1280', 15, 'published', now() - interval '19 days'),
+  ('d5555555-d555-4555-8555-000000000020', 'd1111111-d111-4111-8111-000000000007', 'Bazaar Basket: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://picsum.photos/seed/demo-bazaar-basket-reel-2/720/1280', 20, 'published', now() - interval '20 days'),
+  ('d5555555-d555-4555-8555-000000000021', 'd1111111-d111-4111-8111-000000000007', 'Bazaar Basket: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'https://picsum.photos/seed/demo-bazaar-basket-reel-3/720/1280', 25, 'published', now() - interval '21 days'),
+  ('d5555555-d555-4555-8555-000000000022', 'd1111111-d111-4111-8111-000000000008', 'Boighar Stationery: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'https://picsum.photos/seed/demo-boighar-reel-1/720/1280', 15, 'published', now() - interval '22 days'),
+  ('d5555555-d555-4555-8555-000000000023', 'd1111111-d111-4111-8111-000000000008', 'Boighar Stationery: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'https://picsum.photos/seed/demo-boighar-reel-2/720/1280', 20, 'published', now() - interval '23 days'),
+  ('d5555555-d555-4555-8555-000000000024', 'd1111111-d111-4111-8111-000000000008', 'Boighar Stationery: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'https://picsum.photos/seed/demo-boighar-reel-3/720/1280', 25, 'published', now() - interval '24 days'),
+  ('d5555555-d555-4555-8555-000000000025', 'd1111111-d111-4111-8111-000000000009', 'Khelaghar Fitness: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'https://picsum.photos/seed/demo-khelaghar-reel-1/720/1280', 15, 'published', now() - interval '25 days'),
+  ('d5555555-d555-4555-8555-000000000026', 'd1111111-d111-4111-8111-000000000009', 'Khelaghar Fitness: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://picsum.photos/seed/demo-khelaghar-reel-2/720/1280', 20, 'published', now() - interval '26 days'),
+  ('d5555555-d555-4555-8555-000000000027', 'd1111111-d111-4111-8111-000000000009', 'Khelaghar Fitness: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'https://picsum.photos/seed/demo-khelaghar-reel-3/720/1280', 25, 'published', now() - interval '27 days'),
+  ('d5555555-d555-4555-8555-000000000028', 'd1111111-d111-4111-8111-000000000010', 'Choto Bondhu Toys: look 1 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'https://picsum.photos/seed/demo-choto-bondhu-reel-1/720/1280', 15, 'published', now() - interval '28 days'),
+  ('d5555555-d555-4555-8555-000000000029', 'd1111111-d111-4111-8111-000000000010', 'Choto Bondhu Toys: look 2 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'https://picsum.photos/seed/demo-choto-bondhu-reel-2/720/1280', 20, 'published', now() - interval '29 days'),
+  ('d5555555-d555-4555-8555-000000000030', 'd1111111-d111-4111-8111-000000000010', 'Choto Bondhu Toys: look 3 / দেখুন নতুন কালেকশন', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', 'https://picsum.photos/seed/demo-choto-bondhu-reel-3/720/1280', 25, 'published', now() - interval '30 days')
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Reel ↔ product links (same shop only)
+-- ---------------------------------------------------------------------------
+insert into public.reel_products (id, reel_id, product_id, sort_order)
+select seed.id, seed.reel_id, seed.product_id, seed.sort_order
+from (values
+  ('d6666666-d666-4666-8666-000000000001'::uuid, 'd5555555-d555-4555-8555-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000002'::uuid, 'd5555555-d555-4555-8555-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000003'::uuid, 'd5555555-d555-4555-8555-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000004'::uuid, 'd5555555-d555-4555-8555-000000000003'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000005'::uuid, 'd5555555-d555-4555-8555-000000000003'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000006'::uuid, 'd5555555-d555-4555-8555-000000000003'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000007'::uuid, 'd5555555-d555-4555-8555-000000000004'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000008'::uuid, 'd5555555-d555-4555-8555-000000000005'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000009'::uuid, 'd5555555-d555-4555-8555-000000000005'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000010'::uuid, 'd5555555-d555-4555-8555-000000000006'::uuid, 'd2222222-d222-4222-8222-000000000016'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000011'::uuid, 'd5555555-d555-4555-8555-000000000006'::uuid, 'd2222222-d222-4222-8222-000000000017'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000012'::uuid, 'd5555555-d555-4555-8555-000000000006'::uuid, 'd2222222-d222-4222-8222-000000000018'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000013'::uuid, 'd5555555-d555-4555-8555-000000000007'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000014'::uuid, 'd5555555-d555-4555-8555-000000000008'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000015'::uuid, 'd5555555-d555-4555-8555-000000000008'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000016'::uuid, 'd5555555-d555-4555-8555-000000000009'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000017'::uuid, 'd5555555-d555-4555-8555-000000000009'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000018'::uuid, 'd5555555-d555-4555-8555-000000000009'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000019'::uuid, 'd5555555-d555-4555-8555-000000000010'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000020'::uuid, 'd5555555-d555-4555-8555-000000000011'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000021'::uuid, 'd5555555-d555-4555-8555-000000000011'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000022'::uuid, 'd5555555-d555-4555-8555-000000000012'::uuid, 'd2222222-d222-4222-8222-000000000046'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000023'::uuid, 'd5555555-d555-4555-8555-000000000012'::uuid, 'd2222222-d222-4222-8222-000000000047'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000024'::uuid, 'd5555555-d555-4555-8555-000000000012'::uuid, 'd2222222-d222-4222-8222-000000000048'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000025'::uuid, 'd5555555-d555-4555-8555-000000000013'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000026'::uuid, 'd5555555-d555-4555-8555-000000000014'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000027'::uuid, 'd5555555-d555-4555-8555-000000000014'::uuid, 'd2222222-d222-4222-8222-000000000062'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000028'::uuid, 'd5555555-d555-4555-8555-000000000015'::uuid, 'd2222222-d222-4222-8222-000000000061'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000029'::uuid, 'd5555555-d555-4555-8555-000000000015'::uuid, 'd2222222-d222-4222-8222-000000000062'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000030'::uuid, 'd5555555-d555-4555-8555-000000000015'::uuid, 'd2222222-d222-4222-8222-000000000063'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000031'::uuid, 'd5555555-d555-4555-8555-000000000016'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000032'::uuid, 'd5555555-d555-4555-8555-000000000017'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000033'::uuid, 'd5555555-d555-4555-8555-000000000017'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000034'::uuid, 'd5555555-d555-4555-8555-000000000018'::uuid, 'd2222222-d222-4222-8222-000000000076'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000035'::uuid, 'd5555555-d555-4555-8555-000000000018'::uuid, 'd2222222-d222-4222-8222-000000000077'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000036'::uuid, 'd5555555-d555-4555-8555-000000000018'::uuid, 'd2222222-d222-4222-8222-000000000078'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000037'::uuid, 'd5555555-d555-4555-8555-000000000019'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000038'::uuid, 'd5555555-d555-4555-8555-000000000020'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000039'::uuid, 'd5555555-d555-4555-8555-000000000020'::uuid, 'd2222222-d222-4222-8222-000000000092'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000040'::uuid, 'd5555555-d555-4555-8555-000000000021'::uuid, 'd2222222-d222-4222-8222-000000000091'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000041'::uuid, 'd5555555-d555-4555-8555-000000000021'::uuid, 'd2222222-d222-4222-8222-000000000092'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000042'::uuid, 'd5555555-d555-4555-8555-000000000021'::uuid, 'd2222222-d222-4222-8222-000000000093'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000043'::uuid, 'd5555555-d555-4555-8555-000000000022'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000044'::uuid, 'd5555555-d555-4555-8555-000000000023'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000045'::uuid, 'd5555555-d555-4555-8555-000000000023'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000046'::uuid, 'd5555555-d555-4555-8555-000000000024'::uuid, 'd2222222-d222-4222-8222-000000000106'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000047'::uuid, 'd5555555-d555-4555-8555-000000000024'::uuid, 'd2222222-d222-4222-8222-000000000107'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000048'::uuid, 'd5555555-d555-4555-8555-000000000024'::uuid, 'd2222222-d222-4222-8222-000000000108'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000049'::uuid, 'd5555555-d555-4555-8555-000000000025'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000050'::uuid, 'd5555555-d555-4555-8555-000000000026'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000051'::uuid, 'd5555555-d555-4555-8555-000000000026'::uuid, 'd2222222-d222-4222-8222-000000000122'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000052'::uuid, 'd5555555-d555-4555-8555-000000000027'::uuid, 'd2222222-d222-4222-8222-000000000121'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000053'::uuid, 'd5555555-d555-4555-8555-000000000027'::uuid, 'd2222222-d222-4222-8222-000000000122'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000054'::uuid, 'd5555555-d555-4555-8555-000000000027'::uuid, 'd2222222-d222-4222-8222-000000000123'::uuid, 2),
+  ('d6666666-d666-4666-8666-000000000055'::uuid, 'd5555555-d555-4555-8555-000000000028'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000056'::uuid, 'd5555555-d555-4555-8555-000000000029'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000057'::uuid, 'd5555555-d555-4555-8555-000000000029'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000058'::uuid, 'd5555555-d555-4555-8555-000000000030'::uuid, 'd2222222-d222-4222-8222-000000000136'::uuid, 0),
+  ('d6666666-d666-4666-8666-000000000059'::uuid, 'd5555555-d555-4555-8555-000000000030'::uuid, 'd2222222-d222-4222-8222-000000000137'::uuid, 1),
+  ('d6666666-d666-4666-8666-000000000060'::uuid, 'd5555555-d555-4555-8555-000000000030'::uuid, 'd2222222-d222-4222-8222-000000000138'::uuid, 2)
+) as seed (id, reel_id, product_id, sort_order)
+where exists (select 1 from public.reels as r where r.id = seed.reel_id)
+  and exists (select 1 from public.products as p where p.id = seed.product_id)
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Live streams (2). livekit_room_name is a demo room string, not a secret.
+-- ---------------------------------------------------------------------------
+insert into public.live_streams (
+  id, vendor_id, title, description, thumbnail_url, status, livekit_room_name,
+  scheduled_at, started_at, ended_at, pinned_product_id, created_at
+) values
+  ('d7777777-d777-4777-8777-000000000001', 'd1111111-d111-4111-8111-000000000001', 'Purush Lane Friday Drop', 'Live try-on of new panjabi and sneakers.',
+   'https://picsum.photos/seed/demo-live-1/1280/720', 'scheduled', 'demo-live-room-1',
+   now() + interval '2 days', null, null, 'd2222222-d222-4222-8222-000000000001', now()),
+  ('d7777777-d777-4777-8777-000000000002', 'd1111111-d111-4111-8111-000000000003', 'Gadget Night Ended Replay', 'Phone deals night — ended demo stream.',
+   'https://picsum.photos/seed/demo-live-2/1280/720', 'ended', 'demo-live-room-2',
+   now() - interval '5 days', now() - interval '5 days', now() - interval '5 days' + interval '90 minutes',
+   'd2222222-d222-4222-8222-000000000031', now() - interval '5 days')
+on conflict (id) do nothing;
+
+insert into public.live_stream_products (id, stream_id, product_id, sort_order)
+select seed.id, seed.stream_id, seed.product_id, seed.sort_order
+from (values
+  ('d8888888-d888-4888-8888-000000000001'::uuid, 'd7777777-d777-4777-8777-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000001'::uuid, 0),
+  ('d8888888-d888-4888-8888-000000000002'::uuid, 'd7777777-d777-4777-8777-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000002'::uuid, 1),
+  ('d8888888-d888-4888-8888-000000000003'::uuid, 'd7777777-d777-4777-8777-000000000001'::uuid, 'd2222222-d222-4222-8222-000000000003'::uuid, 2),
+  ('d8888888-d888-4888-8888-000000000004'::uuid, 'd7777777-d777-4777-8777-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000031'::uuid, 0),
+  ('d8888888-d888-4888-8888-000000000005'::uuid, 'd7777777-d777-4777-8777-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000032'::uuid, 1),
+  ('d8888888-d888-4888-8888-000000000006'::uuid, 'd7777777-d777-4777-8777-000000000002'::uuid, 'd2222222-d222-4222-8222-000000000033'::uuid, 2)
+) as seed (id, stream_id, product_id, sort_order)
+where exists (select 1 from public.live_streams as s where s.id = seed.stream_id)
 on conflict (id) do nothing;
 
 commit;
 
--- Summary (runs after commit)
+-- Summary
 select
   (select count(*) from public.vendor_profiles
-    where profile_id in (
-      'd1111111-d111-4111-8111-000000000001',
-      'd1111111-d111-4111-8111-000000000002',
-      'd1111111-d111-4111-8111-000000000003',
-      'd1111111-d111-4111-8111-000000000004'
-    )) as demo_shops,
+    where profile_id between 'd1111111-d111-4111-8111-000000000001'
+                        and 'd1111111-d111-4111-8111-000000000010') as demo_shops,
+  (select count(*) from public.categories
+    where id::text like 'd4444444-%') as demo_categories_added,
   (select count(*) from public.products
     where id between 'd2222222-d222-4222-8222-000000000001'
-                 and 'd2222222-d222-4222-8222-000000000040') as demo_products,
+                and 'd2222222-d222-4222-8222-000000000150') as demo_products,
   (select count(*) from public.product_images
     where id between 'd3333333-d333-4333-8333-000000000001'
-                 and 'd3333333-d333-4333-8333-000000000102') as demo_images;
+                and 'd3333333-d333-4333-8333-000000000525') as demo_product_images,
+  (select count(*) from public.reels
+    where id between 'd5555555-d555-4555-8555-000000000001'
+                and 'd5555555-d555-4555-8555-000000000030') as demo_reels,
+  (select count(*) from public.reel_products
+    where id between 'd6666666-d666-4666-8666-000000000001'
+                and 'd6666666-d666-4666-8666-000000000060') as demo_reel_product_links;

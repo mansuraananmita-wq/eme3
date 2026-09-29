@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300" role="img" aria-labelledby="tm3 dm3">
+  <title id="tm3">Kids Corner</title>
+  <desc id="dm3">Playful kids promo with gift box</desc>
+  <defs>
+    <linearGradient id="gm3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="300" fill="url(#gm3)"/>
+  <circle cx="520" cy="50" r="80" fill="#fde047" opacity=".3"/>
+  <g transform="translate(430,90)">
+    <rect x="10" y="40" width="100" height="80" rx="8" fill="#fff"/>
+    <rect x="0" y="65" width="120" height="24" fill="#ef4444"/>
+    <rect x="52" y="20" width="16" height="100" fill="#ef4444"/>
+    <path d="M52 40 C40 10 20 20 30 40" fill="#fbbf24"/>
+    <path d="M68 40 C80 10 100 20 90 40" fill="#fbbf24"/>
+  </g>
+  <text x="36" y="100" fill="#dbeafe" font-family="Inter,Segoe UI,sans-serif" font-size="22" font-weight="700">PLAY TIME</text>
+  <text x="36" y="155" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="40" font-weight="800">Kids Corner</text>
+  <text x="36" y="210" fill="#bbf7d0" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="20" font-weight="600">•¿¡¸ •°Í¨¾°</text>
+</svg>

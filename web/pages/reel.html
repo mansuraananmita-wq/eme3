@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light only">
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\\/g, "/");
+        if (/\/web$/i.test(path)) {
+          location.replace(path + "/" + location.search + location.hash);
+        }
+      })();
+    </script>
+    <title>Reel — EME</title>
+    <link rel="icon" href="../assets/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/tokens.css">
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/marketplace.css">
+    <link rel="stylesheet" href="../css/reels.css">
+  </head>
+  <body class="reels-page" data-page="reels">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header" id="site-header"></header>
+    <main id="main">
+      <div id="reels-root"></div>
+    </main>
+    <footer class="site-footer" id="site-footer"></footer>
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
+    <div class="toast-root" id="toast-root"></div>
+    <div class="modal-root" id="modal-root"></div>
+    <script type="module" src="../js/reel-page.js"></script>
+  </body>
+</html>

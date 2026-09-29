@@ -21,46 +21,59 @@
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/marketplace.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/reels.css">
   </head>
-  <body>
+  <body data-page="home">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
-      <div class="wrap">
-        <section class="hero-carousel" aria-label="Offers">
-          <div class="hero-track" id="hero-track">
-            <article class="hero-slide">
-              <p>Today’s picks</p>
-              <h1>Free delivery over ৳999</h1>
-              <p>Shop active products from approved stores across Bangladesh.</p>
-              <a class="button" href="pages/products.html">Shop now</a>
-            </article>
-            <article class="hero-slide">
-              <p>Multi-vendor deals</p>
-              <h1>Trusted shops, fair prices</h1>
-              <p>বিশ্বস্ত দোকান থেকে কেনাকাটা। New arrivals every day.</p>
-              <a class="button" href="pages/products.html?sort=newest">See new arrivals</a>
-            </article>
-            <article class="hero-slide">
-              <p>Sell with us</p>
-              <h1>Open your store on EME</h1>
-              <p>Independent sellers get a storefront, catalog, and discovery across the marketplace.</p>
-              <a class="button" href="pages/sell.html">Sell on EME</a>
-            </article>
+      <div class="wrap home-page">
+        <!-- 1. Hero block -->
+        <section class="home-hero" aria-label="Offers" id="home-hero">
+          <nav class="hero-cats" aria-label="Top categories" id="hero-cats">
+            <div class="skeleton skeleton-card" style="height:280px"></div>
+          </nav>
+          <div class="hero-carousel home-carousel" id="hero-carousel" aria-roledescription="carousel" aria-label="Sale banners">
+            <div class="hero-track" data-carousel-track id="hero-track" aria-busy="true">
+              <div class="skeleton skeleton-card hero-skeleton"></div>
+            </div>
+            <div class="hero-nav">
+              <button type="button" data-carousel-prev aria-label="Previous banner">‹</button>
+              <button type="button" data-carousel-next aria-label="Next banner">›</button>
+            </div>
+            <div class="hero-dots" data-carousel-dots id="hero-dots"></div>
           </div>
-          <div class="hero-nav">
-            <button type="button" data-hero="prev" aria-label="Previous offer">‹</button>
-            <button type="button" data-hero="next" aria-label="Next offer">›</button>
-          </div>
-          <div class="hero-dots" id="hero-dots"></div>
+          <div class="hero-side" id="hero-side" aria-label="Promo banners"></div>
         </section>
 
+        <!-- 2. Trust strip -->
+        <section class="trust-strip" aria-label="Why shop with EME">
+          <div class="trust-item">
+            <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h13l3 4v6h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 7v4h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <div><strong>Free delivery</strong><span>On orders over ৳999</span></div>
+          </div>
+          <div class="trust-item">
+            <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <div><strong>Secure payment</strong><span>bKash, Nagad, card, COD</span></div>
+          </div>
+          <div class="trust-item">
+            <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7l-2 8 11-10h-7l2-8z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <div><strong>Easy returns</strong><span>Hassle-free support</span></div>
+          </div>
+          <div class="trust-item">
+            <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <div><strong>24/7 support</strong><span>We’re here to help</span></div>
+          </div>
+        </section>
+
+        <!-- 3. Category icons -->
         <section class="section" aria-labelledby="category-heading">
           <div class="section-head">
             <h2 id="category-heading">Shop by category</h2>
             <a href="pages/categories.html">All categories</a>
           </div>
-          <div class="category-row" id="category-row" aria-busy="true">
+          <div class="category-icons" id="category-row" aria-busy="true">
             <div class="skeleton skeleton-chip"></div>
             <div class="skeleton skeleton-chip"></div>
             <div class="skeleton skeleton-chip"></div>
@@ -69,30 +82,19 @@
           </div>
         </section>
 
-        <section class="section" aria-labelledby="featured-heading">
-          <div class="section-head">
-            <h2 id="featured-heading">Featured stores</h2>
-            <a href="pages/shops.html">All stores</a>
+        <!-- 4. Flash Sale -->
+        <section class="section flash-section is-hidden" aria-labelledby="flash-heading" id="flash-section" hidden>
+          <div class="section-head flash-head">
+            <div class="flash-title-row">
+              <h2 id="flash-heading">Flash Sale</h2>
+              <div class="flash-countdown" id="flash-countdown" aria-live="polite"></div>
+            </div>
+            <a href="pages/products.html?sort=trending">View all</a>
           </div>
-          <div class="featured-shops" id="featured-shops" aria-busy="true">
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
-          </div>
+          <div class="product-rail" id="flash-rail" aria-busy="true"></div>
         </section>
 
-        <section class="section" aria-labelledby="top-heading">
-          <div class="section-head">
-            <h2 id="top-heading">Top stores</h2>
-            <a href="pages/shops.html">Browse stores</a>
-          </div>
-          <div class="top-stores" id="top-stores" aria-busy="true">
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-          </div>
-        </section>
-
+        <!-- 5. Trending -->
         <section class="section" aria-labelledby="trending-heading">
           <div class="section-head">
             <h2 id="trending-heading">Trending</h2>
@@ -106,6 +108,37 @@
           </div>
         </section>
 
+        <!-- 6. Promo banner row -->
+        <section class="promo-row section" aria-label="Promotions" id="promo-row"></section>
+
+        <!-- 7. Reels -->
+        <section class="section" aria-labelledby="reels-heading">
+          <div class="section-head">
+            <h2 id="reels-heading">Reels</h2>
+            <a href="pages/reels.html">Watch all</a>
+          </div>
+          <div class="reels-row" id="reels-row" aria-busy="true">
+            <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
+          </div>
+        </section>
+
+        <!-- 8. Featured stores -->
+        <section class="section" aria-labelledby="featured-heading">
+          <div class="section-head">
+            <h2 id="featured-heading">Featured stores</h2>
+            <a href="pages/shops.html">All stores</a>
+          </div>
+          <div class="featured-shops" id="featured-shops" aria-busy="true">
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+          </div>
+        </section>
+
+        <!-- 9. New arrivals -->
         <section class="section" aria-labelledby="arrivals-heading">
           <div class="section-head">
             <h2 id="arrivals-heading">New arrivals</h2>
@@ -119,10 +152,13 @@
           </div>
         </section>
 
-        <section class="seller-banner" aria-labelledby="become-seller-heading">
-          <h2 id="become-seller-heading">Become a seller</h2>
-          <p>Open an independent storefront on EME and sell alongside other vendors.</p>
-          <a class="button" href="pages/sell.html">Sell on EME</a>
+        <!-- 10. Become a seller -->
+        <section class="seller-banner seller-banner-wide" aria-labelledby="become-seller-heading">
+          <div class="seller-banner-copy">
+            <h2 id="become-seller-heading">Become a seller</h2>
+            <p>Open an independent storefront on EME and sell alongside other vendors. বাংলাদেশজুড়ে কাস্টমারদের কাছে পৌঁছান।</p>
+            <a class="button" href="pages/sell.html">Sell on EME</a>
+          </div>
         </section>
       </div>
     </main>
@@ -141,7 +177,7 @@
           banner.setAttribute("role", "alert");
           banner.textContent = "The shop scripts did not load. Open this app at /web/ (with a trailing slash), for example http://localhost:5500/web/";
           document.body.prepend(banner);
-          ["category-row", "featured-shops", "top-stores", "trending-grid", "arrivals-grid"].forEach(function (id) {
+          ["category-row", "featured-shops", "reels-row", "trending-grid", "arrivals-grid", "flash-rail"].forEach(function (id) {
             var node = document.getElementById(id);
             if (node && node.getAttribute("aria-busy") === "true") {
               node.setAttribute("aria-busy", "false");

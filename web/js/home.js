@@ -1,28 +1,51 @@
+/**
+ * Home marketplace: hero, flash sale, promo rows, catalog sections.
+ */
+
 import { authErrorMessage, getCurrentProfile } from "./auth.js";
 import { mountShell, toast } from "./components.js";
+import { mountCarousel } from "./carousel.js";
+import {
+  HERO_BANNERS,
+  MEDIUM_BANNERS,
+  SIDE_BANNERS,
+  flashSaleEndsAt,
+  isBannerActive,
+} from "./data/banners.js";
 import { escapeHtml } from "./html.js";
+import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js";
 import { showState, syncConfigBanner } from "./ui-state.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js";
-import { shopCardHtml, shopHref, shopLogoHtml } from "./shopView.js";
+import { shopCardHtml } from "./shopView.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { listCategories } from "./api/categoriesApi.js";
-import { listProducts } from "./api/productsApi.js";
-import { listFeaturedShops, listTopShops } from "./api/shopsApi.js";
+import { listDiscountedProducts, listProducts } from "./api/productsApi.js";
+import { listFeaturedShops } from "./api/shopsApi.js";
+import { listPublishedReels } from "./api/reelsApi.js";
 
 const categoryRoot = document.querySelector("#category-row");
 const trendingRoot = document.querySelector("#trending-grid");
 const arrivalsRoot = document.querySelector("#arrivals-grid");
 const featuredRoot = document.querySelector("#featured-shops");
-const topRoot = document.querySelector("#top-stores");
+const reelsRoot = document.querySelector("#reels-row");
+const flashSection = document.querySelector("#flash-section");
+const flashRail = document.querySelector("#flash-rail");
+const heroCats = document.querySelector("#hero-cats");
+const heroTrack = document.querySelector("#hero-track");
+const heroSide = document.querySelector("#hero-side");
+const promoRow = document.querySelector("#promo-row");
+const flashCountdown = document.querySelector("#flash-countdown");
 
 if (trendingRoot) bindCatalogActions(trendingRoot);
 if (arrivalsRoot) bindCatalogActions(arrivalsRoot);
+if (flashRail instanceof HTMLElement) bindCatalogActions(flashRail);
 
 mountShell({ page: "home" });
-setupHero();
+renderStaticBanners();
 loadHome();
+window.setTimeout(() => maybeShowPromoPopup(), 1200);
 
 async function loadHome() {
   syncConfigBanner(isSupabaseConfigured());
@@ -34,20 +57,23 @@ async function loadHome() {
   }
 
   try {
-    const [categories, trending, arrivals, featured, top, saved] = await Promise.all([
+    const [categories, trending, arrivals, featured, reels, flash, saved] = await Promise.all([
       listCategories(),
       listProducts({ sort: "trending", limit: 12, offset: 0 }),
       listProducts({ sort: "newest", limit: 12, offset: 0 }),
       listFeaturedShops(6),
-      listTopShops(10),
+      listPublishedReels({ limit: 12, offset: 0, sort: "newest" }),
+      listDiscountedProducts({ limit: 14 }),
       savedIds(),
     ]);
 
+    renderHeroCats(categories);
     renderCategories(categories);
+    renderFlash(flash, saved);
     renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
     renderProducts(arrivalsRoot, arrivals.rows, saved, "No new products yet.");
     renderFeatured(featured);
-    renderTop(top);
+    renderReels(reels.rows);
   } catch (error) {
     const message = authErrorMessage(error);
     toast(message, "error");
@@ -78,7 +104,77 @@ function endAll(message, retry) {
   if (trendingRoot) showState(trendingRoot, escapeHtml(message), onRetry);
   if (arrivalsRoot) showState(arrivalsRoot, escapeHtml(message), onRetry);
   if (featuredRoot) showState(featuredRoot, escapeHtml(message), onRetry);
-  if (topRoot) showState(topRoot, escapeHtml(message), onRetry);
+  if (reelsRoot) showState(reelsRoot, escapeHtml(message), onRetry);
+  if (flashRail) showState(flashRail, escapeHtml(message), onRetry);
+  if (heroCats) showState(heroCats, escapeHtml(message), onRetry);
+}
+
+function renderStaticBanners() {
+  const heroes = HERO_BANNERS.filter((banner) => isBannerActive(banner));
+  const sides = SIDE_BANNERS.filter((banner) => isBannerActive(banner));
+  const mediums = MEDIUM_BANNERS.filter((banner) => isBannerActive(banner));
+
+  if (heroTrack instanceof HTMLElement) {
+    heroTrack.setAttribute("aria-busy", "false");
+    heroTrack.innerHTML = heroes.map((banner, index) => `
+      <a class="hero-slide-banner" href="${url(banner.href)}" aria-label="${escapeHtml(banner.alt || banner.title)}">
+        <img
+          src="${escapeHtml(url(banner.image))}"
+          alt="${escapeHtml(banner.alt || banner.title)}"
+          width="1200"
+          height="400"
+          ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
+        >
+      </a>
+    `).join("");
+
+    const carousel = document.querySelector("#hero-carousel");
+    if (carousel instanceof HTMLElement) mountCarousel(carousel, { intervalMs: 5000 });
+  }
+
+  if (heroSide instanceof HTMLElement) {
+    heroSide.innerHTML = sides.map((banner) => `
+      <a class="hero-side-card" href="${url(banner.href)}" aria-label="${escapeHtml(banner.alt || banner.title)}">
+        <img src="${escapeHtml(url(banner.image))}" alt="${escapeHtml(banner.alt || banner.title)}" width="400" height="190" loading="lazy">
+      </a>
+    `).join("");
+  }
+
+  if (promoRow instanceof HTMLElement) {
+    promoRow.innerHTML = mediums.map((banner) => `
+      <a class="promo-card" href="${url(banner.href)}" aria-label="${escapeHtml(banner.alt || banner.title)}">
+        <img src="${escapeHtml(url(banner.image))}" alt="${escapeHtml(banner.alt || banner.title)}" width="600" height="300" loading="lazy">
+      </a>
+    `).join("");
+  }
+}
+
+/**
+ * @param {Array<{ id: string, parent_id: string | null, name: string, slug: string }>} categories
+ */
+function renderHeroCats(categories) {
+  if (!(heroCats instanceof HTMLElement)) return;
+  const roots = categories.filter((row) => !row.parent_id).slice(0, 10);
+  heroCats.setAttribute("aria-busy", "false");
+  if (!roots.length) {
+    heroCats.innerHTML = "";
+    return;
+  }
+  heroCats.innerHTML = `
+    <ul class="hero-cat-list">
+      ${roots.map((row) => {
+        const kids = categories.filter((c) => c.parent_id === row.id);
+        return `
+          <li>
+            <a href="${url("pages/products.html")}?category=${encodeURIComponent(row.slug)}">
+              <span>${escapeHtml(row.name)}</span>
+              ${kids.length ? `<span class="hero-cat-arrow" aria-hidden="true">›</span>` : ""}
+            </a>
+          </li>
+        `;
+      }).join("")}
+    </ul>
+  `;
 }
 
 /**
@@ -98,16 +194,63 @@ function renderCategories(categories) {
   categoryRoot.innerHTML = shown
     .map((category) => {
       const image = category.image_url
-        ? `<img class="category-mark" src="${escapeHtml(category.image_url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'category-mark\\'>${escapeHtml(category.name.slice(0, 1))}</span>'">`
-        : `<span class="category-mark">${escapeHtml(category.name.slice(0, 1))}</span>`;
+        ? `<img src="${escapeHtml(category.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
+        : "";
+      const letter = escapeHtml(category.name.slice(0, 1));
       return `
-        <a class="category-card" href="${url("pages/products.html")}?category=${encodeURIComponent(category.slug)}">
-          ${image}
-          <h3>${escapeHtml(category.name)}</h3>
+        <a class="category-icon-card" href="${url("pages/products.html")}?category=${encodeURIComponent(category.slug)}">
+          <span class="category-icon-mark">${image || `<span>${letter}</span>`}</span>
+          <span>${escapeHtml(category.name)}</span>
         </a>
       `;
     })
     .join("");
+}
+
+/**
+ * @param {Array<object>} products
+ * @param {Set<string>} saved
+ */
+function renderFlash(products, saved) {
+  if (!(flashSection instanceof HTMLElement) || !(flashRail instanceof HTMLElement)) return;
+
+  if (!products.length) {
+    flashSection.hidden = true;
+    flashSection.classList.add("is-hidden");
+    return;
+  }
+
+  flashSection.hidden = false;
+  flashSection.classList.remove("is-hidden");
+  flashRail.setAttribute("aria-busy", "false");
+  flashRail.innerHTML = products
+    .map((product) => productCardHtml(product, { saved: saved.has(product.id), flash: true }))
+    .join("");
+
+  startFlashCountdown();
+}
+
+function startFlashCountdown() {
+  if (!(flashCountdown instanceof HTMLElement)) return;
+  const ends = flashSaleEndsAt();
+
+  const tick = () => {
+    const diff = ends.getTime() - Date.now();
+    if (diff <= 0) {
+      flashCountdown.textContent = "Ended";
+      return;
+    }
+    const hours = Math.floor(diff / 3_600_000);
+    const mins = Math.floor((diff % 3_600_000) / 60_000);
+    const secs = Math.floor((diff % 60_000) / 1000);
+    flashCountdown.innerHTML = `
+      <span class="sr-only">Ends in ${hours} hours ${mins} minutes ${secs} seconds</span>
+      <span aria-hidden="true"><b>${String(hours).padStart(2, "0")}</b>:<b>${String(mins).padStart(2, "0")}</b>:<b>${String(secs).padStart(2, "0")}</b></span>
+    `;
+  };
+
+  tick();
+  window.setInterval(tick, 1000);
 }
 
 /**
@@ -144,64 +287,27 @@ function renderFeatured(shops) {
 }
 
 /**
- * @param {Array<object>} shops
+ * @param {Array<object>} reels
  */
-function renderTop(shops) {
-  if (!topRoot) return;
-  topRoot.setAttribute("aria-busy", "false");
-  if (!shops.length) {
-    showState(topRoot, "No approved stores yet.");
+function renderReels(reels) {
+  if (!reelsRoot) return;
+  reelsRoot.setAttribute("aria-busy", "false");
+  if (!reels.length) {
+    showState(reelsRoot, "No published reels yet.");
     return;
   }
-  topRoot.innerHTML = shops
-    .map((shop) => `
-      <a class="top-store-card" href="${shopHref(shop.slug)}">
-        ${shopLogoHtml(shop, "shop-logo-md")}
-        <h3>${escapeHtml(shop.shop_name)}</h3>
-        <p class="muted">${escapeHtml(String(shop.productCount))} products</p>
-      </a>
-    `)
+  reelsRoot.innerHTML = reels
+    .map((reel) => {
+      const thumb = reel.thumbnailUrl
+        ? `<img src="${escapeHtml(reel.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
+        : "";
+      const label = reel.shop?.shop_name || "Reel";
+      return `
+        <a class="reel-thumb-card" href="${url("pages/reels.html")}?start=${encodeURIComponent(reel.id)}">
+          ${thumb}
+          <span>${escapeHtml(label)}</span>
+        </a>
+      `;
+    })
     .join("");
-}
-
-function setupHero() {
-  const track = document.querySelector("#hero-track");
-  const dots = document.querySelector("#hero-dots");
-  if (!track || !dots) return;
-
-  const slides = [...track.children];
-  let index = 0;
-
-  const paint = () => {
-    track.style.transform = `translateX(-${index * 100}%)`;
-    dots.querySelectorAll("button").forEach((button, i) => {
-      button.classList.toggle("is-active", i === index);
-    });
-  };
-
-  dots.innerHTML = slides
-    .map((_, i) => `<button type="button" aria-label="Slide ${i + 1}" class="${i === 0 ? "is-active" : ""}"></button>`)
-    .join("");
-
-  dots.querySelectorAll("button").forEach((button, i) => {
-    button.addEventListener("click", () => {
-      index = i;
-      paint();
-    });
-  });
-
-  document.querySelector("[data-hero='prev']")?.addEventListener("click", () => {
-    index = (index - 1 + slides.length) % slides.length;
-    paint();
-  });
-  document.querySelector("[data-hero='next']")?.addEventListener("click", () => {
-    index = (index + 1) % slides.length;
-    paint();
-  });
-
-  window.setInterval(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    index = (index + 1) % slides.length;
-    paint();
-  }, 6000);
 }

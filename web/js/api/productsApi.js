@@ -12,6 +12,7 @@ const LIST_COLUMNS = `
   compare_at_price,
   currency,
   stock,
+  sales_count,
   status,
   avg_rating,
   category_id,
@@ -159,6 +160,35 @@ export async function getProduct(key) {
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/**
+ * Active products with a real compare_at_price discount (Flash Sale).
+ * @param {{ limit?: number }} [options]
+ * @returns {Promise<Array<object>>}
+ */
+export async function listDiscountedProducts(options = {}) {
+  const supabase = getSupabase();
+  const limit = options.limit ?? 16;
+  const { data, error } = await supabase
+    .from("products")
+    .select(LIST_COLUMNS)
+    .eq("status", "active")
+    .eq("vendor_profiles.status", "approved")
+    .not("compare_at_price", "is", null)
+    .order("sales_count", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(Math.max(limit * 3, 24));
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .filter((row) => {
+      const compare = Number(row.compare_at_price);
+      const price = Number(row.price);
+      return Number.isFinite(compare) && Number.isFinite(price) && compare > price;
+    })
+    .slice(0, limit);
 }
 
 /**

@@ -1,4 +1,5 @@
 import { authErrorMessage, redirectAfterAuth, signIn } from "./auth.js";
+import { mergeGuestCart } from "./api/cartApi.js";
 import { mountShell, toast } from "./components.js";
 import { url } from "./paths.js";
 
@@ -31,6 +32,11 @@ form?.addEventListener("submit", async (event) => {
 
   try {
     await signIn(email, password);
+    try {
+      await mergeGuestCart();
+    } catch (error) {
+      toast(authErrorMessage(error), "error");
+    }
     toast("Signed in.", "success");
     window.location.assign(redirectAfterAuth());
   } catch (error) {
@@ -39,4 +45,7 @@ form?.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#register-link")?.setAttribute("href", url("pages/register.html"));
+const params = new URLSearchParams(window.location.search);
+const redirect = params.get("redirect") || params.get("next");
+const extra = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
+document.querySelector("#register-link")?.setAttribute("href", `${url("pages/register.html")}${extra}`);

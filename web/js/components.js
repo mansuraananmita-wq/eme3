@@ -4,13 +4,20 @@ import {
   onAuthStateChange,
   signOut,
 } from "./auth.js";
-import { fetchBadgeCounts } from "./catalog.js";
+import { cartCount, mergeGuestCart } from "./api/cartApi.js";
+import { listCategories } from "./api/categoriesApi.js";
+import { wishlistCount } from "./api/wishlistApi.js";
+import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";
 import { url } from "./paths.js";
+import { syncConfigBanner } from "./ui-state.js";
 
 /** @type {number} */
 let toastId = 0;
+
+/** @type {Array<{ name: string, slug: string }> | null} */
+let categoryCache = null;
 
 /**
  * Shows a short message. type is "info", "success", or "error".
@@ -86,14 +93,16 @@ export function openModal({ title, body, confirmLabel = "OK", onConfirm }) {
 }
 
 /**
- * Injects the header, footer, and mobile navigation, then keeps them in sync with auth.
+ * Injects the marketplace chrome and keeps counts in sync.
  * @param {{ page?: string }} [options]
  */
 export function mountShell(options = {}) {
   const page = options.page || "";
-  renderChrome(null, { cart: 0, wishlist: 0 }, page);
+  syncConfigBanner(isSupabaseConfigured());
+  renderChrome(null, { cart: 0, wishlist: 0 }, page, []);
   refreshShell(page);
   onAuthStateChange(() => refreshShell(page));
+  window.addEventListener("eme-counts", () => refreshShell(page));
   document.addEventListener("click", (event) => {
     const header = document.querySelector("#site-header");
     if (!(event.target instanceof Node) || !header?.contains(event.target)) {
@@ -108,23 +117,37 @@ export function mountShell(options = {}) {
 async function refreshShell(page) {
   let profile = null;
   let counts = { cart: 0, wishlist: 0 };
+  let categories = categoryCache || [];
 
   try {
-    profile = await getCurrentProfile();
-    counts = await fetchBadgeCounts(profile?.id ?? null);
+    syncConfigBanner(isSupabaseConfigured());
+    if (isSupabaseConfigured()) {
+      if (!categoryCache) {
+        categoryCache = (await listCategories()).filter((row) => !row.parent_id).slice(0, 12);
+      }
+      categories = categoryCache;
+      profile = await getCurrentProfile();
+      if (profile) await mergeGuestCart(profile.id);
+      counts = {
+        cart: await cartCount(profile?.id ?? null),
+        wishlist: await wishlistCount(profile?.id ?? null),
+      };
+    }
   } catch (error) {
-    if (page !== "home") toast(authErrorMessage(error), "error");
+    const message = authErrorMessage(error);
+    if (!message.toLowerCase().includes("config.js")) toast(message, "error");
   }
 
-  renderChrome(profile, counts, page);
+  renderChrome(profile, counts, page, categories);
 }
 
 /**
  * @param {import("./auth.js").Profile | null} profile
  * @param {{ cart: number, wishlist: number }} counts
  * @param {string} page
+ * @param {Array<{ name: string, slug: string }>} categories
  */
-function renderChrome(profile, counts, page) {
+function renderChrome(profile, counts, page, categories) {
   const header = document.querySelector("#site-header");
   const footer = document.querySelector("#site-footer");
   const bottom = document.querySelector("#bottom-nav");
@@ -133,49 +156,133 @@ function renderChrome(profile, counts, page) {
   const home = url("index.html");
   const login = url("pages/login.html");
   const register = url("pages/register.html");
-  const query = new URLSearchParams(window.location.search).get("q") || "";
+  const products = url("pages/products.html");
+  const categoriesPage = url("pages/categories.html");
+  const shops = url("pages/shops.html");
+  const sell = url("pages/sell.html");
+  const cart = url("pages/cart.html");
+  const wishlist = url("pages/wishlist.html");
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("q") || "";
+  const category = params.get("category") || "";
   const name = profile?.full_name?.trim() || "Account";
   const roleLabel = profile ? roleName(profile.role) : "";
 
   header.innerHTML = `
-    <div class="header-inner">
-      <div class="header-top">
-        <a class="logo" href="${home}">EME</a>
-        <div class="header-actions">
-          <button class="icon-button" type="button" data-soon="wishlist" aria-label="Wishlist, ${counts.wishlist} items">
-            ${icon("heart")}
-            <span class="count-badge">${counts.wishlist}</span>
-          </button>
-          <button class="icon-button" type="button" data-soon="cart" aria-label="Cart, ${counts.cart} items">
-            ${icon("cart")}
-            <span class="count-badge">${counts.cart}</span>
-          </button>
-          ${profile ? accountMenu(name, roleLabel) : guestLinks(login, register)}
+    <div class="top-bar">
+      <div class="top-bar-inner">
+        <div class="chrome-links">
+          <a href="${shops}">Stores</a>
+          <a href="${sell}">Sell on EME</a>
+          <span>Free delivery over ৳999</span>
+        </div>
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button type="button" data-lang="bn">BN</button>
+          <button type="button" class="is-active" data-lang="en">EN</button>
         </div>
       </div>
-      <form class="search-form" action="${home}" method="get" role="search">
-        <label class="sr-only" for="site-search">Search products</label>
-        <input id="site-search" name="q" type="search" placeholder="Search products" value="${escapeHtml(query)}" autocomplete="off">
-        <button class="button button-primary" type="submit">${icon("search")}<span>Search</span></button>
-      </form>
     </div>
+    <div class="header-main">
+      <a class="logo" href="${home}">EME</a>
+      <form class="search-form" action="${products}" method="get" role="search">
+        <label class="sr-only" for="search-category">Category</label>
+        <select id="search-category" name="category">
+          <option value="">All</option>
+          ${categories.map((row) => `
+            <option value="${escapeHtml(row.slug)}" ${row.slug === category ? "selected" : ""}>
+              ${escapeHtml(row.name)}
+            </option>
+          `).join("")}
+        </select>
+        <label class="sr-only" for="site-search">Search products</label>
+        <input id="site-search" name="q" type="search" placeholder="Search in EME" value="${escapeHtml(query)}" autocomplete="off">
+        <button class="button button-primary" type="submit" aria-label="Search">${icon("search")}</button>
+      </form>
+      <div class="header-actions">
+        ${profile
+          ? accountMenu(name, roleLabel, cart, wishlist)
+          : guestLinks(login, register)}
+        <a class="header-link" href="${wishlist}" aria-label="Wishlist, ${counts.wishlist} items">
+          ${icon("heart")}
+          <span class="action-label">Wishlist</span>
+          <span class="count-badge">${counts.wishlist}</span>
+        </a>
+        <a class="header-link" href="${cart}" aria-label="Cart, ${counts.cart} items">
+          ${icon("cart")}
+          <span class="action-label">Cart</span>
+          <span class="count-badge">${counts.cart}</span>
+        </a>
+      </div>
+    </div>
+    <nav class="cat-strip" aria-label="Categories">
+      <div class="cat-strip-inner">
+        <a href="${categoriesPage}">All</a>
+        <a class="${page === "shops" || page === "shop" ? "is-active" : ""}" href="${shops}">Stores</a>
+        <a class="${page === "sell" ? "is-active" : ""}" href="${sell}">Sell on EME</a>
+        ${categories.map((row) => `
+          <a class="${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
+            ${escapeHtml(row.name)}
+          </a>
+        `).join("")}
+      </div>
+    </nav>
   `;
 
   footer.innerHTML = `
-    <div class="footer-inner">
-      <p class="logo">EME</p>
-      <p>Multi-vendor shop for products, reels, and live selling. Prices are in BDT.</p>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h3>About</h3>
+        <p>EME is a multi-vendor marketplace for everyday shopping in Bangladesh.</p>
+        <a href="${home}">Home</a>
+        <a href="${shops}">Browse stores</a>
+      </div>
+      <div class="footer-col">
+        <h3>Customer service</h3>
+        <a href="${cart}">Your cart</a>
+        <a href="${wishlist}">Wishlist</a>
+        <a href="${products}">Browse products</a>
+      </div>
+      <div class="footer-col">
+        <h3>Sell on EME</h3>
+        <p>Open a shop and reach customers with products, reels, and live selling.</p>
+        <a href="${sell}">Seller landing</a>
+        <a href="${sell}#sell-apply">Apply to sell</a>
+        <a href="${register}">Create account</a>
+      </div>
+      <div class="footer-col">
+        <h3>Contact</h3>
+        <p>support@eme.test</p>
+        <p>Dhaka, Bangladesh</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="trust-badges">
+        <span>bKash</span>
+        <span>Nagad</span>
+        <span>Card</span>
+        <span>Cash on delivery</span>
+      </div>
+      <p>© ${new Date().getFullYear()} EME. All rights reserved.</p>
     </div>
   `;
 
   bottom.innerHTML = `
     <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>Home</span></a>
-    <button type="button" data-soon="cart">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></button>
-    <button type="button" data-soon="wishlist">${icon("heart")}<span>Saved</span><span class="count-badge">${counts.wishlist}</span></button>
-    <a class="${page === "login" || page === "register" ? "is-active" : ""}" href="${profile ? home : login}">
-      ${icon("user")}<span>${profile ? "You" : "Login"}</span>
+    <a class="${page === "categories" || page === "products" ? "is-active" : ""}" href="${categoriesPage}">${icon("grid")}<span>Categories</span></a>
+    <a class="${page === "shops" || page === "shop" ? "is-active" : ""}" href="${shops}">${icon("grid")}<span>Stores</span></a>
+    <a class="${page === "cart" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
+    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" ? "is-active" : ""}" href="${profile ? wishlist : login}">
+      ${icon("user")}<span>Account</span>
     </a>
   `;
+
+  header.querySelectorAll("[data-lang]").forEach((button) => {
+    button.addEventListener("click", () => {
+      header.querySelectorAll("[data-lang]").forEach((node) => node.classList.remove("is-active"));
+      button.classList.add("is-active");
+      toast("Language switching comes in a later step.", "info");
+    });
+  });
 
   header.querySelector("[data-account-toggle]")?.addEventListener("click", (event) => {
     const menu = header.querySelector(".account-menu");
@@ -196,29 +303,30 @@ function renderChrome(profile, counts, page) {
     });
   });
 
-  document.querySelectorAll("[data-soon]").forEach((node) => {
-    node.addEventListener("click", () => {
-      const which = node.getAttribute("data-soon") === "cart" ? "Cart" : "Wishlist";
-      toast(`${which} opens in the next step.`, "info");
-    });
+  document.querySelectorAll("[data-soon='reels']").forEach((node) => {
+    node.addEventListener("click", () => toast("Reels opens in a later step.", "info"));
   });
 }
 
 /**
  * @param {string} name
  * @param {string} roleLabel
+ * @param {string} cart
+ * @param {string} wishlist
  * @returns {string}
  */
-function accountMenu(name, roleLabel) {
+function accountMenu(name, roleLabel, cart, wishlist) {
   return `
     <div class="account">
-      <button class="button button-ghost" type="button" data-account-toggle aria-expanded="false">
+      <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
         ${icon("user")}
-        <span class="account-name">${escapeHtml(name)}</span>
+        <span class="action-label">${escapeHtml(name.split(" ")[0] || "Account")}</span>
       </button>
       <div class="account-menu">
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
+        <a href="${cart}">Cart</a>
+        <a href="${wishlist}">Wishlist</a>
         <button class="button button-ghost" type="button" data-sign-out>Sign out</button>
       </div>
     </div>
@@ -237,8 +345,9 @@ function guestLinks(login, register) {
       <a class="button button-primary" href="${register}">Register</a>
     </div>
     <div class="account guest-menu">
-      <button class="icon-button" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
+      <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
         ${icon("user")}
+        <span class="action-label">Account</span>
       </button>
       <div class="account-menu">
         <a href="${login}">Login</a>

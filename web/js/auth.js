@@ -108,14 +108,14 @@ export async function getSession() {
  */
 export async function getCurrentProfile() {
   const supabase = getSupabase();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!userData.user) return null;
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (!sessionData.session?.user) return null;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("id, role, full_name, phone, avatar_url, created_at, updated_at")
-    .eq("id", userData.user.id)
+    .eq("id", sessionData.session.user.id)
     .maybeSingle();
 
   if (error) throw error;
@@ -164,8 +164,8 @@ export async function requireRole(roles) {
   }
 
   if (!profile) {
-    const next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.assign(`${url("pages/login.html")}?next=${next}`);
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.assign(`${url("pages/login.html")}?redirect=${redirect}`);
     return null;
   }
 
@@ -181,6 +181,20 @@ export async function requireRole(roles) {
  * @returns {string}
  */
 export function redirectAfterAuth() {
-  const next = new URLSearchParams(window.location.search).get("next");
-  return safeNext(next);
+  const params = new URLSearchParams(window.location.search);
+  return safeNext(params.get("redirect") || params.get("next"));
+}
+
+/**
+ * Sends a guest to login and brings them back to this page afterwards.
+ * @returns {Promise<Profile | null>}
+ */
+export async function requireUser() {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.assign(`${url("pages/login.html")}?redirect=${redirect}`);
+    return null;
+  }
+  return profile;
 }

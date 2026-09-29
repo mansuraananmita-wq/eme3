@@ -1,39 +1,39 @@
-/* Design tokens. Component CSS uses these variables only. */
+/* EME marketplace tokens. Deep teal brand, neutral greys, Inter + Bangla. */
+
+/* Site is always light. Dark video chrome belongs only on immersive reels/live players. */
+html {
+  color-scheme: light only;
+}
 
 :root {
-  --font-body: "Noto Sans", "Noto Sans Bengali", "Segoe UI", sans-serif;
+  color-scheme: light only;
+  --font-body: Inter, "Noto Sans Bengali", "Segoe UI", sans-serif;
 
-  --color-bg: #f4f6fb;
+  --color-bg: #f3f4f6;
   --color-surface: #ffffff;
-  --color-surface-muted: #eef1f8;
-  --color-text: #16181f;
-  --color-muted: #5e6472;
-  --color-border: #e2e6f0;
-  --color-primary: #5b4dff;
-  --color-primary-strong: #4338ca;
+  --color-surface-muted: #eceff3;
+  --color-text: #111827;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-primary: #0f766e;
+  --color-primary-strong: #0d5f59;
+  --color-primary-soft: #ccfbf1;
   --color-on-primary: #ffffff;
-  --color-accent: #e11d6a;
+  --color-accent: #ea580c;
+  --color-accent-soft: #ffedd5;
   --color-success: #15803d;
   --color-danger: #dc2626;
   --color-warning: #b45309;
-
-  --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, white);
-  --color-danger-soft: color-mix(in srgb, var(--color-danger) 12%, white);
-  --color-success-soft: color-mix(in srgb, var(--color-success) 12%, white);
-
-  --gradient-hero: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--color-primary) 16%, white),
-    color-mix(in srgb, var(--color-accent) 10%, white)
-  );
+  --color-danger-soft: #fee2e2;
+  --color-success-soft: #dcfce7;
 
   --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.35rem;
-  --text-2xl: 1.75rem;
-  --text-3xl: 2.25rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
 
   --weight-regular: 400;
   --weight-medium: 500;
@@ -50,20 +50,33 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
   --radius-full: 999px;
 
-  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-text) 6%, transparent);
-  --shadow-md: 0 10px 30px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-sm: 0 1px 2px rgb(17 24 39 / 6%);
+  --shadow-md: 0 4px 14px rgb(17 24 39 / 8%);
 
-  --header-height: 118px;
-  --bottom-nav-height: 64px;
-  --container: 1120px;
-  --tap: 44px;
+  --topbar-height: 32px;
+  --header-main-height: 64px;
+  --cat-strip-height: 42px;
+  --header-height: 138px;
+  --bottom-nav-height: 58px;
+  --container: 1200px;
+  --tap: 40px;
 
-  --z-header: 20;
-  --z-bottom: 30;
-  --z-modal: 40;
-  --z-toast: 50;
+  --z-header: 40;
+  --z-bottom: 45;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-banner: 70;
+}
+
+/* Force light UI chrome even when the OS is in dark mode. */
+html,
+body {
+  color-scheme: light only;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }

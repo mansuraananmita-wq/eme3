@@ -1,120 +1,207 @@
+import { authErrorMessage, getCurrentProfile } from "./auth.js";
 import { mountShell, toast } from "./components.js";
-import { authErrorMessage } from "./auth.js";
-import { fetchActiveCategories, fetchActiveProducts } from "./catalog.js";
-import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
-import { pickProductImage, productImageUrl } from "./media.js";
+import { isSupabaseConfigured } from "./supabaseClient.js";
+import { url } from "./paths.js";
+import { showState, syncConfigBanner } from "./ui-state.js";
+import { bindCatalogActions, productCardHtml } from "./productView.js";
+import { shopCardHtml, shopHref, shopLogoHtml } from "./shopView.js";
+import { wishlistIds } from "./api/wishlistApi.js";
+import { listCategories } from "./api/categoriesApi.js";
+import { listProducts } from "./api/productsApi.js";
+import { listFeaturedShops, listTopShops } from "./api/shopsApi.js";
 
-const search = new URLSearchParams(window.location.search).get("q")?.trim() || "";
+const categoryRoot = document.querySelector("#category-row");
+const trendingRoot = document.querySelector("#trending-grid");
+const arrivalsRoot = document.querySelector("#arrivals-grid");
+const featuredRoot = document.querySelector("#featured-shops");
+const topRoot = document.querySelector("#top-stores");
+
+if (trendingRoot) bindCatalogActions(trendingRoot);
+if (arrivalsRoot) bindCatalogActions(arrivalsRoot);
 
 mountShell({ page: "home" });
+setupHero();
 loadHome();
 
 async function loadHome() {
-  const categoryRoot = document.querySelector("#category-row");
-  const productRoot = document.querySelector("#product-grid");
-  if (!categoryRoot || !productRoot) return;
+  syncConfigBanner(isSupabaseConfigured());
+
+  if (!isSupabaseConfigured()) {
+    const message = "Set SUPABASE_URL and SUPABASE_ANON_KEY in web/js/config.js";
+    endAll(message, true);
+    return;
+  }
 
   try {
-    const [categories, products] = await Promise.all([
-      fetchActiveCategories(),
-      fetchActiveProducts(search),
+    const [categories, trending, arrivals, featured, top, saved] = await Promise.all([
+      listCategories(),
+      listProducts({ sort: "trending", limit: 12, offset: 0 }),
+      listProducts({ sort: "newest", limit: 12, offset: 0 }),
+      listFeaturedShops(6),
+      listTopShops(10),
+      savedIds(),
     ]);
-    renderCategories(categoryRoot, categories);
-    renderProducts(productRoot, products);
-    categoryRoot.setAttribute("aria-busy", "false");
-    productRoot.setAttribute("aria-busy", "false");
+
+    renderCategories(categories);
+    renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
+    renderProducts(arrivalsRoot, arrivals.rows, saved, "No new products yet.");
+    renderFeatured(featured);
+    renderTop(top);
   } catch (error) {
     const message = authErrorMessage(error);
     toast(message, "error");
-    categoryRoot.innerHTML = `<p class="empty">${escapeHtml(message)}</p>`;
-    productRoot.innerHTML = `<p class="empty">${escapeHtml(message)}</p>`;
-    categoryRoot.setAttribute("aria-busy", "false");
-    productRoot.setAttribute("aria-busy", "false");
+    endAll(message, true);
   }
 }
 
 /**
- * @param {HTMLElement} root
- * @param {Array<{ id: string, parent_id: string | null, name: string, image_url: string | null }>} categories
+ * @returns {Promise<Set<string>>}
  */
-function renderCategories(root, categories) {
-  if (!categories.length) {
-    root.innerHTML = `<p class="empty">No active categories yet.</p>`;
+async function savedIds() {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return new Set();
+    return await wishlistIds();
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * @param {string} message
+ * @param {boolean} retry
+ */
+function endAll(message, retry) {
+  const onRetry = retry ? () => loadHome() : undefined;
+  if (categoryRoot) showState(categoryRoot, escapeHtml(message), onRetry);
+  if (trendingRoot) showState(trendingRoot, escapeHtml(message), onRetry);
+  if (arrivalsRoot) showState(arrivalsRoot, escapeHtml(message), onRetry);
+  if (featuredRoot) showState(featuredRoot, escapeHtml(message), onRetry);
+  if (topRoot) showState(topRoot, escapeHtml(message), onRetry);
+}
+
+/**
+ * @param {Array<{ id: string, parent_id: string | null, name: string, slug: string, image_url: string | null }>} categories
+ */
+function renderCategories(categories) {
+  if (!categoryRoot) return;
+  const roots = categories.filter((category) => !category.parent_id);
+  const shown = (roots.length ? roots : categories).slice(0, 12);
+
+  if (!shown.length) {
+    showState(categoryRoot, "No active categories yet.");
     return;
   }
 
-  const roots = categories.filter((category) => !category.parent_id);
-  const shown = roots.length ? roots : categories;
-
-  root.innerHTML = shown
+  categoryRoot.setAttribute("aria-busy", "false");
+  categoryRoot.innerHTML = shown
     .map((category) => {
       const image = category.image_url
-        ? `<img src="${escapeHtml(category.image_url)}" alt="">`
+        ? `<img class="category-mark" src="${escapeHtml(category.image_url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'category-mark\\'>${escapeHtml(category.name.slice(0, 1))}</span>'">`
         : `<span class="category-mark">${escapeHtml(category.name.slice(0, 1))}</span>`;
       return `
-        <article class="category-card">
+        <a class="category-card" href="${url("pages/products.html")}?category=${encodeURIComponent(category.slug)}">
           ${image}
           <h3>${escapeHtml(category.name)}</h3>
-        </article>
+        </a>
       `;
     })
     .join("");
 }
 
 /**
- * @param {HTMLElement} root
+ * @param {HTMLElement | null} root
  * @param {Array<object>} products
+ * @param {Set<string>} saved
+ * @param {string} emptyMessage
  */
-function renderProducts(root, products) {
-  const heading = document.querySelector("#product-heading");
-  if (heading) {
-    heading.textContent = search ? `Results for “${search}”` : "New products";
-  }
-
+function renderProducts(root, products, saved, emptyMessage) {
+  if (!root) return;
+  root.setAttribute("aria-busy", "false");
   if (!products.length) {
-    root.innerHTML = `<p class="empty">${
-      search
-        ? "No active products match that search."
-        : "No active products from approved shops yet."
-    }</p>`;
+    showState(root, emptyMessage);
     return;
   }
-
   root.innerHTML = products
-    .map((product) => {
-      const shop = shopOf(product);
-      const image = pickProductImage(product.product_images);
-      const src = image ? productImageUrl(image.storage_path) : "";
-      const price = formatMoney(product.price, product.currency);
-      const compare =
-        product.compare_at_price != null && Number(product.compare_at_price) > Number(product.price)
-          ? `<s>${escapeHtml(formatMoney(product.compare_at_price, product.currency))}</s>`
-          : "";
-      const media = src
-        ? `<img src="${escapeHtml(src)}" alt="">`
-        : `<span class="product-fallback">${escapeHtml(product.title.slice(0, 1))}</span>`;
-
-      return `
-        <article class="product-card">
-          <div class="product-media">${media}</div>
-          <div class="product-copy">
-            <p class="shop-name">${escapeHtml(shop)}</p>
-            <h3>${escapeHtml(product.title)}</h3>
-            <p class="price">${escapeHtml(price)} ${compare}</p>
-          </div>
-        </article>
-      `;
-    })
+    .map((product) => productCardHtml(product, { saved: saved.has(product.id) }))
     .join("");
 }
 
 /**
- * @param {object} product
- * @returns {string}
+ * @param {Array<object>} shops
  */
-function shopOf(product) {
-  const shop = product.vendor_profiles;
-  if (Array.isArray(shop)) return shop[0]?.shop_name || "Shop";
-  return shop?.shop_name || "Shop";
+function renderFeatured(shops) {
+  if (!featuredRoot) return;
+  featuredRoot.setAttribute("aria-busy", "false");
+  if (!shops.length) {
+    showState(featuredRoot, "No approved stores yet.");
+    return;
+  }
+  featuredRoot.innerHTML = shops
+    .map((shop) => shopCardHtml(shop, { products: shop.products || [] }))
+    .join("");
+}
+
+/**
+ * @param {Array<object>} shops
+ */
+function renderTop(shops) {
+  if (!topRoot) return;
+  topRoot.setAttribute("aria-busy", "false");
+  if (!shops.length) {
+    showState(topRoot, "No approved stores yet.");
+    return;
+  }
+  topRoot.innerHTML = shops
+    .map((shop) => `
+      <a class="top-store-card" href="${shopHref(shop.slug)}">
+        ${shopLogoHtml(shop, "shop-logo-md")}
+        <h3>${escapeHtml(shop.shop_name)}</h3>
+        <p class="muted">${escapeHtml(String(shop.productCount))} products</p>
+      </a>
+    `)
+    .join("");
+}
+
+function setupHero() {
+  const track = document.querySelector("#hero-track");
+  const dots = document.querySelector("#hero-dots");
+  if (!track || !dots) return;
+
+  const slides = [...track.children];
+  let index = 0;
+
+  const paint = () => {
+    track.style.transform = `translateX(-${index * 100}%)`;
+    dots.querySelectorAll("button").forEach((button, i) => {
+      button.classList.toggle("is-active", i === index);
+    });
+  };
+
+  dots.innerHTML = slides
+    .map((_, i) => `<button type="button" aria-label="Slide ${i + 1}" class="${i === 0 ? "is-active" : ""}"></button>`)
+    .join("");
+
+  dots.querySelectorAll("button").forEach((button, i) => {
+    button.addEventListener("click", () => {
+      index = i;
+      paint();
+    });
+  });
+
+  document.querySelector("[data-hero='prev']")?.addEventListener("click", () => {
+    index = (index - 1 + slides.length) % slides.length;
+    paint();
+  });
+  document.querySelector("[data-hero='next']")?.addEventListener("click", () => {
+    index = (index + 1) % slides.length;
+    paint();
+  });
+
+  window.setInterval(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    index = (index + 1) % slides.length;
+    paint();
+  }, 6000);
 }

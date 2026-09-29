@@ -12,44 +12,32 @@
         }
       })();
     </script>
-    <title>Create account — EME</title>
+    <title>Wishlist — EME</title>
     <link rel="icon" href="../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/tokens.css">
     <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/catalog.css">
+    <link rel="stylesheet" href="../css/marketplace.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
-      <form class="auth-card" id="register-form" novalidate>
-        <h1>Create account</h1>
-        <p class="muted">New accounts start as customers. Shop approval and admin access are granted later.</p>
-        <label class="field">
-          <span>Full name</span>
-          <input name="full_name" type="text" autocomplete="name" maxlength="120" required>
-          <small class="field-error" id="name-error"></small>
-        </label>
-        <label class="field">
-          <span>Email</span>
-          <input name="email" type="email" autocomplete="email" required>
-          <small class="field-error" id="email-error"></small>
-        </label>
-        <label class="field">
-          <span>Password</span>
-          <input name="password" type="password" autocomplete="new-password" required>
-          <small class="field-error" id="password-error"></small>
-        </label>
-        <button class="button button-primary" type="submit">Create account</button>
-        <p class="muted">Already registered? <a id="login-link" href="login.html">Sign in</a></p>
-      </form>
+      <div class="wrap">
+        <h1>Wishlist</h1>
+        <div class="product-grid" id="wishlist-root" aria-busy="true">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+      </div>
     </main>
     <footer class="site-footer" id="site-footer"></footer>
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/register.js"></script>
+    <script type="module" src="../js/wishlist.js"></script>
   </body>
 </html>

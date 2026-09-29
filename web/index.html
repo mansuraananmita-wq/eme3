@@ -3,50 +3,126 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light only">
     <title>EME — Shop</title>
-    <meta name="description" content="Multi-vendor shop with products from approved stores.">
+    <meta name="description" content="Multi-vendor marketplace with products from approved stores.">
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\\/g, "/");
+        if (/\/web$/i.test(path)) {
+          location.replace(path + "/" + location.search + location.hash);
+        }
+      })();
+    </script>
     <link rel="icon" href="assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/marketplace.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
       <div class="wrap">
-        <section class="hero">
-          <h1>Shop from trusted stores</h1>
-          <p>বিশ্বস্ত দোকান থেকে কেনাকাটা। Active products from approved shops, priced in BDT.</p>
-          <a class="button button-primary" href="#products">Browse products</a>
+        <section class="hero-carousel" aria-label="Offers">
+          <div class="hero-track" id="hero-track">
+            <article class="hero-slide">
+              <p>Today’s picks</p>
+              <h1>Free delivery over ৳999</h1>
+              <p>Shop active products from approved stores across Bangladesh.</p>
+              <a class="button" href="pages/products.html">Shop now</a>
+            </article>
+            <article class="hero-slide">
+              <p>Multi-vendor deals</p>
+              <h1>Trusted shops, fair prices</h1>
+              <p>বিশ্বস্ত দোকান থেকে কেনাকাটা। New arrivals every day.</p>
+              <a class="button" href="pages/products.html?sort=newest">See new arrivals</a>
+            </article>
+            <article class="hero-slide">
+              <p>Sell with us</p>
+              <h1>Open your store on EME</h1>
+              <p>Independent sellers get a storefront, catalog, and discovery across the marketplace.</p>
+              <a class="button" href="pages/sell.html">Sell on EME</a>
+            </article>
+          </div>
+          <div class="hero-nav">
+            <button type="button" data-hero="prev" aria-label="Previous offer">‹</button>
+            <button type="button" data-hero="next" aria-label="Next offer">›</button>
+          </div>
+          <div class="hero-dots" id="hero-dots"></div>
         </section>
 
         <section class="section" aria-labelledby="category-heading">
           <div class="section-head">
-            <h2 id="category-heading">Categories</h2>
-            <p>Active departments</p>
+            <h2 id="category-heading">Shop by category</h2>
+            <a href="pages/categories.html">All categories</a>
           </div>
           <div class="category-row" id="category-row" aria-busy="true">
             <div class="skeleton skeleton-chip"></div>
             <div class="skeleton skeleton-chip"></div>
             <div class="skeleton skeleton-chip"></div>
             <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
           </div>
         </section>
 
-        <section class="section" id="products" aria-labelledby="product-heading">
+        <section class="section" aria-labelledby="featured-heading">
           <div class="section-head">
-            <h2 id="product-heading">New products</h2>
-            <p>Approved shops only</p>
+            <h2 id="featured-heading">Featured stores</h2>
+            <a href="pages/shops.html">All stores</a>
           </div>
-          <div class="product-grid" id="product-grid" aria-busy="true">
+          <div class="featured-shops" id="featured-shops" aria-busy="true">
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="top-heading">
+          <div class="section-head">
+            <h2 id="top-heading">Top stores</h2>
+            <a href="pages/shops.html">Browse stores</a>
+          </div>
+          <div class="top-stores" id="top-stores" aria-busy="true">
+            <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
+            <div class="skeleton skeleton-chip"></div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="trending-heading">
+          <div class="section-head">
+            <h2 id="trending-heading">Trending</h2>
+            <a href="pages/products.html?sort=trending">View all</a>
+          </div>
+          <div class="product-grid" id="trending-grid" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
             <div class="skeleton skeleton-card"></div>
             <div class="skeleton skeleton-card"></div>
             <div class="skeleton skeleton-card"></div>
           </div>
+        </section>
+
+        <section class="section" aria-labelledby="arrivals-heading">
+          <div class="section-head">
+            <h2 id="arrivals-heading">New arrivals</h2>
+            <a href="pages/products.html?sort=newest">View all</a>
+          </div>
+          <div class="product-grid" id="arrivals-grid" aria-busy="true">
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+          </div>
+        </section>
+
+        <section class="seller-banner" aria-labelledby="become-seller-heading">
+          <h2 id="become-seller-heading">Become a seller</h2>
+          <p>Open an independent storefront on EME and sell alongside other vendors.</p>
+          <a class="button" href="pages/sell.html">Sell on EME</a>
         </section>
       </div>
     </main>
@@ -56,5 +132,24 @@
     <div class="modal-root" id="modal-root"></div>
     <noscript><p class="empty wrap">EME needs JavaScript to load the shop.</p></noscript>
     <script type="module" src="js/home.js"></script>
+    <script>
+      setTimeout(function () {
+        var header = document.getElementById("site-header");
+        if (header && !header.innerHTML.trim()) {
+          var banner = document.createElement("div");
+          banner.className = "config-banner";
+          banner.setAttribute("role", "alert");
+          banner.textContent = "The shop scripts did not load. Open this app at /web/ (with a trailing slash), for example http://localhost:5500/web/";
+          document.body.prepend(banner);
+          ["category-row", "featured-shops", "top-stores", "trending-grid", "arrivals-grid"].forEach(function (id) {
+            var node = document.getElementById(id);
+            if (node && node.getAttribute("aria-busy") === "true") {
+              node.setAttribute("aria-busy", "false");
+              node.innerHTML = '<div class="state-panel"><p>Could not load this section.</p><button class="button button-primary" type="button" onclick="location.reload()">Retry</button></div>';
+            }
+          });
+        }
+      }, 4500);
+    </script>
   </body>
 </html>

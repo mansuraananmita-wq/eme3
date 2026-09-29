@@ -44,7 +44,7 @@ function readKeyRole(key) {
  */
 export function getSupabase() {
   if (!isSupabaseConfigured()) {
-    throw new Error("Add your Supabase project URL and anon key in web/js/config.js.");
+    throw new Error("Set SUPABASE_URL and SUPABASE_ANON_KEY in web/js/config.js");
   }
 
   if (

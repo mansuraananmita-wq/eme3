@@ -1,4 +1,5 @@
 import { authErrorMessage, redirectAfterAuth, signUp } from "./auth.js";
+import { mergeGuestCart } from "./api/cartApi.js";
 import { mountShell, toast } from "./components.js";
 import { url } from "./paths.js";
 
@@ -41,10 +42,17 @@ form?.addEventListener("submit", async (event) => {
 
   try {
     const result = await signUp(email, password, fullName);
+    const back = new URLSearchParams(window.location.search).get("redirect");
     if (result.needsEmailConfirm) {
       toast("Account created. Confirm the email, then sign in.", "success");
-      window.location.assign(url("pages/login.html"));
+      const extra = back ? `?redirect=${encodeURIComponent(back)}` : "";
+      window.location.assign(`${url("pages/login.html")}${extra}`);
       return;
+    }
+    try {
+      await mergeGuestCart();
+    } catch (error) {
+      toast(authErrorMessage(error), "error");
     }
     toast("Account created.", "success");
     window.location.assign(redirectAfterAuth());
@@ -54,4 +62,6 @@ form?.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#login-link")?.setAttribute("href", url("pages/login.html"));
+const back = new URLSearchParams(window.location.search).get("redirect");
+const extra = back ? `?redirect=${encodeURIComponent(back)}` : "";
+document.querySelector("#login-link")?.setAttribute("href", `${url("pages/login.html")}${extra}`);

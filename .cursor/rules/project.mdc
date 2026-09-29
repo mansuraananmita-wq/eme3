@@ -1,0 +1,50 @@
+---
+description: EME stack, folder layout, design tokens, and Supabase rules
+alwaysApply: true
+---
+
+# EME platform
+
+Multi-vendor commerce with Reels and Live Shopping. Build on this foundation only.
+
+## Stack
+
+- Plain HTML, CSS, and JavaScript ES modules. No framework, no bundler, no Node backend.
+- Supabase for Auth, Postgres, RLS, Storage, Realtime, and Edge Functions.
+- LiveKit for live video only.
+- Load Supabase JS v2 from `https://esm.sh/@supabase/supabase-js@2` inside `assets/js/core/supabase-client.js`.
+
+## Layout
+
+- `index.html` and `pages/` are routes. Pages share the head, anti-flash theme script, and shell.
+- `assets/css/` is tokens, base, components, layout, utilities — in that order.
+- `assets/js/core/` is config, client, state, theme, and icons.
+- `assets/js/components/` is shared UI (shell, toast, modal, dropdown, skeleton).
+- `assets/js/modules/` is feature code. Keep modules small.
+- `supabase/` is backend SQL, policies, and Edge Functions. Do not invent a second backend.
+
+## CSS
+
+Always use variables from `assets/css/tokens.css`. Never hardcode colors in component or layout CSS.
+
+```css
+/* BAD */
+color: #6D5DFC;
+/* GOOD */
+color: var(--color-primary);
+```
+
+The inline theme script may set only `#F8F9FC` and `#0B0B12` so the first paint matches `--color-bg`. Reels and Live stay dark via `body[data-page="reels|live"]`.
+
+## Data
+
+- All Supabase calls go through `assets/js/core/supabase-client.js`.
+- RLS is the security layer. Never trust the frontend for authorization.
+- `config.js` holds the project URL and anon key only. Never put a `service_role` key in frontend code, HTML, or git.
+
+## JavaScript
+
+- ES modules and small functions. One job per file.
+- JSDoc on exported functions.
+- No business rules inside shell or design-system components.
+- Icons come from `assets/js/core/icons.js`. Do not use emoji as icons.

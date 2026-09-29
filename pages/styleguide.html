@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#F8F9FC" />
+  <meta name="description" content="EME design system in light and dark theme." />
+  <title>Style guide · EME</title>
+
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    (function () {
+      var key = "eme-theme";
+      var theme = "light";
+      try {
+        var stored = localStorage.getItem(key);
+        if (stored === "light" || stored === "dark") theme = stored;
+        else if (window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+      } catch (err) {}
+      var root = document.documentElement;
+      root.setAttribute("data-theme", theme);
+      root.style.colorScheme = theme;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", theme === "dark" ? "#0B0B12" : "#F8F9FC");
+    })();
+  </script>
+  <link rel="stylesheet" href="../assets/css/tokens.css" />
+  <link rel="stylesheet" href="../assets/css/base.css" />
+  <link rel="stylesheet" href="../assets/css/components.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/utilities.css" />
+
+</head>
+<body data-page="styleguide">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-header"></div>
+
+  <main id="main" class="page-main sg-page">
+    <header class="sg-hero">
+      <div class="container">
+        <p class="kicker">Design system</p>
+        <h1>EME style guide</h1>
+        <p class="sg-lead">Every control is shown in light and dark. The navbar theme is separate, so you can check chrome and components together. Reels and Live ignore this toggle and stay dark.</p>
+      </div>
+    </header>
+    <div class="container">
+      
+    <section class="sg-section" id="color">
+      <h2>Color</h2>
+      <p class="sg-note">Brand, surface, and status colors come from tokens.css. Swatches read the active pane theme.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="swatches">
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-bg)"></div><span>Background</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-surface)"></div><span>Surface</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-surface-2)"></div><span>Surface 2</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-text)"></div><span>Text</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-muted)"></div><span>Muted</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-border)"></div><span>Border</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-primary)"></div><span>Primary</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-accent)"></div><span>Accent</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--gradient-brand)"></div><span>Gradient</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-success)"></div><span>Success</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-warning)"></div><span>Warning</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-danger)"></div><span>Danger</span></div>
+          <div class="swatch"><div class="swatch-chip" style="background: var(--color-info)"></div><span>Info</span></div>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="type">
+      <h2>Type</h2>
+      <p class="sg-note">Plus Jakarta Sans for headings, Inter for body, Noto Sans Bengali as the fallback.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="stack">
+          <p class="kicker">Display</p>
+          <h3>Headlines stay tight and confident.</h3>
+          <p>Body copy sits at 16px so mobile fields do not zoom on focus. Secondary lines use the muted token.</p>
+          <p class="muted">Vendor names, hints, and timestamps use muted text.</p>
+          <p lang="bn">আপনার দোকান, রিলস, আর লাইভ শপ</p>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="buttons">
+      <h2>Buttons</h2>
+      <p class="sg-note">Primary uses the brand gradient. Icon buttons and loading states keep a 44px target.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="cluster">
+          <button type="button" class="btn btn-primary">Primary</button>
+          <button type="button" class="btn btn-secondary">Secondary</button>
+          <button type="button" class="btn btn-ghost">Ghost</button>
+          <button type="button" class="btn btn-danger">Danger</button>
+          <button type="button" class="btn btn-icon" aria-label="Filter"><span data-icon="filter" data-icon-size="18"></span></button>
+          <button type="button" class="btn btn-primary is-loading" aria-busy="true"><span>Saving</span></button>
+          <button type="button" class="btn btn-secondary" disabled>Disabled</button>
+        </div>
+        <a class="btn btn-primary btn-block" href="shop.html">Continue to shop</a>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="fields">
+      <h2>Fields</h2>
+      <p class="sg-note">Inputs, selects, and textareas share a focus ring. Errors use the danger token.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <label class="field">
+          <span class="label">Email</span>
+          <input class="input" type="email" placeholder="you@shop.com" autocomplete="off" />
+          <span class="field-hint">Used for order updates.</span>
+        </label>
+        <label class="field">
+          <span class="label">Category</span>
+          <span class="select-wrap">
+            <select class="select" aria-label="Category">
+              <option>Apparel</option>
+              <option>Beauty</option>
+              <option>Home</option>
+            </select>
+          </span>
+        </label>
+        <label class="field">
+          <span class="label">Note to seller</span>
+          <textarea class="textarea" placeholder="Leave a note"></textarea>
+        </label>
+        <label class="field is-error">
+          <span class="label">Phone</span>
+          <input class="input" type="tel" value="017" aria-invalid="true" autocomplete="off" />
+          <span class="field-error">Enter a valid mobile number.</span>
+        </label>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="choices">
+      <h2>Choices</h2>
+      <p class="sg-note">Checkbox, radio, and switch. The whole row is the tap target.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <label class="choice">
+          <input class="choice-input" type="checkbox" checked />
+          <span class="choice-box" aria-hidden="true"></span>
+          <span>Email me order updates</span>
+        </label>
+        <fieldset class="stack">
+          <legend class="label">Delivery</legend>
+          <label class="choice">
+            <input class="choice-input" type="radio" name="delivery" checked />
+            <span class="choice-box choice-radio" aria-hidden="true"></span>
+            <span>Standard</span>
+          </label>
+          <label class="choice">
+            <input class="choice-input" type="radio" name="delivery" />
+            <span class="choice-box choice-radio" aria-hidden="true"></span>
+            <span>Express</span>
+          </label>
+        </fieldset>
+        <label class="switch">
+          <input class="switch-input" type="checkbox" checked />
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span>Push notifications</span>
+        </label>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="cards">
+      <h2>Cards</h2>
+      <p class="sg-note">Product cards lift on hover and keep the wishlist control at 44px.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <article class="card">
+          <h3 class="card-title">Vendor note</h3>
+          <p>Plain cards hold addresses, summaries, and dashboard copy.</p>
+        </article>
+        <div class="product-grid">
+          <article class="product-card">
+            <a class="product-media" href="product.html">
+              <span class="ph ph-a"></span>
+              <span class="badge badge-accent product-badge">New</span>
+            </a>
+            <button type="button" class="wish" aria-pressed="false" aria-label="Save Washed linen shirt">
+              <span data-icon="heart" data-icon-size="18"></span>
+            </button>
+            <div class="product-body">
+              <p class="product-vendor">North Loom</p>
+              <h3><a class="product-name" href="product.html">Washed linen shirt</a></h3>
+              <p class="rating">
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star" data-icon-size="14"></span>
+                <span class="rating-count">4.8</span>
+              </p>
+              <p class="price-row"><span class="price">৳1,290</span><span class="price-compare">৳1,590</span></p>
+            </div>
+          </article>
+          <article class="product-card">
+            <a class="product-media" href="product.html">
+              <span class="ph ph-b"></span>
+              <span class="badge badge-danger product-badge">Live</span>
+            </a>
+            <button type="button" class="wish" aria-pressed="true" aria-label="Remove Studio headphone from wishlist">
+              <span data-icon="heart-fill" data-icon-size="18"></span>
+            </button>
+            <div class="product-body">
+              <p class="product-vendor">Atelier 19</p>
+              <h3><a class="product-name" href="product.html">Studio headphone</a></h3>
+              <p class="rating">
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span data-icon="star-fill" data-icon-size="14"></span>
+                <span class="rating-count">5.0</span>
+              </p>
+              <p class="price-row"><span class="price">৳4,800</span></p>
+            </div>
+          </article>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="badges">
+      <h2>Badges</h2>
+      <p class="sg-note">Status badges and filter chips. Chips meet the 44px target.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="cluster">
+          <span class="badge badge-primary">Primary</span>
+          <span class="badge badge-accent">Live</span>
+          <span class="badge badge-success">Paid</span>
+          <span class="badge badge-warning">Pending</span>
+          <span class="badge badge-danger">Failed</span>
+          <span class="badge badge-info">Info</span>
+          <span class="badge badge-neutral">Draft</span>
+        </div>
+        <div class="cluster">
+          <button type="button" class="chip is-active" aria-pressed="true">All</button>
+          <button type="button" class="chip" aria-pressed="false">Live now</button>
+          <button type="button" class="chip" aria-pressed="false">Under ৳1,000</button>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="tabs">
+      <h2>Tabs</h2>
+      <p class="sg-note">Arrow keys move between tabs. Both themes get their own tab set.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="tabs" data-tabs>
+          <div class="tablist" role="tablist" aria-label="Product information">
+            <button type="button" class="tab" role="tab" aria-selected="true">Details</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1">Reviews</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1">Shipping</button>
+          </div>
+          <div class="tab-panel" role="tabpanel">Cut, fabric, and care notes will show here.</div>
+          <div class="tab-panel" role="tabpanel" hidden>Buyer reviews will show here.</div>
+          <div class="tab-panel" role="tabpanel" hidden>Delivery estimates will show here.</div>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="table">
+      <h2>Table</h2>
+      <p class="sg-note">Rows become labeled stacks under 768px. No sideways page scroll.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Order</th>
+                <th scope="col">Shop</th>
+                <th scope="col">Status</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-label="Order">#1042</td>
+                <td data-label="Shop">North Loom</td>
+                <td data-label="Status"><span class="badge badge-success">Paid</span></td>
+                <td data-label="Total">৳2,480</td>
+              </tr>
+              <tr>
+                <td data-label="Order">#1043</td>
+                <td data-label="Shop">Atelier 19</td>
+                <td data-label="Status"><span class="badge badge-warning">Packed</span></td>
+                <td data-label="Total">৳4,800</td>
+              </tr>
+              <tr>
+                <td data-label="Order">#1044</td>
+                <td data-label="Shop">City Clay</td>
+                <td data-label="Status"><span class="badge badge-info">Refund</span></td>
+                <td data-label="Total">৳860</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="pagination">
+      <h2>Pagination</h2>
+      <p class="sg-note">The current page uses the brand gradient.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <nav class="pagination" aria-label="Pagination">
+          <button type="button" class="page-btn" disabled>Prev</button>
+          <button type="button" class="page-btn" aria-current="page">1</button>
+          <button type="button" class="page-btn">2</button>
+          <button type="button" class="page-btn">3</button>
+          <button type="button" class="page-btn">Next</button>
+        </nav>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="breadcrumbs">
+      <h2>Breadcrumbs</h2>
+      <p class="sg-note">The current crumb is text, not a link.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <ol>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="shop.html">Shop</a></li>
+            <li><span aria-current="page">Washed linen shirt</span></li>
+          </ol>
+        </nav>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="avatars">
+      <h2>Avatars</h2>
+      <p class="sg-note">Initials sit on the brand gradient. Sizes are for identity, not for hit area.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="cluster">
+          <span class="avatar avatar-sm">A</span>
+          <span class="avatar">M</span>
+          <span class="avatar avatar-lg">E</span>
+        </div>
+        <div class="avatar-row" aria-hidden="true">
+          <span class="avatar">N</span>
+          <span class="avatar">R</span>
+          <span class="avatar">L</span>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="skeleton">
+      <h2>Skeleton</h2>
+      <p class="sg-note">Shimmer respects reduced motion. The button mounts a product skeleton from skeleton.js.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div>
+          <span class="skeleton skeleton-line medium"></span>
+          <span class="skeleton skeleton-line"></span>
+          <span class="skeleton skeleton-line short"></span>
+        </div>
+        <div data-skeleton-host></div>
+        <button type="button" class="btn btn-secondary" data-demo-skeleton>Render product skeleton</button>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="empty">
+      <h2>Empty</h2>
+      <p class="sg-note">Use this when a list has no rows yet.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="empty">
+          <div class="empty-icon"><span data-icon="package" data-icon-size="28"></span></div>
+          <h3>Your cart is empty</h3>
+          <p>Products you add from shops, reels, or live rooms will show up here.</p>
+          <a class="btn btn-primary" href="shop.html">Continue shopping</a>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="toast">
+      <h2>Toast</h2>
+      <p class="sg-note">Toasts stack above the mobile tab bar and dismiss on their own.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="cluster">
+          <button type="button" class="btn btn-secondary" data-demo-toast="info">Info</button>
+          <button type="button" class="btn btn-secondary" data-demo-toast="success">Success</button>
+          <button type="button" class="btn btn-secondary" data-demo-toast="warning">Warning</button>
+          <button type="button" class="btn btn-secondary" data-demo-toast="danger">Danger</button>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="modal">
+      <h2>Modal</h2>
+      <p class="sg-note">Opens a focus-trapped dialog. Escape, the backdrop, and both actions close it.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <button type="button" class="btn btn-primary" data-demo-modal>Open modal</button>
+        <div class="modal-dialog">
+          <h2>Save this address?</h2>
+          <p>Static preview of the dialog surface. Use the button for focus, Escape, and backdrop behavior.</p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary">Not now</button>
+            <button type="button" class="btn btn-primary">Save address</button>
+          </div>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="drawer">
+      <h2>Drawer</h2>
+      <p class="sg-note">The frame shows the panel in both themes. The button opens the real overlay.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="sg-frame">
+          <aside class="drawer drawer-static">
+            <div class="drawer-head"><h3>Filters</h3></div>
+            <div class="stack">
+              <button type="button" class="chip is-active" aria-pressed="true">In stock</button>
+              <button type="button" class="chip" aria-pressed="false">Live only</button>
+            </div>
+          </aside>
+        </div>
+        <button type="button" class="btn btn-secondary" data-demo-drawer>Open drawer</button>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="dropdown">
+      <h2>Dropdown</h2>
+      <p class="sg-note">Click outside, Escape, or a menu item closes it. Arrow keys move through items.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="dropdown" data-dropdown>
+          <button type="button" class="btn btn-secondary" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false">Options</button>
+          <div class="dropdown-menu" data-dropdown-menu role="menu" hidden>
+            <button type="button" class="dropdown-item" role="menuitem">Edit listing</button>
+            <button type="button" class="dropdown-item" role="menuitem">Share</button>
+            <div class="dropdown-sep" role="separator"></div>
+            <button type="button" class="dropdown-item" role="menuitem">Archive</button>
+          </div>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="tooltip">
+      <h2>Tooltip</h2>
+      <p class="sg-note">Tooltips show on hover and keyboard focus.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <button type="button" class="btn btn-icon tooltip" data-tooltip="Save to wishlist" aria-label="Save to wishlist">
+          <span data-icon="heart" data-icon-size="18"></span>
+        </button>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="progress">
+      <h2>Progress</h2>
+      <p class="sg-note">The bar uses the brand gradient and a width token.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div>
+          <div class="progress-meta"><span>Profile</span><span>68%</span></div>
+          <div class="progress" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="Profile completeness">
+            <span class="progress-bar" style="--progress: 68%"></span>
+          </div>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+      
+    <section class="sg-section" id="stats">
+      <h2>Stats</h2>
+      <p class="sg-note">Dashboard stat cards for vendor and admin surfaces.</p>
+      
+    <div class="sg-split" data-sg-mirror>
+      <div class="sg-pane" data-theme="light">
+        <p class="sg-pane-label">Light</p>
+        <div class="sg-demo" data-sg-demo>
+          
+        <div class="stat-grid">
+          <article class="stat">
+            <div class="stat-top">
+              <span class="stat-icon"><span data-icon="wallet" data-icon-size="20"></span></span>
+              <span class="badge badge-success">+12%</span>
+            </div>
+            <p class="stat-label">Revenue</p>
+            <p class="stat-value">৳84,200</p>
+          </article>
+          <article class="stat">
+            <div class="stat-top">
+              <span class="stat-icon"><span data-icon="package" data-icon-size="20"></span></span>
+              <span class="badge badge-info">Today</span>
+            </div>
+            <p class="stat-label">Orders</p>
+            <p class="stat-value">128</p>
+          </article>
+          <article class="stat">
+            <div class="stat-top">
+              <span class="stat-icon"><span data-icon="live" data-icon-size="20"></span></span>
+              <span class="badge badge-accent">Live</span>
+            </div>
+            <p class="stat-label">Viewers</p>
+            <p class="stat-value">1,406</p>
+          </article>
+        </div>
+      
+        </div>
+      </div>
+      <div class="sg-pane" data-theme="dark" data-sg-dark>
+        <p class="sg-pane-label">Dark</p>
+      </div>
+    </div>
+
+    </section>
+
+    </div>
+  </main>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <aside class="drawer" data-drawer hidden role="dialog" aria-modal="true" aria-labelledby="filter-drawer-title">
+    <div class="drawer-head">
+      <h2 id="filter-drawer-title">Filters</h2>
+      <button type="button" class="btn btn-icon" data-drawer-close aria-label="Close filters">
+        <span data-icon="close" data-icon-size="18"></span>
+      </button>
+    </div>
+    <p class="muted">Shop filters will live in this panel. Escape, the close button, and the backdrop dismiss it.</p>
+  </aside>
+
+  <div id="shell-footer"></div>
+  <div id="shell-tabbar"></div>
+  <script type="module" src="../assets/js/boot.js"></script>
+  <script type="module" src="../assets/js/styleguide.js"></script>
+</body>
+</html>

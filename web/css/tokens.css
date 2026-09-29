@@ -3,6 +3,7 @@
 /* Site is always light. Dark video chrome belongs only on immersive reels/live players. */
 html {
   color-scheme: light only;
+  font-size: 16px;
 }
 
 :root {
@@ -27,13 +28,14 @@ html {
   --color-danger-soft: #fee2e2;
   --color-success-soft: #dcfce7;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-md: 0.9375rem;
-  --text-lg: 1.0625rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
+  /* Compact type scale (at 16px root) */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.8125rem;  /* 13px */
+  --text-md: 0.875rem;   /* 14px — body */
+  --text-lg: 1rem;       /* 16px — h3 */
+  --text-xl: 1.25rem;    /* 20px — h2 */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.75rem;   /* 28px — h1 */
 
   --weight-regular: 400;
   --weight-medium: 500;
@@ -45,26 +47,28 @@ html {
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
+  --space-6: 20px;
+  --space-8: 28px;
+  --space-10: 36px;
+  --space-12: 40px;
 
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
   --radius-full: 999px;
 
   --shadow-sm: 0 1px 2px rgb(17 24 39 / 6%);
-  --shadow-md: 0 4px 14px rgb(17 24 39 / 8%);
+  --shadow-md: 0 4px 12px rgb(17 24 39 / 8%);
 
   --topbar-height: 32px;
   --header-main-height: 64px;
-  --cat-strip-height: 42px;
-  --header-height: 138px;
-  --bottom-nav-height: 58px;
+  --cat-strip-height: 44px;
+  --header-height: 140px;
+  --bottom-nav-height: 56px;
   --container: 1200px;
+  --page-gutter: 16px;
   --tap: 40px;
+  --tap-sm: 32px;
 
   --z-header: 40;
   --z-bottom: 45;

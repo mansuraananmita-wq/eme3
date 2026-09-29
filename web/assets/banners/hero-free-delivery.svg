@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t4 d4">
-  <title id="t4">Free Delivery over є999</title>
-  <desc id="d4">Green delivery promo with package shape</desc>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img">
+  <title>Free Delivery over Tk 999</title>
   <defs>
     <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#14532d"/>
@@ -15,8 +15,8 @@
     <path d="M80 120 L180 70 L180 190 L80 240 Z" fill="#dcfce7"/>
     <rect x="55" y="125" width="50" height="18" rx="4" fill="#15803d"/>
   </g>
-  <text x="72" y="145" fill="#dcfce7" font-family="Inter,Segoe UI,sans-serif" font-size="28" font-weight="700">NO EXTRA COST</text>
-  <text x="72" y="215" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="52" font-weight="800">Free Delivery</text>
-  <text x="72" y="275" fill="#bbf7d0" font-family="Inter,Segoe UI,sans-serif" font-size="34" font-weight="700">over є999</text>
-  <text x="72" y="330" fill="#ecfdf5" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="26" font-weight="600">яяяє+ Е░═б╛░╟ л═░┐ б╟▓┐н╛░┐</text>
+  <text x="72" y="145" fill="#dcfce7" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">NO EXTRA COST</text>
+  <text x="72" y="215" fill="#fff" font-family="Segoe UI,Arial,sans-serif" font-size="52" font-weight="800">Free Delivery</text>
+  <text x="72" y="275" fill="#bbf7d0" font-family="Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">over рз│999</text>
+  <text x="72" y="330" fill="#ecfdf5" font-family="Segoe UI,Arial,sans-serif" font-size="26" font-weight="600">рзпрзпрзпрз│+ ржЕрж░рзНржбрж╛рж░рзЗ ржлрзНрж░рж┐ ржбрзЗрж▓рж┐ржнрж╛рж░рж┐</text>
 </svg>

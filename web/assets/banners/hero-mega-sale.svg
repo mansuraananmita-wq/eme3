@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t1 d1">
-  <title id="t1">Mega Sale up to 70% OFF</title>
-  <desc id="d1">Bold teal and orange sale banner with shopping bag</desc>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img">
+  <title>Mega Sale up to 70% OFF</title>
   <defs>
     <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0f766e"/>
@@ -17,9 +17,9 @@
     <path d="M50 50 C50 10 150 10 150 50" fill="none" stroke="#0f766e" stroke-width="14"/>
     <rect x="70" y="90" width="60" height="12" rx="6" fill="#ea580c"/>
   </g>
-  <text x="72" y="140" fill="#fff" font-family="Inter,Segoe UI,sans-serif" font-size="64" font-weight="800">Mega Sale</text>
-  <text x="72" y="210" fill="#ffedd5" font-family="Inter,Segoe UI,sans-serif" font-size="42" font-weight="700">up to 70% OFF</text>
-  <text x="72" y="270" fill="#ccfbf1" font-family="Noto Sans Bengali,Segoe UI,sans-serif" font-size="28" font-weight="600">�Ǘ� �ǲ  ��% ��ͯ�ͤ ���</text>
+  <text x="72" y="140" fill="#fff" font-family="Segoe UI,Arial,sans-serif" font-size="64" font-weight="800">Mega Sale</text>
+  <text x="72" y="210" fill="#ffedd5" font-family="Segoe UI,Arial,sans-serif" font-size="42" font-weight="700">up to 70% OFF</text>
+  <text x="72" y="270" fill="#ccfbf1" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="600">মেগা সেল — ৭০% পর্যন্ত ছাড়</text>
   <rect x="72" y="300" width="220" height="48" rx="24" fill="#fff"/>
-  <text x="182" y="332" text-anchor="middle" fill="#0f766e" font-family="Inter,Segoe UI,sans-serif" font-size="18" font-weight="700">Shop deals</text>
+  <text x="182" y="332" text-anchor="middle" fill="#0f766e" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="700">Shop deals</text>
 </svg>

@@ -124,6 +124,7 @@ function renderStaticBanners() {
           width="1200"
           height="400"
           ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
+          onerror="this.classList.add('is-broken');this.removeAttribute('alt');"
         >
       </a>
     `).join("");
@@ -135,7 +136,14 @@ function renderStaticBanners() {
   if (heroSide instanceof HTMLElement) {
     heroSide.innerHTML = sides.map((banner) => `
       <a class="hero-side-card" href="${url(banner.href)}" aria-label="${escapeHtml(banner.alt || banner.title)}">
-        <img src="${escapeHtml(url(banner.image))}" alt="${escapeHtml(banner.alt || banner.title)}" width="400" height="190" loading="lazy">
+        <img
+          src="${escapeHtml(url(banner.image))}"
+          alt="${escapeHtml(banner.alt || banner.title)}"
+          width="400"
+          height="190"
+          loading="lazy"
+          onerror="this.classList.add('is-broken');this.removeAttribute('alt');"
+        >
       </a>
     `).join("");
   }
@@ -143,7 +151,14 @@ function renderStaticBanners() {
   if (promoRow instanceof HTMLElement) {
     promoRow.innerHTML = mediums.map((banner) => `
       <a class="promo-card" href="${url(banner.href)}" aria-label="${escapeHtml(banner.alt || banner.title)}">
-        <img src="${escapeHtml(url(banner.image))}" alt="${escapeHtml(banner.alt || banner.title)}" width="600" height="300" loading="lazy">
+        <img
+          src="${escapeHtml(url(banner.image))}"
+          alt="${escapeHtml(banner.alt || banner.title)}"
+          width="600"
+          height="300"
+          loading="lazy"
+          onerror="this.classList.add('is-broken');this.removeAttribute('alt');"
+        >
       </a>
     `).join("");
   }

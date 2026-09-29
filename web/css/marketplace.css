@@ -9,8 +9,8 @@
 .shop-directory,
 .featured-shops {
   display: grid;
-  gap: var(--space-4);
-  margin-top: var(--space-4);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .shop-card-panel {
@@ -113,9 +113,9 @@
 }
 
 .shop-logo-lg {
-  width: 72px;
-  height: 72px;
-  font-size: var(--text-2xl);
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-xl);
 }
 
 .sold-by {
@@ -178,7 +178,7 @@
 }
 
 .storefront-head h1 {
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
 }
 
 .filters-compact {
@@ -281,7 +281,7 @@
 }
 
 .sell-hero h1 {
-  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  font-size: clamp(1.5rem, 4vw, 1.75rem);
 }
 
 .eyebrow {

@@ -1,19 +1,34 @@
 /* Home marketplace layout: hero, trust, flash, promos. Light theme only. */
 
 .home-page {
-  padding-block: var(--space-4) var(--space-8);
+  padding-block: var(--space-3) var(--space-6);
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.home-page > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* —— Hero: cats | carousel | side —— */
 .home-hero {
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.home-hero > * {
+  min-width: 0;
 }
 
 .hero-cats {
   display: none;
+  min-width: 0;
 }
 
 .hero-cat-list {
@@ -32,7 +47,8 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
-  padding: 10px var(--space-4);
+  padding: 0 var(--space-3);
+  min-height: 36px;
   color: var(--color-text);
   text-decoration: none;
   font-size: var(--text-sm);
@@ -49,18 +65,24 @@
 
 .home-carousel {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  aspect-ratio: 3 / 1;
+  height: auto;
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--color-surface-muted);
-  aspect-ratio: 3 / 1;
-  min-height: 120px;
   margin-top: 0;
   color: inherit;
 }
 
 .home-carousel .hero-track {
+  position: absolute;
+  inset: 0;
   display: flex;
   height: 100%;
+  width: 100%;
   transition: transform 0.45s ease;
 }
 
@@ -72,9 +94,13 @@
 
 .hero-slide-banner {
   flex: 0 0 100%;
-  display: block;
+  width: 100%;
   height: 100%;
+  min-width: 0;
+  display: block;
   position: relative;
+  overflow: hidden;
+  background: var(--color-surface-muted);
 }
 
 .hero-slide-banner img {
@@ -84,9 +110,13 @@
   display: block;
 }
 
+.hero-slide-banner img.is-broken {
+  opacity: 0;
+}
+
 .hero-skeleton {
   flex: 0 0 100%;
-  min-height: 140px;
+  min-height: 100%;
 }
 
 .home-carousel .hero-nav {
@@ -97,19 +127,20 @@
   justify-content: space-between;
   padding: 0 var(--space-2);
   pointer-events: none;
+  z-index: 2;
 }
 
 .home-carousel .hero-nav button {
   pointer-events: auto;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: var(--radius-full);
   background: rgb(255 255 255 / 92%);
   color: var(--color-text);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
@@ -126,6 +157,7 @@
   display: flex;
   justify-content: center;
   gap: 6px;
+  z-index: 2;
 }
 
 .home-carousel .hero-dots button {
@@ -147,6 +179,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .hero-side-card {
@@ -155,6 +188,7 @@
   overflow: hidden;
   aspect-ratio: 400 / 190;
   background: var(--color-surface-muted);
+  min-width: 0;
 }
 
 .hero-side-card img {
@@ -164,12 +198,16 @@
   display: block;
 }
 
+.hero-side-card img.is-broken {
+  opacity: 0;
+}
+
 /* —— Trust —— */
 .trust-strip {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -177,13 +215,13 @@
 
 .trust-item {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
   align-items: flex-start;
 }
 
 .trust-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   color: var(--color-primary);
 }
@@ -203,11 +241,13 @@
 .category-icons {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 88px;
+  grid-auto-columns: 76px;
   gap: var(--space-3);
   overflow-x: auto;
   padding-bottom: var(--space-2);
   scroll-snap-type: x mandatory;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .category-icon-card {
@@ -223,8 +263,8 @@
 }
 
 .category-icon-mark {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-full);
   background: var(--color-primary-soft);
   color: var(--color-primary-strong);
@@ -232,7 +272,7 @@
   place-items: center;
   overflow: hidden;
   font-weight: var(--weight-bold);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
 }
 
 .category-icon-mark img {
@@ -278,11 +318,13 @@
 .product-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(160px, 200px);
+  grid-auto-columns: minmax(180px, 210px);
   gap: var(--space-3);
   overflow-x: auto;
   padding-bottom: var(--space-2);
   scroll-snap-type: x mandatory;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .product-rail .product-card {
@@ -313,6 +355,8 @@
 .promo-row {
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .promo-card {
@@ -321,6 +365,7 @@
   overflow: hidden;
   aspect-ratio: 2 / 1;
   background: var(--color-surface-muted);
+  min-width: 0;
 }
 
 .promo-card img {
@@ -330,13 +375,17 @@
   display: block;
 }
 
+.promo-card img.is-broken {
+  opacity: 0;
+}
+
 /* —— Seller —— */
 .seller-banner-wide {
   background:
     linear-gradient(120deg, var(--color-primary-strong), var(--color-primary) 55%, var(--color-accent));
   color: var(--color-on-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-6);
+  padding: var(--space-6) var(--space-5);
 }
 
 .seller-banner-wide h2,
@@ -406,30 +455,32 @@
 
 @media (min-width: 900px) {
   .home-hero {
-    grid-template-columns: 220px minmax(0, 1fr) 220px;
-    align-items: stretch;
-    min-height: 280px;
+    grid-template-columns: 220px minmax(0, 1fr) 260px;
+    align-items: start;
   }
 
   .hero-cats {
     display: block;
+    align-self: stretch;
+  }
+
+  .hero-cat-list {
+    height: 100%;
   }
 
   .home-carousel {
-    min-height: 280px;
+    align-self: start;
+    width: 100%;
   }
 
   .hero-side {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
+    width: 100%;
+    align-self: start;
   }
 }
 
 @media (max-width: 359px) {
-  .home-carousel {
-    min-height: 100px;
-  }
-
   .trust-strip {
     grid-template-columns: 1fr;
   }

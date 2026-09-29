@@ -300,7 +300,7 @@
 .reels-row {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 112px;
+  grid-auto-columns: 100px;
   gap: var(--space-3);
   overflow-x: auto;
   padding-bottom: var(--space-2);

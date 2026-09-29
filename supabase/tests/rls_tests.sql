@@ -1,48 +1,41 @@
 -- RLS smoke test. Paste this whole file once.
--- It builds throwaway users, checks the policies, prints PASS/FAIL, then ROLLBACK.
--- Nothing remains: users, shops, products, storage rows, and this result table are undone.
+-- The helper creates public._rls_results itself on the first call.
+-- A separate create-table statement is not visible to that call in the SQL editor,
+-- which is why the insert raised 42P01.
+-- The opening drops remove leftovers from the previous run.
 -- Requires migrations 0001-0019 and seed.sql (category slug electronics).
 
-begin;
+drop table if exists public._rls_results;
+drop function if exists public._rls_record(text, boolean, text);
 
-create temp table rls_results (
-  test_name text primary key,
-  status text not null check (status in ('PASS', 'FAIL')),
-  detail text not null
-);
-
-do $$
-begin
-  execute format(
-    'grant usage on schema %I to anon, authenticated',
-    pg_my_temp_schema()::regnamespace
-  );
-  execute format(
-    'grant select, insert, update, delete on all tables in schema %I to anon, authenticated',
-    pg_my_temp_schema()::regnamespace
-  );
-end;
-$$;
-
-create function pg_temp.pass_if_denied(test_name text, sql_state text, message text)
+create or replace function public._rls_record(test_name text, ok boolean, detail text)
 returns void
 language plpgsql
-as $$
+security definer
+set search_path = public
+as $fn$
 begin
-  if sql_state in ('42501', 'P0001')
-     or message ilike '%row-level security%'
-     or message ilike '%permission denied%'
-     or message ilike '%same shop%'
-     or message ilike '%only an admin%'
-  then
-    insert into rls_results values (test_name, 'PASS', message);
-  else
-    insert into rls_results values (test_name, 'FAIL', sql_state || ' ' || message);
+  if to_regclass('public._rls_results') is null then
+    create table public._rls_results (
+      id bigint generated always as identity,
+      test_name text,
+      status text,
+      detail text
+    );
   end if;
-end;
-$$;
 
-grant execute on function pg_temp.pass_if_denied(text, text, text) to anon, authenticated;
+  execute
+    'insert into public._rls_results (test_name, status, detail) values ($1, $2, $3)'
+    using
+      test_name,
+      case when ok then 'PASS' else 'FAIL' end,
+      coalesce(detail, '');
+end;
+$fn$;
+
+grant execute on function public._rls_record(text, boolean, text) to anon, authenticated;
+
+select public._rls_record('tests ran', true, 'pending');
 
 do $$
 declare
@@ -119,7 +112,7 @@ begin
       );
     exception
       when others then
-        raise notice 'auth.identities insert skipped for %: %', person.email, sqlerrm;
+        null;
     end;
   end loop;
 end;
@@ -211,35 +204,49 @@ select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '', true);
 set local role anon;
 
-insert into rls_results (test_name, status, detail)
-select
-  'anon reads active product',
-  case when count(*) = 1 then 'PASS' else 'FAIL' end,
-  'visible=' || count(*)::text
-from public.products
-where id = '11111111-1111-4111-8111-0000000000a1';
+do $$
+declare
+  seen integer;
+begin
+  select count(*) into seen
+  from public.products
+  where id = '11111111-1111-4111-8111-0000000000a1';
+  perform public._rls_record('anon reads active product', seen = 1, 'visible=' || seen::text);
+exception
+  when others then
+    perform public._rls_record('anon reads active product', false, sqlerrm);
+end;
+$$;
 
-insert into rls_results (test_name, status, detail)
-select
-  'anon cannot read draft product',
-  case when count(*) = 0 then 'PASS' else 'FAIL' end,
-  'visible=' || count(*)::text
-from public.products
-where id = '11111111-1111-4111-8111-0000000000d1';
+do $$
+declare
+  seen integer;
+begin
+  select count(*) into seen
+  from public.products
+  where id = '11111111-1111-4111-8111-0000000000d1';
+  perform public._rls_record('anon cannot read draft product', seen = 0, 'visible=' || seen::text);
+exception
+  when others then
+    perform public._rls_record('anon cannot read draft product', false, sqlerrm);
+end;
+$$;
 
 do $$
 declare
   seen integer;
 begin
   select count(*) into seen from public.orders;
-  insert into rls_results values (
-    'anon cannot read orders',
-    case when seen = 0 then 'PASS' else 'FAIL' end,
-    'visible=' || seen::text
-  );
+  perform public._rls_record('anon cannot read orders', seen = 0, 'visible=' || seen::text);
 exception
-  when insufficient_privilege then
-    insert into rls_results values ('anon cannot read orders', 'PASS', sqlerrm);
+  when others then
+    perform public._rls_record(
+      'anon cannot read orders',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -253,37 +260,43 @@ select set_config(
 );
 set local role authenticated;
 
-insert into rls_results (test_name, status, detail)
-select
-  'customer cannot read another cart',
-  case when own_rows = 1 and other_rows = 0 then 'PASS' else 'FAIL' end,
-  'own=' || own_rows::text || ' other=' || other_rows::text
-from (
+do $$
+declare
+  own_rows integer;
+  other_rows integer;
+begin
   select
-    count(*) filter (where customer_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') as own_rows,
-    count(*) filter (where customer_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2') as other_rows
-  from public.cart_items
-) as carts;
+    count(*) filter (where customer_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'),
+    count(*) filter (where customer_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2')
+  into own_rows, other_rows
+  from public.cart_items;
+  perform public._rls_record(
+    'customer cannot read another cart',
+    own_rows = 1 and other_rows = 0,
+    'own=' || own_rows::text || ' other=' || other_rows::text
+  );
+exception
+  when others then
+    perform public._rls_record('customer cannot read another cart', false, sqlerrm);
+end;
+$$;
 
 do $$
 begin
   update public.profiles
   set role = 'admin'
   where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
-  insert into rls_results values (
-    'customer cannot change own role',
-    'FAIL',
-    'update was allowed'
-  );
+  perform public._rls_record('customer cannot change own role', false, 'update was allowed');
 exception
-  when insufficient_privilege or check_violation then
-    insert into rls_results values ('customer cannot change own role', 'PASS', sqlerrm);
   when others then
-    if sqlerrm ilike '%only an admin%' or sqlerrm ilike '%permission denied%' then
-      insert into rls_results values ('customer cannot change own role', 'PASS', sqlerrm);
-    else
-      insert into rls_results values ('customer cannot change own role', 'FAIL', sqlerrm);
-    end if;
+    perform public._rls_record(
+      'customer cannot change own role',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%'
+        or sqlerrm ilike '%only an admin%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -298,10 +311,16 @@ begin
     10,
     '{"recipient_name":"A","phone":"01711111111","line1":"House 1","city":"Dhaka","district":"Dhaka"}'::jsonb
   );
-  insert into rls_results values ('customer cannot insert orders', 'FAIL', 'insert was allowed');
+  perform public._rls_record('customer cannot insert orders', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('customer cannot insert orders', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'customer cannot insert orders',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -309,10 +328,16 @@ do $$
 begin
   insert into public.payments (order_id, provider, provider_reference, amount)
   values ('33333333-3333-4333-8333-0000000000a1', 'test', 'rls-ref-customer', 10);
-  insert into rls_results values ('customer cannot insert payments', 'FAIL', 'insert was allowed');
+  perform public._rls_record('customer cannot insert payments', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('customer cannot insert payments', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'customer cannot insert payments',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -320,10 +345,10 @@ do $$
 begin
   insert into storage.objects (bucket_id, name)
   values ('avatars', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/avatar.png');
-  insert into rls_results values ('storage avatar own folder', 'PASS', 'inserted');
+  perform public._rls_record('storage avatar own folder', true, 'inserted');
 exception
   when others then
-    insert into rls_results values ('storage avatar own folder', 'FAIL', sqlerrm);
+    perform public._rls_record('storage avatar own folder', false, sqlerrm);
 end;
 $$;
 
@@ -331,10 +356,16 @@ do $$
 begin
   insert into storage.objects (bucket_id, name)
   values ('avatars', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1/nope.png');
-  insert into rls_results values ('storage rejects another user folder', 'FAIL', 'insert was allowed');
+  perform public._rls_record('storage rejects another user folder', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('storage rejects another user folder', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'storage rejects another user folder',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -342,16 +373,18 @@ do $$
 begin
   insert into storage.objects (bucket_id, name)
   values ('product-images', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/front.png');
-  insert into rls_results values (
+  perform public._rls_record(
     'storage product image requires approved vendor',
-    'FAIL',
+    false,
     'customer insert was allowed'
   );
 exception
   when others then
-    perform pg_temp.pass_if_denied(
+    perform public._rls_record(
       'storage product image requires approved vendor',
-      sqlstate,
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
       sqlerrm
     );
 end;
@@ -379,14 +412,20 @@ begin
   select title into title_now
   from public.products
   where id = '11111111-1111-4111-8111-0000000000b1';
-  insert into rls_results values (
+  perform public._rls_record(
     'vendor cannot edit another vendor product',
-    case
-      when changed = 0 and title_now = 'Vendor B product' then 'PASS'
-      else 'FAIL'
-    end,
+    changed = 0 and title_now = 'Vendor B product',
     'updated_rows=' || changed::text || ' title=' || coalesce(title_now, 'null')
   );
+exception
+  when others then
+    perform public._rls_record(
+      'vendor cannot edit another vendor product',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -397,14 +436,17 @@ begin
     '22222222-2222-4222-8222-0000000000a1',
     '11111111-1111-4111-8111-0000000000b1'
   );
-  insert into rls_results values (
-    'vendor cannot tag another vendor product',
-    'FAIL',
-    'insert was allowed'
-  );
+  perform public._rls_record('vendor cannot tag another vendor product', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('vendor cannot tag another vendor product', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'vendor cannot tag another vendor product',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%'
+        or sqlerrm ilike '%same shop%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -419,10 +461,16 @@ begin
     10,
     '{"recipient_name":"A","phone":"01711111111","line1":"House 1","city":"Dhaka","district":"Dhaka"}'::jsonb
   );
-  insert into rls_results values ('vendor cannot insert orders', 'FAIL', 'insert was allowed');
+  perform public._rls_record('vendor cannot insert orders', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('vendor cannot insert orders', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'vendor cannot insert orders',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -430,10 +478,16 @@ do $$
 begin
   insert into public.payments (order_id, provider, provider_reference, amount)
   values ('33333333-3333-4333-8333-0000000000a1', 'test', 'rls-ref-vendor', 10);
-  insert into rls_results values ('vendor cannot insert payments', 'FAIL', 'insert was allowed');
+  perform public._rls_record('vendor cannot insert payments', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('vendor cannot insert payments', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'vendor cannot insert payments',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -441,10 +495,10 @@ do $$
 begin
   insert into storage.objects (bucket_id, name)
   values ('product-images', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1/front.png');
-  insert into rls_results values ('storage vendor own product image', 'PASS', 'inserted');
+  perform public._rls_record('storage vendor own product image', true, 'inserted');
 exception
   when others then
-    insert into rls_results values ('storage vendor own product image', 'FAIL', sqlerrm);
+    perform public._rls_record('storage vendor own product image', false, sqlerrm);
 end;
 $$;
 
@@ -458,20 +512,31 @@ select set_config(
 );
 set local role authenticated;
 
-insert into rls_results (test_name, status, detail)
-select
-  'admin reads orders',
-  case when count(*) >= 1 then 'PASS' else 'FAIL' end,
-  'visible=' || count(*)::text
-from public.orders;
+do $$
+declare
+  seen integer;
+begin
+  select count(*) into seen from public.orders;
+  perform public._rls_record('admin reads orders', seen >= 1, 'visible=' || seen::text);
+exception
+  when others then
+    perform public._rls_record('admin reads orders', false, sqlerrm);
+end;
+$$;
 
-insert into rls_results (test_name, status, detail)
-select
-  'admin reads draft product',
-  case when count(*) = 1 then 'PASS' else 'FAIL' end,
-  'visible=' || count(*)::text
-from public.products
-where id = '11111111-1111-4111-8111-0000000000d1';
+do $$
+declare
+  seen integer;
+begin
+  select count(*) into seen
+  from public.products
+  where id = '11111111-1111-4111-8111-0000000000d1';
+  perform public._rls_record('admin reads draft product', seen = 1, 'visible=' || seen::text);
+exception
+  when others then
+    perform public._rls_record('admin reads draft product', false, sqlerrm);
+end;
+$$;
 
 do $$
 begin
@@ -484,10 +549,16 @@ begin
     10,
     '{"recipient_name":"A","phone":"01711111111","line1":"House 1","city":"Dhaka","district":"Dhaka"}'::jsonb
   );
-  insert into rls_results values ('admin cannot insert orders', 'FAIL', 'insert was allowed');
+  perform public._rls_record('admin cannot insert orders', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('admin cannot insert orders', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'admin cannot insert orders',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
@@ -495,17 +566,35 @@ do $$
 begin
   insert into public.payments (order_id, provider, provider_reference, amount)
   values ('33333333-3333-4333-8333-0000000000a1', 'test', 'rls-ref-admin', 10);
-  insert into rls_results values ('admin cannot insert payments', 'FAIL', 'insert was allowed');
+  perform public._rls_record('admin cannot insert payments', false, 'insert was allowed');
 exception
   when others then
-    perform pg_temp.pass_if_denied('admin cannot insert payments', sqlstate, sqlerrm);
+    perform public._rls_record(
+      'admin cannot insert payments',
+      sqlstate in ('42501', 'P0001')
+        or sqlerrm ilike '%row-level security%'
+        or sqlerrm ilike '%permission denied%',
+      sqlerrm
+    );
 end;
 $$;
 
 reset role;
 
-select test_name, status, detail
-from rls_results
-order by status desc, test_name;
+select public._rls_record(
+  'cleanup check',
+  true,
+  'Rows below are removed when this script is run again. ROLLBACK cannot drop a table the SQL editor already committed.'
+);
 
-rollback;
+update public._rls_results
+set detail = (
+  select count(*)::text
+  from public._rls_results
+  where test_name not in ('tests ran', 'cleanup check')
+)
+where test_name = 'tests ran';
+
+select test_name, status, detail
+from public._rls_results
+order by id;

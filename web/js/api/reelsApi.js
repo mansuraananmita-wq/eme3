@@ -9,6 +9,12 @@ import { pickProductImage, productImageUrl } from "../media.js";
 
 export const REELS_PAGE_SIZE = 8;
 
+/** @type {number} */
+export const REEL_VIDEO_MAX_BYTES = 52_428_800;
+
+/** @type {string[]} */
+export const REEL_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"];
+
 const REEL_COLUMNS = `
   id,
   vendor_id,
@@ -368,4 +374,216 @@ function normalizeReel(row) {
       : null,
     products,
   };
+}
+
+/**
+ * Reels owned by the signed-in approved vendor (draft + published).
+ * @returns {Promise<Array<object>>}
+ */
+export async function listMyReels() {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to manage reels.");
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("reels")
+    .select(`
+      ${REEL_COLUMNS},
+      reel_products ( product_id, sort_order )
+    `)
+    .eq("vendor_id", profile.id)
+    .neq("status", "removed")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    caption: row.caption,
+    videoUrl: reelMediaUrl(row.video_path, "reel-videos"),
+    thumbnailUrl: reelMediaUrl(row.thumbnail_path, "reel-thumbnails"),
+    videoPath: row.video_path,
+    thumbnailPath: row.thumbnail_path,
+    durationSeconds: row.duration_seconds,
+    status: row.status,
+    likesCount: row.likes_count,
+    commentsCount: row.comments_count,
+    createdAt: row.created_at,
+    productIds: [...(row.reel_products || [])]
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((link) => link.product_id),
+  }));
+}
+
+/**
+ * Active products the signed-in vendor can tag on reels.
+ * @returns {Promise<Array<{ id: string, title: string }>>}
+ */
+export async function listMyProductsForReels() {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to manage reels.");
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, title")
+    .eq("vendor_id", profile.id)
+    .eq("status", "active")
+    .order("title", { ascending: true })
+    .limit(200);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * @param {{ caption?: string, status?: "draft" | "published" }} input
+ * @returns {Promise<string>} reel id
+ */
+export async function createReel(input = {}) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to create a reel.");
+
+  const status = input.status === "published" ? "published" : "draft";
+  const caption = String(input.caption || "").trim() || null;
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("reels")
+    .insert({
+      vendor_id: profile.id,
+      caption,
+      status,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  return data.id;
+}
+
+/**
+ * @param {string} reelId
+ * @param {{ caption?: string, status?: "draft" | "published", video_path?: string | null, thumbnail_path?: string | null, duration_seconds?: number | null }} patch
+ * @returns {Promise<void>}
+ */
+export async function updateReel(reelId, patch) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to update reels.");
+
+  const body = {};
+  if (patch.caption !== undefined) body.caption = patch.caption?.trim() || null;
+  if (patch.status !== undefined) body.status = patch.status;
+  if (patch.video_path !== undefined) body.video_path = patch.video_path;
+  if (patch.thumbnail_path !== undefined) body.thumbnail_path = patch.thumbnail_path;
+  if (patch.duration_seconds !== undefined) body.duration_seconds = patch.duration_seconds;
+
+  const supabase = getSupabase();
+  const { error } = await supabase.from("reels").update(body).eq("id", reelId).eq("vendor_id", profile.id);
+  if (error) throw error;
+}
+
+/**
+ * @param {string} reelId
+ * @returns {Promise<void>}
+ */
+export async function deleteReel(reelId) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to delete reels.");
+
+  const supabase = getSupabase();
+  const { error } = await supabase.from("reels").delete().eq("id", reelId).eq("vendor_id", profile.id);
+  if (error) throw error;
+}
+
+/**
+ * Replace tagged products (max 5, own products only — enforced by RLS).
+ * @param {string} reelId
+ * @param {string[]} productIds
+ * @returns {Promise<void>}
+ */
+export async function setReelProductTags(reelId, productIds) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to tag products.");
+
+  const ids = [...new Set(productIds)].slice(0, 5);
+  const supabase = getSupabase();
+
+  const { error: delError } = await supabase.from("reel_products").delete().eq("reel_id", reelId);
+  if (delError) throw delError;
+
+  if (!ids.length) return;
+
+  const rows = ids.map((product_id, index) => ({
+    reel_id: reelId,
+    product_id,
+    sort_order: index,
+  }));
+
+  const { error } = await supabase.from("reel_products").insert(rows);
+  if (error) throw error;
+}
+
+/**
+ * Upload reel video to Storage ({auth.uid()}/{reelId}.ext).
+ * @param {string} reelId
+ * @param {File} file
+ * @param {(pct: number) => void} [onProgress]
+ * @returns {Promise<string>} storage path stored on reels.video_path
+ */
+export async function uploadReelVideo(reelId, file, onProgress) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to upload.");
+
+  if (!REEL_VIDEO_MIME.includes(file.type)) {
+    throw new Error("Use an MP4, WebM, or MOV file.");
+  }
+  if (file.size > REEL_VIDEO_MAX_BYTES) {
+    throw new Error("Video must be 50 MB or smaller.");
+  }
+
+  const ext = file.type === "video/webm" ? "webm" : file.type === "video/quicktime" ? "mov" : "mp4";
+  const path = `${profile.id}/${reelId}.${ext}`;
+  const supabase = getSupabase();
+
+  onProgress?.(5);
+  const { error: uploadError } = await supabase.storage.from("reel-videos").upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  });
+  if (uploadError) throw uploadError;
+  onProgress?.(85);
+
+  await updateReel(reelId, { video_path: path });
+  onProgress?.(100);
+  return path;
+}
+
+/**
+ * @param {string} reelId
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+export async function uploadReelThumbnail(reelId, file) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to upload.");
+
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Thumbnail must be an image.");
+  }
+  if (file.size > 2_097_152) {
+    throw new Error("Thumbnail must be 2 MB or smaller.");
+  }
+
+  const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
+  const path = `${profile.id}/${reelId}-thumb.${ext}`;
+  const supabase = getSupabase();
+
+  const { error: uploadError } = await supabase.storage.from("reel-thumbnails").upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  });
+  if (uploadError) throw uploadError;
+
+  await updateReel(reelId, { thumbnail_path: path });
+  return path;
 }

@@ -2,7 +2,7 @@
 
 Static multi-vendor marketplace front. Open it through a local web server so ES modules and Supabase can load. Do not open the HTML files directly from the file explorer.
 
-The site is **always light**. There is no `prefers-color-scheme` dark theme. A dark background is used only inside the immersive reels viewer (`.reels-viewer`).
+The site is **always light**. There is no `prefers-color-scheme` dark theme. A dark background is used only inside the immersive reels viewer (`.reels-viewer`) and live room (`.live-room`).
 
 ## Before the first run
 
@@ -30,7 +30,7 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 
 ### Shop
 
-- `/` — home marketplace: hero (categories + carousel + side promos), trust strip, category icons, Flash Sale, Trending, promo banners, Reels, Featured stores, New arrivals, Become a seller
+- `/` — home marketplace: hero, trust strip, categories, Flash Sale, Trending, promo banners, Live now (when any), Reels, Featured stores, New arrivals, Become a seller
 - `/pages/shops.html` — approved store directory
 - `/pages/shop.html?slug=` — storefront
 - `/pages/sell.html` — Sell on EME + vendor apply form
@@ -38,9 +38,15 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 - `/pages/products.html` — catalog filters + search (`?q=` has Products | Stores tabs)
 - `/pages/product.html?slug=` — product details
 - `/pages/cart.html` — cart grouped by store → checkout
-- `/pages/checkout.html` — address, delivery fee, payment method UI, order summary (**does not write orders**)
+- `/pages/checkout.html` — address, Dhaka vs outside delivery fee, COD (bKash/Nagad coming soon), `place_order` RPC
+- `/pages/account/orders.html` — customer order list
+- `/pages/account/order.html?id=` — order detail, timeline, cancel while pending
+- `/pages/vendor-orders.html` — **approved vendors**: own line items + status transitions
 - `/pages/reels.html` — full-screen reels feed (`?start=<id>` opens at that reel)
-- `/pages/reel.html?id=` — single-reel deep link (same viewer)
+- `/pages/reel.html?id=` — deep link into the same feed (scroll continues to next reels)
+- `/pages/vendor-reels.html` — **approved vendors only**: upload, tag products, publish, delete reels
+- `/pages/lives.html` — Live now + Upcoming stream cards
+- `/pages/live.html?id=` — live room (video is a placeholder; chat + pinned products work)
 - `/pages/login.html` and `/pages/register.html`
 
 ### Account (requires login, `?redirect=` on guests)
@@ -51,7 +57,7 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 - `/pages/account/order.html?id=` — order details + Buy again
 - `/pages/wishlist.html` — wishlist inside the account layout
 
-Live players, vendor dashboard, admin screens, and the secure `place_order` function are not built yet.
+Vendor reels/orders, LiveKit/Agora players, and paid gateway webhooks are not fully productized yet. Checkout uses the `place_order` RPC (COD).
 
 ## Banners and promotions
 
@@ -84,6 +90,8 @@ Flash Sale products use real `products.compare_at_price` discounts. The sold bar
 - Payment method choices are UI-only (no `payment_method` enum; `payments.provider` is free text).
 - Reels: public can watch published reels of approved shops. Like / follow / comment need login. **View and share counts are not writable by the client** (trigger-guarded). Buy Now opens tagged products and uses the cart — it does not create an order.
 - Reels API: `web/js/api/reelsApi.js`. Viewer: `web/js/reels/` + `web/css/reels.css`.
+- Live: public can read `scheduled` / `live` / `ended` rooms of approved shops. Chat (`live_messages`) is **authenticated only** — guests see a sign-in CTA; send is allowed only while status is `live`. Pinned product uses `live_streams.pinned_product_id` (must already be in `live_stream_products`). Video is a placeholder via `web/js/live/liveVideo.js` (`mountVideo`) for a later LiveKit/Agora plug-in. Realtime watches `live_messages` inserts and `live_streams` updates. **There is no live viewer-count column** — only readable `peak_viewers` (not client-writable). Buy Now uses the shared reels product sheet → cart only.
+- Live API: `web/js/api/liveApi.js`. UI: `web/js/live/` + `web/css/live.css`. List: `pages/lives.html`. Room: `pages/live.html?id=`.
 
 ## Auth notes
 

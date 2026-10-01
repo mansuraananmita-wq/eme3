@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Laptop</title>
+  <rect width="800" height="800" fill="#eef2ff"/>
+  <circle cx="650" cy="120" r="100" fill="#4338ca" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#4338ca" opacity=".1"/>
+  <rect x="200" y="200" width="400" height="260" rx="12" fill="#4338ca"/><rect x="220" y="220" width="360" height="200" fill="#1e1b4b"/><rect x="160" y="460" width="480" height="24" rx="6" fill="#4338ca"/>
+  <text x="40" y="760" fill="#4338ca" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Laptop</text>
+</svg>

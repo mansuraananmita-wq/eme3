@@ -19,6 +19,7 @@ async function load() {
     const [lines, profile] = await Promise.all([listCart(), getCurrentProfile()]);
     render(lines, Boolean(profile));
   } catch (error) {
+    console.error("Cart load:", error);
     const message = authErrorMessage(error);
     toast(message, "error");
     showState(root, escapeHtml(message), () => load());
@@ -177,6 +178,7 @@ async function change(productId, quantity) {
     }
     await load();
   } catch (error) {
+    console.error("Cart change:", error);
     toast(authErrorMessage(error), "error");
   }
 }

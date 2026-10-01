@@ -23,6 +23,8 @@
     <link rel="stylesheet" href="css/marketplace.css">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/reels.css">
+    <link rel="stylesheet" href="css/live.css">
+    <link rel="stylesheet" href="css/reels.css">
   </head>
   <body data-page="home">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -111,7 +113,16 @@
         <!-- 6. Promo banner row -->
         <section class="promo-row section" aria-label="Promotions" id="promo-row"></section>
 
-        <!-- 7. Reels -->
+        <!-- 7. Live now -->
+        <section class="section" aria-labelledby="lives-home-heading" id="lives-home-section" hidden>
+          <div class="section-head">
+            <h2 id="lives-home-heading">Live now</h2>
+            <a href="pages/lives.html">All lives</a>
+          </div>
+          <div class="lives-home-row" id="lives-home-row" aria-busy="true"></div>
+        </section>
+
+        <!-- 8. Reels -->
         <section class="section" aria-labelledby="reels-heading">
           <div class="section-head">
             <h2 id="reels-heading">Reels</h2>
@@ -125,7 +136,7 @@
           </div>
         </section>
 
-        <!-- 8. Featured stores -->
+        <!-- 9. Featured stores -->
         <section class="section" aria-labelledby="featured-heading">
           <div class="section-head">
             <h2 id="featured-heading">Featured stores</h2>
@@ -138,7 +149,7 @@
           </div>
         </section>
 
-        <!-- 9. New arrivals -->
+        <!-- 10. New arrivals -->
         <section class="section" aria-labelledby="arrivals-heading">
           <div class="section-head">
             <h2 id="arrivals-heading">New arrivals</h2>

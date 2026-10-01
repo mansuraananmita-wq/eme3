@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Power bank</title>
+  <rect width="800" height="800" fill="#e0f2fe"/>
+  <circle cx="650" cy="120" r="100" fill="#0369a1" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#0369a1" opacity=".1"/>
+  <rect x="280" y="220" width="240" height="360" rx="28" fill="#0369a1"/><rect x="320" y="280" width="160" height="20" rx="6" fill="#fff" opacity=".4"/>
+  <text x="40" y="760" fill="#0369a1" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Power bank</text>
+</svg>

@@ -1,5 +1,6 @@
 /**
  * Shared product bottom sheet for reels (and later live).
+ * Buy Now / Add to cart go through the cart only — never create an order.
  */
 
 import { addToCart } from "../api/cartApi.js";
@@ -12,7 +13,7 @@ import { url } from "../paths.js";
 /**
  * @param {HTMLElement} host
  * @param {Array<object>} products
- * @param {{ title?: string }} [options]
+ * @param {{ title?: string, buyFocus?: boolean }} [options]
  */
 export function openProductSheet(host, products, options = {}) {
   closeProductSheet(host);
@@ -59,6 +60,30 @@ export function openProductSheet(host, products, options = {}) {
       }
     });
   });
+
+  // Buy Now: add to cart, then open the cart page (never creates an order).
+  sheet.querySelectorAll("[data-buy-cart]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      button.disabled = true;
+      try {
+        const result = await addToCart(button.getAttribute("data-buy-cart") || "", 1);
+        toast(
+          result.capped ? `Only ${result.stock} in stock. Opening cart.` : "Added — opening cart.",
+          result.capped ? "info" : "success",
+        );
+        closeProductSheet(host);
+        window.location.assign(url("pages/cart.html"));
+      } catch (error) {
+        toast(authErrorMessage(error), "error");
+        button.disabled = false;
+      }
+    });
+  });
+
+  if (options.buyFocus) {
+    sheet.querySelector("[data-buy-cart]")?.focus();
+  }
 }
 
 /**
@@ -78,18 +103,26 @@ function productRow(product) {
     ? `<img src="${escapeHtml(product.imageUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
     : `<span class="reel-product-fallback">${escapeHtml((product.title || "?").slice(0, 1))}</span>`;
   const stock = Number(product.stock) || 0;
+  const price = formatMoney(product.price, product.currency);
+  const compare = Number(product.compare_at_price);
+  const showCompare = Number.isFinite(compare) && compare > Number(product.price);
 
   return `
     <article class="reel-product-row">
       <a class="reel-product-thumb" href="${href}">${img}</a>
       <div class="reel-product-copy">
         <a href="${href}"><strong>${escapeHtml(product.title)}</strong></a>
-        <p>${escapeHtml(formatMoney(product.price, product.currency))}</p>
+        <p>
+          ${escapeHtml(price)}
+          ${showCompare ? `<s>${escapeHtml(formatMoney(compare, product.currency))}</s>` : ""}
+        </p>
         <div class="reel-product-actions">
-          <button class="button button-primary" type="button" data-add-cart="${escapeHtml(product.id)}" ${stock < 1 ? "disabled" : ""}>
+          <button class="button button-primary" type="button" data-buy-cart="${escapeHtml(product.id)}" ${stock < 1 ? "disabled" : ""}>
+            Buy Now
+          </button>
+          <button class="button button-ghost" type="button" data-add-cart="${escapeHtml(product.id)}" ${stock < 1 ? "disabled" : ""}>
             Add to cart
           </button>
-          <a class="button button-ghost" href="${href}">View</a>
         </div>
       </div>
     </article>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Football</title>
+  <rect width="800" height="800" fill="#fff7ed"/>
+  <circle cx="650" cy="120" r="100" fill="#ea580c" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#ea580c" opacity=".1"/>
+  <circle cx="400" cy="380" r="160" fill="#ea580c"/><path d="M400 220l50 100h-100zM300 360l100 40 40-100M500 360l-100 40-40-100" fill="#fff" opacity=".3"/>
+  <text x="40" y="760" fill="#ea580c" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Football</text>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Green tea</title>
+  <rect width="800" height="800" fill="#ecfdf5"/>
+  <circle cx="650" cy="120" r="100" fill="#16a34a" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#16a34a" opacity=".1"/>
+  <rect x="280" y="260" width="240" height="280" rx="16" fill="#16a34a"/><circle cx="400" cy="380" r="50" fill="#14532d"/>
+  <text x="40" y="760" fill="#16a34a" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Green tea</text>
+</svg>

@@ -163,6 +163,7 @@ function renderChrome(profile, counts, page, categories) {
   const shops = url("pages/shops.html");
   const sell = url("pages/sell.html");
   const reels = url("pages/reels.html");
+  const lives = url("pages/lives.html");
   const cart = url("pages/cart.html");
   const wishlist = url("pages/wishlist.html");
   const orders = url("pages/account/orders.html");
@@ -234,6 +235,7 @@ function renderChrome(profile, counts, page, categories) {
         </div>
         <a class="cat-nav-link" href="${shops}">Stores</a>
         <a class="cat-nav-link ${page === "reels" ? "is-active" : ""}" href="${reels}">Reels</a>
+        <a class="cat-nav-link ${page === "lives" ? "is-active" : ""}" href="${lives}">Live</a>
         <a class="cat-nav-link ${page === "sell" ? "is-active" : ""}" href="${sell}">Sell on EME</a>
         ${roots.slice(0, 8).map((row) => `
           <a class="cat-nav-link desktop-only ${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
@@ -288,10 +290,10 @@ function renderChrome(profile, counts, page, categories) {
 
   bottom.innerHTML = `
     <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>Home</span></a>
-    <a class="${page === "categories" || page === "products" ? "is-active" : ""}" href="${categoriesPage}">${icon("grid")}<span>Categories</span></a>
     <a class="${page === "reels" ? "is-active" : ""}" href="${reels}">${icon("reels")}<span>Reels</span></a>
+    <a class="${page === "lives" ? "is-active" : ""}" href="${lives}">${icon("live")}<span>Live</span></a>
     <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
-    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" ? "is-active" : ""}" href="${profile ? url("pages/account/profile.html") : login}">
+    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" || page === "categories" || page === "products" ? "is-active" : ""}" href="${profile ? url("pages/account/profile.html") : login}">
       ${icon("user")}<span>Account</span>
     </a>
   `;
@@ -446,6 +448,9 @@ function accountMenu(name, roleLabel, cart, wishlist) {
   const profile = url("pages/account/profile.html");
   const addresses = url("pages/account/addresses.html");
   const orders = url("pages/account/orders.html");
+  const vendorOrders = url("pages/vendor-orders.html");
+  const vendorReels = url("pages/vendor-reels.html");
+  const isVendor = roleLabel === "Vendor";
   return `
     <div class="account">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
@@ -457,6 +462,8 @@ function accountMenu(name, roleLabel, cart, wishlist) {
         <span class="badge">${escapeHtml(roleLabel)}</span>
         <a href="${profile}">Profile</a>
         <a href="${orders}">Orders</a>
+        ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
+        ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}
         <a href="${addresses}">Addresses</a>
         <a href="${wishlist}">Wishlist</a>
         <a href="${cart}">Cart</a>

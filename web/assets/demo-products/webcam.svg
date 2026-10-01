@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Webcam</title>
+  <rect width="800" height="800" fill="#f1f5f9"/>
+  <circle cx="650" cy="120" r="100" fill="#334155" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#334155" opacity=".1"/>
+  <circle cx="400" cy="340" r="110" fill="#334155"/><circle cx="400" cy="340" r="60" fill="#0f172a"/><rect x="370" y="450" width="60" height="80" fill="#334155"/>
+  <text x="40" y="760" fill="#334155" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Webcam</text>
+</svg>

@@ -5,6 +5,11 @@ import { url } from "./paths.js";
 
 mountShell({ page: "reels" });
 
+window.addEventListener("beforeunload", () => {
+  document.body.classList.remove("reels-lock");
+  window.dispatchEvent(new Event("eme-reels-unmount"));
+});
+
 const root = document.querySelector("#reels-root");
 const id = new URLSearchParams(window.location.search).get("id");
 
@@ -15,5 +20,5 @@ if (!(root instanceof HTMLElement)) {
     window.location.assign(url("pages/reels.html"));
   });
 } else {
-  mountReelViewer(root, { singleId: id, startId: id });
+  mountReelViewer(root, { startId: id });
 }

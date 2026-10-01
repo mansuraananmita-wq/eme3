@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Jacket</title>
+  <rect width="800" height="800" fill="#eff6ff"/>
+  <circle cx="650" cy="120" r="100" fill="#1e40af" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#1e40af" opacity=".1"/>
+  <path d="M240 220l160-40 160 40v40l-70-15v300H310V245l-70 15z" fill="#1e40af"/>
+  <text x="40" y="760" fill="#1e40af" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Jacket</text>
+</svg>

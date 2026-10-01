@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Lamp</title>
+  <rect width="800" height="800" fill="#fffbeb"/>
+  <circle cx="650" cy="120" r="100" fill="#d97706" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#d97706" opacity=".1"/>
+  <path d="M280 280h240l-40 120H320z" fill="#d97706"/><rect x="380" y="400" width="40" height="160" fill="#92400e"/><ellipse cx="400" cy="560" rx="80" ry="20" fill="#92400e"/>
+  <text x="40" y="760" fill="#d97706" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Lamp</text>
+</svg>

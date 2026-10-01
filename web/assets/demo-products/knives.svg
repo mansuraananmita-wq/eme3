@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Knives</title>
+  <rect width="800" height="800" fill="#f8fafc"/>
+  <circle cx="650" cy="120" r="100" fill="#475569" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#475569" opacity=".1"/>
+  <path d="M220 500L480 200l40 30-260 300z" fill="#475569"/><rect x="200" y="480" width="80" height="30" rx="6" fill="#92400e"/>
+  <text x="40" y="760" fill="#475569" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Knives</text>
+</svg>

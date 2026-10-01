@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Mat</title>
+  <rect width="800" height="800" fill="#ecfdf5"/>
+  <circle cx="650" cy="120" r="100" fill="#059669" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#059669" opacity=".1"/>
+  <rect x="160" y="280" width="480" height="240" rx="16" fill="#059669"/><path d="M200 320h400M200 380h400M200 440h400" stroke="#fff" stroke-width="8" opacity=".4"/>
+  <text x="40" y="760" fill="#059669" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Mat</text>
+</svg>

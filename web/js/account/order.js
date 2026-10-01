@@ -1,8 +1,8 @@
 import { mountAccountNav } from "../accountShell.js";
 import { addToCart } from "../api/cartApi.js";
-import { getMyOrder } from "../api/ordersApi.js";
+import { cancelMyOrder, getMyOrder } from "../api/ordersApi.js";
 import { authErrorMessage, requireUser } from "../auth.js";
-import { mountShell, toast } from "../components.js";
+import { mountShell, openModal, toast } from "../components.js";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { pickProductImage, productImageUrl } from "../media.js";
@@ -44,6 +44,7 @@ async function load() {
     document.title = `Order ${shortId(order.id)} — EME`;
     render(order);
   } catch (error) {
+    console.error("Order detail:", error);
     const message = authErrorMessage(error);
     toast(message, "error");
     showState(root, escapeHtml(message), () => load());
@@ -57,6 +58,7 @@ function render(order) {
   if (!root) return;
   const address = order.shipping_address || {};
   const payment = Array.isArray(order.payments) ? order.payments[0] : null;
+  const canCancel = order.status === "pending";
 
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
@@ -67,7 +69,7 @@ function render(order) {
     <p class="muted">${escapeHtml(formatDate(order.created_at))}</p>
 
     <section class="account-card">
-      <h2>Status</h2>
+      <h2>Status / অবস্থা</h2>
       <ol class="timeline">${timelineHtml(order.status)}</ol>
       <p class="muted">Payment: <span class="status-badge is-${escapeHtml(order.payment_status)}">${escapeHtml(order.payment_status)}</span>
         ${payment ? ` · ${escapeHtml(payment.provider)}` : ""}</p>
@@ -94,9 +96,12 @@ function render(order) {
       <p class="checkout-line"><span>Total</span><strong>${escapeHtml(formatMoney(order.total, order.currency))}</strong></p>
       <div class="order-actions">
         <button class="button button-primary" type="button" id="buy-again">Buy again</button>
+        ${canCancel ? `<button class="button button-ghost" type="button" id="cancel-order">Cancel order</button>` : ""}
         <a class="button button-ghost" href="${url("pages/account/orders.html")}">Back to orders</a>
       </div>
-      <p class="muted">Customers cannot cancel orders from the browser. Contact support if you need help.</p>
+      ${canCancel
+        ? `<p class="muted">You can cancel while the order is still pending.</p>`
+        : `<p class="muted">This order can no longer be cancelled from your account.</p>`}
     </section>
   `;
 
@@ -110,17 +115,36 @@ function render(order) {
         try {
           await addToCart(item.product_id, item.quantity);
           added += 1;
-        } catch {
-          // Skip unavailable lines; continue with the rest.
+        } catch (lineError) {
+          console.error("Buy again line:", lineError);
         }
       }
       if (!added) throw new Error("None of these products could be added to the cart.");
       toast(`Added ${added} item${added === 1 ? "" : "s"} to your cart.`, "success");
       window.location.assign(url("pages/cart.html"));
     } catch (error) {
+      console.error("Buy again:", error);
       toast(authErrorMessage(error), "error");
       if (button instanceof HTMLButtonElement) button.disabled = false;
     }
+  });
+
+  root.querySelector("#cancel-order")?.addEventListener("click", () => {
+    openModal({
+      title: "Cancel order",
+      body: "Cancel this pending order? Stock will be restored.",
+      confirmLabel: "Cancel order",
+      onConfirm: async () => {
+        try {
+          await cancelMyOrder(order.id);
+          toast("Order cancelled.", "success");
+          await load();
+        } catch (error) {
+          console.error("Cancel order:", error);
+          toast(authErrorMessage(error), "error");
+        }
+      },
+    });
   });
 }
 

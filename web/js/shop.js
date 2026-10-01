@@ -139,11 +139,11 @@ async function renderPanel(tab) {
       panel.innerHTML = `
         <div class="content-grid">
           ${lives.map((live) => `
-            <article class="content-card">
+            <a class="content-card" href="${url("pages/live.html")}?id=${encodeURIComponent(live.id)}">
               <div class="content-thumb">${live.thumbnail_url ? `<img src="${escapeHtml(live.thumbnail_url)}" alt="" loading="lazy">` : `<span class="thumb-fallback"></span>`}</div>
               <p><strong>${escapeHtml(live.title)}</strong></p>
               <p class="muted">${escapeHtml(live.status)}</p>
-            </article>
+            </a>
           `).join("")}
         </div>
       `;

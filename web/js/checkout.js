@@ -1,8 +1,10 @@
 import {
   buildCheckoutSummary,
-  getDefaultShippingFee,
+  clearBuyNow,
+  DELIVERY_FEES,
   PAYMENT_METHODS,
   placeOrder,
+  shippingFeeForAddress,
 } from "./api/checkoutApi.js";
 import {
   createAddress,
@@ -22,10 +24,9 @@ const root = document.querySelector("#checkout-root");
 let addresses = [];
 /** @type {Awaited<ReturnType<typeof buildCheckoutSummary>> | null} */
 let summary = null;
-/** @type {{ amount: number, currency: string } | null} */
-let shipping = null;
 let selectedAddressId = "";
-let selectedPayment = PAYMENT_METHODS[0].id;
+let selectedPayment = "cash_on_delivery";
+let placing = false;
 
 boot();
 
@@ -41,37 +42,49 @@ async function load() {
   root.setAttribute("aria-busy", "true");
 
   try {
-    [summary, addresses, shipping] = await Promise.all([
+    [summary, addresses] = await Promise.all([
       buildCheckoutSummary(),
       listAddresses(),
-      getDefaultShippingFee(),
     ]);
 
     if (!summary || summary.empty) {
+      clearBuyNow();
       window.location.assign(url("pages/cart.html"));
       return;
     }
 
     const preferred = addresses.find((row) => row.is_default) || addresses[0];
     selectedAddressId = preferred?.id || "";
+    selectedPayment = "cash_on_delivery";
     render();
   } catch (error) {
+    console.error("Checkout load:", error);
     const message = authErrorMessage(error);
     toast(message, "error");
     showState(root, escapeHtml(message), () => load());
   }
 }
 
+function selectedAddress() {
+  return addresses.find((row) => row.id === selectedAddressId) || null;
+}
+
 function render() {
-  if (!root || !summary || !shipping) return;
+  if (!root || !summary) return;
+  const address = selectedAddress();
+  const shipping = shippingFeeForAddress(address || { city: "Dhaka", district: "Dhaka" });
   const grand = summary.subtotal + shipping.amount;
+  const buyNote = summary.mode === "buy_now"
+    ? `<p class="notice">Buy Now — checking out with this item only. Your other cart items stay in the cart.</p>`
+    : "";
 
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
+    ${buyNote}
     <div class="checkout-layout">
       <div class="checkout-steps">
         <section class="checkout-panel">
-          <h2 class="checkout-step-title">1. Delivery address</h2>
+          <h2 class="checkout-step-title">1. Delivery address / ঠিকানা</h2>
           ${addresses.length
             ? `<div class="address-pick-list" id="address-pick">
                 ${addresses.map((row) => `
@@ -89,15 +102,15 @@ function render() {
             : `<p class="muted">No saved addresses yet. Add one below.</p>`}
 
           <details ${addresses.length ? "" : "open"}>
-            <summary>Add a new address</summary>
+            <summary>Add a new address / নতুন ঠিকানা</summary>
             <form id="checkout-address-form" class="address-form" style="margin-top: var(--space-3)">
               <label class="field"><span>Label</span><input name="label" value="Home" required maxlength="40"></label>
-              <label class="field"><span>Recipient name</span><input name="recipient_name" required maxlength="120"></label>
-              <label class="field"><span>Phone</span><input name="phone" required maxlength="20" placeholder="01XXXXXXXXX" inputmode="tel"></label>
-              <label class="field"><span>Address line 1</span><input name="line1" required maxlength="180"></label>
+              <label class="field"><span>Recipient name / নাম</span><input name="recipient_name" required maxlength="120"></label>
+              <label class="field"><span>Phone / মোবাইল</span><input name="phone" required maxlength="20" placeholder="01XXXXXXXXX" inputmode="tel"></label>
+              <label class="field"><span>Address line / ঠিকানা</span><input name="line1" required maxlength="180"></label>
               <label class="field"><span>Address line 2</span><input name="line2" maxlength="180"></label>
-              <label class="field"><span>City / area</span><input name="city" required maxlength="80"></label>
-              <label class="field"><span>District</span><input name="district" required maxlength="80"></label>
+              <label class="field"><span>Area / city (এলাকা)</span><input name="city" required maxlength="80" placeholder="e.g. Mirpur"></label>
+              <label class="field"><span>District (জেলা)</span><input name="district" required maxlength="80" placeholder="e.g. Dhaka"></label>
               <label class="field"><span>Postal code</span><input name="postal_code" maxlength="20"></label>
               <label class="field-inline"><input name="is_default" type="checkbox" checked> <span>Set as default</span></label>
               <button class="button button-primary" type="submit">Save address</button>
@@ -106,19 +119,31 @@ function render() {
         </section>
 
         <section class="checkout-panel">
-          <h2 class="checkout-step-title">2. Delivery</h2>
-          <p>Standard delivery · ${escapeHtml(formatMoney(shipping.amount, shipping.currency))}</p>
-          <p class="muted">Taken from platform_settings.default_shipping_fee (no shipping_methods table).</p>
+          <h2 class="checkout-step-title">2. Delivery / ডেলিভারি</h2>
+          <p>
+            ${shipping.zone === "dhaka"
+              ? `Inside Dhaka · ${escapeHtml(formatMoney(DELIVERY_FEES.insideDhaka, DELIVERY_FEES.currency))}`
+              : `Outside Dhaka · ${escapeHtml(formatMoney(DELIVERY_FEES.outsideDhaka, DELIVERY_FEES.currency))}`}
+          </p>
+          <p class="muted">
+            Fee is ${escapeHtml(String(DELIVERY_FEES.insideDhaka))} BDT in Dhaka,
+            ${escapeHtml(String(DELIVERY_FEES.outsideDhaka))} BDT elsewhere
+            (matched on district/city containing “Dhaka”). Confirmed on the server when you place the order.
+          </p>
         </section>
 
         <section class="checkout-panel">
-          <h2 class="checkout-step-title">3. Payment method</h2>
-          <p class="muted">UI only — no real payment is charged. There is no payment_method enum; these map to payments.provider later.</p>
+          <h2 class="checkout-step-title">3. Payment / পেমেন্ট</h2>
           <div class="payment-options" id="payment-pick">
             ${PAYMENT_METHODS.map((method) => `
-              <label class="${method.id === selectedPayment ? "is-selected" : ""}">
-                <input type="radio" name="payment_method" value="${escapeHtml(method.id)}" ${method.id === selectedPayment ? "checked" : ""}>
-                <span>${escapeHtml(method.label)}</span>
+              <label class="${method.id === selectedPayment ? "is-selected" : ""} ${method.available ? "" : "is-disabled"}">
+                <input type="radio" name="payment_method" value="${escapeHtml(method.id)}"
+                  ${method.id === selectedPayment ? "checked" : ""}
+                  ${method.available ? "" : "disabled"}>
+                <span>
+                  ${escapeHtml(method.label)}
+                  ${method.available ? "" : `<em class="coming-soon">Coming soon</em>`}
+                </span>
               </label>
             `).join("")}
           </div>
@@ -142,8 +167,9 @@ function render() {
         <p class="checkout-line"><span>Subtotal</span><strong>${escapeHtml(formatMoney(summary.subtotal, summary.currency))}</strong></p>
         <p class="checkout-line"><span>Delivery</span><strong>${escapeHtml(formatMoney(shipping.amount, shipping.currency))}</strong></p>
         <p class="checkout-line"><span>Total</span><strong>${escapeHtml(formatMoney(grand, summary.currency))}</strong></p>
-        <button class="button button-primary" type="button" id="place-order">Place order</button>
-        <p class="muted">Checkout will call a secure server function in a later step. Nothing is written to orders yet.</p>
+        <button class="button button-primary" type="button" id="place-order" ${placing ? "disabled" : ""}>
+          ${placing ? "Placing…" : "Place order / অর্ডার করুন"}
+        </button>
       </aside>
     </div>
   `;
@@ -192,23 +218,44 @@ function render() {
       addresses = await listAddresses();
       render();
     } catch (error) {
+      console.error("Save address:", error);
       toast(authErrorMessage(error), "error");
     }
   });
 
-  root.querySelector("#place-order")?.addEventListener("click", async () => {
-    const button = root.querySelector("#place-order");
-    if (button instanceof HTMLButtonElement) button.disabled = true;
-    try {
-      const result = await placeOrder({
-        addressId: selectedAddressId,
-        paymentMethod: selectedPayment,
-      });
-      toast(result.message, "info");
-    } catch (error) {
-      toast(authErrorMessage(error), "error");
-    } finally {
-      if (button instanceof HTMLButtonElement) button.disabled = false;
+  root.querySelector("#place-order")?.addEventListener("click", onPlaceOrder);
+}
+
+async function onPlaceOrder() {
+  if (placing || !root) return;
+  if (!selectedAddressId) {
+    toast("Add or choose a delivery address.", "error");
+    return;
+  }
+
+  placing = true;
+  const button = root.querySelector("#place-order");
+  if (button instanceof HTMLButtonElement) {
+    button.disabled = true;
+    button.textContent = "Placing…";
+  }
+
+  try {
+    const result = await placeOrder({
+      addressId: selectedAddressId,
+      paymentMethod: selectedPayment,
+    });
+    toast("Order placed.", "success");
+    window.location.assign(
+      `${url("pages/account/order.html")}?id=${encodeURIComponent(result.orderId)}`,
+    );
+  } catch (error) {
+    console.error("Place order:", error);
+    toast(authErrorMessage(error), "error");
+    placing = false;
+    if (button instanceof HTMLButtonElement) {
+      button.disabled = false;
+      button.textContent = "Place order / অর্ডার করুন";
     }
-  });
+  }
 }

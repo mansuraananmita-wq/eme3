@@ -18,18 +18,23 @@ import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js";
 import { showState, syncConfigBanner } from "./ui-state.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js";
-import { shopCardHtml } from "./shopView.js";
+import { shopCardHtml, shopHref, shopLogoHtml } from "./shopView.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { listCategories } from "./api/categoriesApi.js";
 import { listDiscountedProducts, listProducts } from "./api/productsApi.js";
 import { listFeaturedShops } from "./api/shopsApi.js";
 import { listPublishedReels } from "./api/reelsApi.js";
+import { listLiveNow } from "./api/liveApi.js";
+import { formatMoney } from "./format.js";
+import { icon } from "./icons.js";
 
 const categoryRoot = document.querySelector("#category-row");
 const trendingRoot = document.querySelector("#trending-grid");
 const arrivalsRoot = document.querySelector("#arrivals-grid");
 const featuredRoot = document.querySelector("#featured-shops");
 const reelsRoot = document.querySelector("#reels-row");
+const livesHomeSection = document.querySelector("#lives-home-section");
+const livesHomeRow = document.querySelector("#lives-home-row");
 const flashSection = document.querySelector("#flash-section");
 const flashRail = document.querySelector("#flash-rail");
 const heroCats = document.querySelector("#hero-cats");
@@ -57,12 +62,13 @@ async function loadHome() {
   }
 
   try {
-    const [categories, trending, arrivals, featured, reels, flash, saved] = await Promise.all([
+    const [categories, trending, arrivals, featured, reels, lives, flash, saved] = await Promise.all([
       listCategories(),
       listProducts({ sort: "trending", limit: 12, offset: 0 }),
       listProducts({ sort: "newest", limit: 12, offset: 0 }),
       listFeaturedShops(6),
       listPublishedReels({ limit: 12, offset: 0, sort: "newest" }),
+      listLiveNow({ limit: 12 }),
       listDiscountedProducts({ limit: 14 }),
       savedIds(),
     ]);
@@ -73,6 +79,7 @@ async function loadHome() {
     renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
     renderProducts(arrivalsRoot, arrivals.rows, saved, "No new products yet.");
     renderFeatured(featured);
+    renderLivesHome(lives);
     renderReels(reels.rows);
   } catch (error) {
     const message = authErrorMessage(error);
@@ -105,6 +112,7 @@ function endAll(message, retry) {
   if (arrivalsRoot) showState(arrivalsRoot, escapeHtml(message), onRetry);
   if (featuredRoot) showState(featuredRoot, escapeHtml(message), onRetry);
   if (reelsRoot) showState(reelsRoot, escapeHtml(message), onRetry);
+  if (livesHomeRow) showState(livesHomeRow, escapeHtml(message), onRetry);
   if (flashRail) showState(flashRail, escapeHtml(message), onRetry);
   if (heroCats) showState(heroCats, escapeHtml(message), onRetry);
 }
@@ -302,6 +310,48 @@ function renderFeatured(shops) {
 }
 
 /**
+ * @param {Array<object>} lives
+ */
+function renderLivesHome(lives) {
+  if (!(livesHomeSection instanceof HTMLElement) || !(livesHomeRow instanceof HTMLElement)) return;
+  if (!lives.length) {
+    livesHomeSection.hidden = true;
+    livesHomeRow.setAttribute("aria-busy", "false");
+    livesHomeRow.innerHTML = "";
+    return;
+  }
+  livesHomeSection.hidden = false;
+  livesHomeRow.setAttribute("aria-busy", "false");
+  livesHomeRow.innerHTML = lives
+    .map((stream) => {
+      const href = `${url("pages/live.html")}?id=${encodeURIComponent(stream.id)}`;
+      const shop = stream.shop;
+      const thumb = stream.thumbnailUrl
+        ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
+        : "";
+      const peak =
+        Number(stream.peakViewers) > 0 ? ` · Peak ${escapeHtml(String(stream.peakViewers))}` : "";
+      return `
+        <article class="live-card">
+          <a class="live-card-media" href="${href}">
+            ${thumb}
+            <span class="live-badge is-live">LIVE</span>
+          </a>
+          <div class="live-card-body">
+            <a class="live-card-shop" href="${shop?.slug ? shopHref(shop.slug) : url("pages/shops.html")}">
+              ${shopLogoHtml(shop, "shop-logo-xs")}
+              <span>${escapeHtml(shop?.shop_name || "Shop")}</span>
+            </a>
+            <h3><a href="${href}">${escapeHtml(stream.title)}</a></h3>
+            <p class="live-card-meta">Live now${peak}</p>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+/**
  * @param {Array<object>} reels
  */
 function renderReels(reels) {
@@ -313,14 +363,21 @@ function renderReels(reels) {
   }
   reelsRoot.innerHTML = reels
     .map((reel) => {
-      const thumb = reel.thumbnailUrl
-        ? `<img src="${escapeHtml(reel.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
+      const product = reel.products?.[0];
+      const thumbSrc = reel.thumbnailUrl || product?.imageUrl || "";
+      const thumb = thumbSrc
+        ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" onerror="this.hidden=true">`
         : "";
       const label = reel.shop?.shop_name || "Reel";
+      const price = product
+        ? formatMoney(product.price, product.currency)
+        : "";
       return `
         <a class="reel-thumb-card" href="${url("pages/reels.html")}?start=${encodeURIComponent(reel.id)}">
           ${thumb}
-          <span>${escapeHtml(label)}</span>
+          <span class="reel-thumb-label">${escapeHtml(label)}</span>
+          <span class="reel-thumb-play" aria-hidden="true">${icon("play")}</span>
+          ${price ? `<span class="reel-thumb-price">${escapeHtml(price)}</span>` : ""}
         </a>
       `;
     })

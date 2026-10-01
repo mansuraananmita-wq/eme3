@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Dress</title>
+  <rect width="800" height="800" fill="#fdf2f8"/>
+  <circle cx="650" cy="120" r="100" fill="#be185d" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#be185d" opacity=".1"/>
+  <path d="M320 180l80-30 80 30v60l60 20v40l-60-10 40 340H280l40-340-60 10v-40l60-20z" fill="#be185d"/>
+  <text x="40" y="760" fill="#be185d" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Dress</text>
+</svg>

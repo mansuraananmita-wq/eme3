@@ -92,6 +92,7 @@ async function renderComments(list, reelId) {
       </article>
     `).join("");
   } catch (error) {
+    console.error("Reel comments:", error);
     list.setAttribute("aria-busy", "false");
     list.innerHTML = `<p class="empty">${escapeHtml(authErrorMessage(error))}</p>`;
   }

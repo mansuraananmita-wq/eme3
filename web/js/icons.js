@@ -26,6 +26,11 @@ export function icon(name) {
     phone: '<path d="M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M10 18h4"/>',
     mail: '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/>',
+    play: '<path d="M9 7.5v9l8-4.5z" fill="currentColor" stroke="none"/>',
+    pause: '<path d="M8 6h3v12H8zM13 6h3v12h-3z" fill="currentColor" stroke="none"/>',
+    volumeOn: '<path d="M4 10v4h3l4 3V7L7 10H4z"/><path d="M16 9a3.5 3.5 0 0 1 0 6"/><path d="M18.2 7a6 6 0 0 1 0 10"/>',
+    volumeOff: '<path d="M4 10v4h3l4 3V7L7 10H4z"/><path d="M16 10l4 4M20 10l-4 4"/>',
+    live: '<circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9" opacity=".35"/>',
   };
 
   const body = paths[name] || paths.menu;

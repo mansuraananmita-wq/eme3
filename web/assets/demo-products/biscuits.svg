@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Biscuits</title>
+  <rect width="800" height="800" fill="#fef3c7"/>
+  <circle cx="650" cy="120" r="100" fill="#b45309" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#b45309" opacity=".1"/>
+  <rect x="240" y="280" width="320" height="220" rx="16" fill="#b45309"/><circle cx="320" cy="390" r="40" fill="#92400e"/><circle cx="400" cy="390" r="40" fill="#92400e"/><circle cx="480" cy="390" r="40" fill="#92400e"/>
+  <text x="40" y="760" fill="#b45309" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Biscuits</text>
+</svg>

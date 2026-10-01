@@ -1,12 +1,13 @@
 import { listReviews, getProduct, productsFromShop, relatedProducts } from "./api/productsApi.js";
 import { getShop } from "./api/shopsApi.js";
 import { addToCart } from "./api/cartApi.js";
+import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
-import { loginRedirect } from "./paths.js";
+import { loginRedirect, url } from "./paths.js";
 import { bindCatalogActions, priceHtml, productCardHtml } from "./productView.js";
 import { shopHref, shopLogoHtml, shopOf, soldByHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";
@@ -121,12 +122,12 @@ function renderProduct(product, saved) {
           <button type="button" data-step="1" aria-label="Increase quantity" ${inStock ? "" : "disabled"}>+</button>
         </div>
         <div class="card-actions">
-          <button class="button button-primary" type="button" id="add-cart" ${inStock ? "" : "disabled"}>Add to cart</button>
+          <button class="button button-primary" type="button" id="buy-now" ${inStock ? "" : "disabled"}>Buy Now</button>
+          <button class="button button-ghost" type="button" id="add-cart" ${inStock ? "" : "disabled"}>Add to cart</button>
           <button class="icon-button ${saved ? "is-saved" : ""}" type="button" id="save-wish" aria-pressed="${saved ? "true" : "false"}" aria-label="Save ${escapeHtml(product.title)}">
             Save
           </button>
         </div>
-        <button class="button button-ghost" type="button" disabled>Checkout coming soon</button>
       </div>
     </div>
   `;
@@ -150,8 +151,28 @@ function renderProduct(product, saved) {
       const result = await addToCart(product.id, clampQty(Number(qty.value), stock));
       toast(result.capped ? `Only ${result.stock} in stock. Added that many.` : "Added to cart.", result.capped ? "info" : "success");
     } catch (error) {
+      console.error("Add to cart:", error);
       toast(authErrorMessage(error), "error");
     } finally {
+      button.disabled = false;
+    }
+  });
+
+  root.querySelector("#buy-now")?.addEventListener("click", async () => {
+    const button = root.querySelector("#buy-now");
+    if (!(button instanceof HTMLButtonElement) || !(qty instanceof HTMLInputElement)) return;
+    const profile = await getCurrentProfile();
+    if (!profile) {
+      window.location.assign(loginRedirect());
+      return;
+    }
+    button.disabled = true;
+    try {
+      setBuyNow(product.id, clampQty(Number(qty.value), stock));
+      window.location.assign(url("pages/checkout.html"));
+    } catch (error) {
+      console.error("Buy now:", error);
+      toast(authErrorMessage(error), "error");
       button.disabled = false;
     }
   });

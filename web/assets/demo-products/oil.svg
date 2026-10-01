@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Oil</title>
+  <rect width="800" height="800" fill="#fffbeb"/>
+  <circle cx="650" cy="120" r="100" fill="#ca8a04" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#ca8a04" opacity=".1"/>
+  <path d="M340 240h120l40 320H300z" fill="#ca8a04"/><rect x="370" y="200" width="60" height="50" fill="#a16207"/>
+  <text x="40" y="760" fill="#ca8a04" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Oil</text>
+</svg>

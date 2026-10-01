@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>OTG</title>
+  <rect width="800" height="800" fill="#f1f5f9"/>
+  <circle cx="650" cy="120" r="100" fill="#64748b" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#64748b" opacity=".1"/>
+  <rect x="300" y="300" width="200" height="80" rx="12" fill="#64748b"/><rect x="340" y="250" width="40" height="60" fill="#64748b"/><rect x="420" y="250" width="40" height="60" fill="#64748b"/>
+  <text x="40" y="760" fill="#64748b" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">OTG</text>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Cream</title>
+  <rect width="800" height="800" fill="#fdf2f8"/>
+  <circle cx="650" cy="120" r="100" fill="#f472b6" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#f472b6" opacity=".1"/>
+  <rect x="280" y="320" width="240" height="180" rx="20" fill="#f472b6"/><ellipse cx="400" cy="320" rx="120" ry="40" fill="#fb7185"/>
+  <text x="40" y="760" fill="#f472b6" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Cream</text>
+</svg>

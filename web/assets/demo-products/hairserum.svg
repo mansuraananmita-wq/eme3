@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Serum</title>
+  <rect width="800" height="800" fill="#faf5ff"/>
+  <circle cx="650" cy="120" r="100" fill="#9333ea" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#9333ea" opacity=".1"/>
+  <rect x="355" y="250" width="90" height="300" rx="14" fill="#9333ea"/><rect x="375" y="200" width="50" height="60" fill="#6b21a8"/>
+  <text x="40" y="760" fill="#9333ea" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Serum</text>
+</svg>

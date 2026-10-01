@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img">
+  <title>Cap</title>
+  <rect width="800" height="800" fill="#fefce8"/>
+  <circle cx="650" cy="120" r="100" fill="#ca8a04" opacity=".12"/>
+  <circle cx="120" cy="680" r="120" fill="#ca8a04" opacity=".1"/>
+  <ellipse cx="400" cy="360" rx="160" ry="50" fill="#ca8a04"/><path d="M260 360c20-100 260-100 280 0" fill="#ca8a04"/><path d="M520 360h120c20 20 20 40 0 50H520z" fill="#ca8a04"/>
+  <text x="40" y="760" fill="#ca8a04" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Cap</text>
+</svg>

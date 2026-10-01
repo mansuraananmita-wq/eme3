@@ -14,29 +14,45 @@ import {
   unfollowShop,
   unlikeReel,
 } from "../api/reelsApi.js";
+import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js";
 import { toast } from "../components.js";
+import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";
 import { loginRedirect, url } from "../paths.js";
 import { shopHref, shopLogoHtml } from "../shopView.js";
+import { getMyShopApplication } from "../api/shopsApi.js";
 import { showState } from "../ui-state.js";
 import { openCommentsSheet } from "./commentsSheet.js";
 import { closeProductSheet, openProductSheet } from "./productSheet.js";
+
+const MUTE_SESSION_KEY = "eme-reels-muted";
 
 /**
  * @param {HTMLElement} root
  * @param {{ startId?: string | null, singleId?: string | null }} [options]
  */
 export async function mountReelViewer(root, options = {}) {
+  document.body.classList.add("reels-lock");
   root.classList.add("reels-viewer");
   root.innerHTML = `
-    <div class="reels-stage" data-stage aria-busy="true">
-      <div class="skeleton skeleton-card reels-skeleton"></div>
-    </div>
-    <div class="reels-desktop-nav" aria-hidden="true">
-      <button type="button" data-dir="-1" aria-label="Previous reel">${icon("chevronUp")}</button>
-      <button type="button" data-dir="1" aria-label="Next reel">${icon("chevronDown")}</button>
+    <header class="reels-topbar">
+      <a class="reels-topbar-btn" href="${url("index.html")}" aria-label="Back">${icon("chevronLeft")}</a>
+      <h1 class="reels-topbar-title">Reels</h1>
+      <div class="reels-topbar-actions">
+        <a class="reels-topbar-link" href="${url("pages/vendor-reels.html")}" data-vendor-reels hidden>Create reel</a>
+        <button class="reels-topbar-btn" type="button" data-global-mute aria-pressed="true" aria-label="Unmute">${icon("volumeOff")}</button>
+      </div>
+    </header>
+    <div class="reels-column">
+      <div class="reels-stage" data-stage aria-busy="true">
+        <div class="skeleton skeleton-card reels-skeleton"></div>
+      </div>
+      <div class="reels-desktop-nav" aria-hidden="true">
+        <button type="button" data-dir="-1" aria-label="Previous reel">${icon("chevronUp")}</button>
+        <button type="button" data-dir="1" aria-label="Next reel">${icon("chevronDown")}</button>
+      </div>
     </div>
     <div class="reels-overlays" data-overlays></div>
   `;
@@ -49,31 +65,39 @@ export async function mountReelViewer(root, options = {}) {
   let reels = [];
   let total = 0;
   let loadingMore = false;
-  let muted = true;
+  let lastAppendCount = 0;
+  let muted = sessionStorage.getItem(MUTE_SESSION_KEY) !== "0";
+  let wheelLock = false;
   /** @type {IntersectionObserver | null} */
   let observer = null;
   /** @type {string | null} */
   let activeId = null;
 
-  const singleId = options.singleId || null;
-  const startId = options.startId || singleId;
+  const startId = options.startId || null;
+
+  getMyShopApplication()
+    .then((shop) => {
+      if (shop?.status === "approved") {
+        root.querySelector("[data-vendor-reels]")?.removeAttribute("hidden");
+      }
+    })
+    .catch((error) => console.error("Vendor reels link:", error));
 
   try {
-    if (singleId) {
-      const one = await getReel(singleId);
-      if (!one) {
-        showState(stage, "This reel is not available.", () => window.location.assign(url("pages/reels.html")));
-        return;
-      }
-      reels = [one];
-      total = 1;
-    } else {
-      const first = await listPublishedReels({ limit: REELS_PAGE_SIZE, offset: 0, sort: "newest" });
-      reels = first.rows;
-      total = first.total;
-      if (startId && !reels.some((reel) => reel.id === startId)) {
+    const first = await listPublishedReels({ limit: REELS_PAGE_SIZE, offset: 0, sort: "newest" });
+    reels = first.rows;
+    total = first.total;
+
+    if (startId) {
+      if (!reels.some((reel) => reel.id === startId)) {
         const focused = await getReel(startId);
-        if (focused) reels = [focused, ...reels.filter((reel) => reel.id !== focused.id)];
+        if (!focused) {
+          showState(stage, "This reel is not available.", () => window.location.assign(url("pages/reels.html")));
+          return;
+        }
+        reels = [focused, ...reels.filter((reel) => reel.id !== focused.id)];
+      } else {
+        reels = prioritizeReel(reels, startId);
       }
     }
 
@@ -82,14 +106,16 @@ export async function mountReelViewer(root, options = {}) {
       return;
     }
 
-    await paint();
-    if (startId) scrollToReel(startId);
+    await paint(false);
+    applyMute();
+    if (startId) scrollToReel(startId, false);
     else if (reels[0]) {
       activeId = reels[0].id;
-      playActive();
+      await playActive();
       preloadAround(activeId);
     }
   } catch (error) {
+    console.error("Reels feed failed:", error);
     const message = authErrorMessage(error);
     toast(message, "error");
     showState(stage, escapeHtml(message), () => mountReelViewer(root, options));
@@ -98,6 +124,26 @@ export async function mountReelViewer(root, options = {}) {
   root.querySelectorAll("[data-dir]").forEach((button) => {
     button.addEventListener("click", () => step(Number(button.getAttribute("data-dir"))));
   });
+
+  root.querySelector("[data-global-mute]")?.addEventListener("click", () => {
+    muted = !muted;
+    applyMute();
+  });
+
+  stage.addEventListener(
+    "wheel",
+    (event) => {
+      if (Math.abs(event.deltaY) < 8) return;
+      event.preventDefault();
+      if (wheelLock) return;
+      wheelLock = true;
+      step(event.deltaY > 0 ? 1 : -1);
+      window.setTimeout(() => {
+        wheelLock = false;
+      }, 450);
+    },
+    { passive: false },
+  );
 
   document.addEventListener("keydown", onKey);
   document.addEventListener("visibilitychange", onVisibility);
@@ -128,48 +174,73 @@ export async function mountReelViewer(root, options = {}) {
   }
 
   function cleanup() {
+    document.body.classList.remove("reels-lock");
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("visibilitychange", onVisibility);
     observer?.disconnect();
     pauseAll();
   }
 
-  async function paint() {
-    const liked = await likedReelIds(reels.map((reel) => reel.id)).catch(() => new Set());
-    const followed = await followedShopIds(
-      reels.map((reel) => reel.vendorId).filter(Boolean),
-    ).catch(() => new Set());
+  /**
+   * @param {boolean} appendOnly
+   */
+  async function paint(appendOnly = false) {
+    const slice = appendOnly ? reels.slice(reels.length - lastAppendCount) : reels;
+    const liked = await likedReelIds(reels.map((reel) => reel.id)).catch((error) => {
+      console.error("Reel likes:", error);
+      return new Set();
+    });
+    const followed = await followedShopIds(reels.map((reel) => reel.vendorId).filter(Boolean)).catch((error) => {
+      console.error("Follow state:", error);
+      return new Set();
+    });
 
     stage.setAttribute("aria-busy", "false");
-    stage.innerHTML = reels.map((reel) => slideHtml(reel, {
-      liked: liked.has(reel.id),
-      followed: followed.has(reel.vendorId),
-      muted,
-    })).join("");
+    const html = slice
+      .map((reel) =>
+        slideHtml(reel, {
+          liked: liked.has(reel.id),
+          followed: followed.has(reel.vendorId),
+          muted,
+          eager: reel.id === activeId || reel.id === reels[0]?.id,
+        }),
+      )
+      .join("");
 
-    bindSlides();
+    if (appendOnly) stage.insertAdjacentHTML("beforeend", html);
+    else stage.innerHTML = html;
+
+    bindSlides(appendOnly ? slice : reels);
     setupObserver();
     preloadAround(activeId || reels[0]?.id);
   }
 
-  function bindSlides() {
-    stage.querySelectorAll("[data-reel-id]").forEach((slide) => {
-      const reelId = slide.getAttribute("data-reel-id") || "";
-      const reel = reels.find((row) => row.id === reelId);
-      if (!reel) return;
-
+  /**
+   * @param {Array<object>} boundReels
+   */
+  function bindSlides(boundReels = reels) {
+    boundReels.forEach((reel) => {
+      const slide = stage.querySelector(`[data-reel-id="${CSS.escape(reel.id)}"]`);
+      if (!slide) return;
       const video = slide.querySelector("video");
-      video?.addEventListener("timeupdate", () => updateProgress(slide, video));
-      video?.addEventListener("error", () => showVideoError(slide, reel));
+      if (video instanceof HTMLVideoElement) {
+        video.muted = muted;
+        video.addEventListener("timeupdate", () => updateProgress(slide, video));
+        video.addEventListener("error", () => showVideoError(slide, reel));
+        video.addEventListener("playing", () => {
+          slide.classList.remove("is-paused", "needs-gesture");
+          slide.querySelector("[data-tap-hint]")?.setAttribute("hidden", "");
+        });
+        video.addEventListener("pause", () => {
+          if (slide.getAttribute("data-reel-id") === activeId && !video.ended) {
+            slide.classList.add("is-paused");
+          }
+        });
+      }
 
       slide.querySelector("[data-tap-video]")?.addEventListener("click", (event) => {
-        if (event.target instanceof Element && event.target.closest("button, a")) return;
-        togglePlay(video);
-      });
-
-      slide.querySelector("[data-mute]")?.addEventListener("click", () => {
-        muted = !muted;
-        applyMute();
+        if (event.target instanceof Element && event.target.closest("button, a, .reel-product-card")) return;
+        togglePlay(video, slide);
       });
 
       slide.querySelector("[data-like]")?.addEventListener("click", () => toggleLike(reel, slide));
@@ -178,21 +249,22 @@ export async function mountReelViewer(root, options = {}) {
       slide.querySelector("[data-products]")?.addEventListener("click", () => {
         openProductSheet(overlays, reel.products, { title: "Shop this reel" });
       });
-      slide.querySelector("[data-buy]")?.addEventListener("click", () => {
-        openProductSheet(overlays, reel.products, { title: "Buy from this reel" });
-      });
       slide.querySelector("[data-comments]")?.addEventListener("click", () => {
         openCommentsSheet(overlays, reel.id);
       });
       slide.querySelector("[data-caption-more]")?.addEventListener("click", (event) => {
         event.currentTarget.closest(".reel-caption")?.classList.toggle("is-expanded");
       });
-      slide.querySelector("[data-retry-video]")?.addEventListener("click", () => {
-        const media = slide.querySelector("video");
-        if (!(media instanceof HTMLVideoElement)) return;
-        slide.querySelector(".reel-video-error")?.remove();
-        media.load();
-        media.play().catch(() => {});
+      slide.querySelector("[data-add-cart]")?.addEventListener("click", () => addProduct(reel.products?.[0]));
+      slide.querySelector("[data-buy-now]")?.addEventListener("click", () => {
+        openProductSheet(overlays, reel.products, { title: "Buy from this reel", buyFocus: true });
+      });
+      slide.querySelector("[data-more-products]")?.addEventListener("click", () => {
+        openProductSheet(overlays, reel.products, { title: "Shop this reel" });
+      });
+      slide.querySelector("[data-retry-video]")?.addEventListener("click", () => retryVideo(slide));
+      slide.querySelector("[data-tap-hint]")?.addEventListener("click", () => {
+        togglePlay(video, slide);
       });
     });
   }
@@ -223,12 +295,36 @@ export async function mountReelViewer(root, options = {}) {
    */
   function preloadAround(id) {
     const index = reels.findIndex((reel) => reel.id === id);
-    const next = reels[index + 1];
+    const keep = new Set(
+      [index - 1, index, index + 1, index + 2]
+        .filter((i) => i >= 0 && i < reels.length)
+        .map((i) => reels[i]?.id)
+        .filter(Boolean),
+    );
+
     stage.querySelectorAll("video").forEach((video) => {
       if (!(video instanceof HTMLVideoElement)) return;
-      const slideId = video.closest("[data-reel-id]")?.getAttribute("data-reel-id");
-      if (slideId === next?.id) video.setAttribute("preload", "auto");
-      else if (slideId !== id) video.setAttribute("preload", "none");
+      const slide = video.closest("[data-reel-id]");
+      const slideId = slide?.getAttribute("data-reel-id");
+      if (!slideId || !video.dataset.src) return;
+
+      if (slideId === id) {
+        video.preload = "auto";
+        if (!video.getAttribute("src")) video.src = video.dataset.src;
+      } else if (keep.has(slideId)) {
+        video.preload = slideId === reels[index + 1]?.id ? "auto" : "metadata";
+        if (slideId === reels[index + 1]?.id && !video.getAttribute("src")) {
+          video.src = video.dataset.src;
+        }
+      } else {
+        video.preload = "none";
+        if (video.getAttribute("src")) {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+          slide?.classList.remove("is-active", "is-paused", "needs-gesture");
+        }
+      }
     });
   }
 
@@ -236,9 +332,9 @@ export async function mountReelViewer(root, options = {}) {
    * @param {string} id
    */
   async function maybeLoadMore(id) {
-    if (singleId || loadingMore) return;
+    if (loadingMore) return;
     const index = reels.findIndex((reel) => reel.id === id);
-    if (index < reels.length - 2) return;
+    if (index < reels.length - 3) return;
     if (reels.length >= total) return;
 
     loadingMore = true;
@@ -253,28 +349,46 @@ export async function mountReelViewer(root, options = {}) {
       if (fresh.length) {
         reels = reels.concat(fresh);
         total = more.total;
-        await paint();
-        if (activeId) scrollToReel(activeId);
+        lastAppendCount = fresh.length;
+        await paint(true);
       }
     } catch (error) {
+      console.error("Reels pagination:", error);
       toast(authErrorMessage(error), "error");
     } finally {
       loadingMore = false;
     }
   }
 
-  function playActive() {
+  async function playActive() {
     stage.querySelectorAll("[data-reel-id]").forEach((slide) => {
       const video = slide.querySelector("video");
       if (!(video instanceof HTMLVideoElement)) return;
       const id = slide.getAttribute("data-reel-id");
       if (id === activeId) {
-        video.muted = muted;
-        video.play().catch(() => {});
         slide.classList.add("is-active");
+        video.muted = muted;
+        if (!video.getAttribute("src") && video.dataset.src) {
+          video.src = video.dataset.src;
+        }
+        const playPromise = video.play();
+        if (playPromise?.then) {
+          playPromise
+            .then(() => {
+              slide.classList.remove("needs-gesture", "is-paused");
+              slide.querySelector("[data-tap-hint]")?.setAttribute("hidden", "");
+            })
+            .catch(() => {
+              slide.classList.add("needs-gesture", "is-paused");
+              const hint = slide.querySelector("[data-tap-hint]");
+              if (hint) hint.removeAttribute("hidden");
+            });
+        }
       } else {
         video.pause();
-        slide.classList.remove("is-active");
+        video.currentTime = 0;
+        slide.classList.remove("is-active", "needs-gesture", "is-paused");
+        slide.querySelector("[data-tap-hint]")?.setAttribute("hidden", "");
       }
     });
   }
@@ -286,28 +400,52 @@ export async function mountReelViewer(root, options = {}) {
   }
 
   function applyMute() {
+    try {
+      sessionStorage.setItem(MUTE_SESSION_KEY, muted ? "1" : "0");
+    } catch (error) {
+      console.error("Mute preference:", error);
+    }
     stage.querySelectorAll("video").forEach((video) => {
       if (video instanceof HTMLVideoElement) video.muted = muted;
     });
-    stage.querySelectorAll("[data-mute]").forEach((button) => {
-      button.setAttribute("aria-pressed", muted ? "true" : "false");
-      button.innerHTML = muted ? "Unmute" : "Mute";
-    });
+    const globalMute = root.querySelector("[data-global-mute]");
+    if (globalMute) {
+      globalMute.setAttribute("aria-pressed", muted ? "true" : "false");
+      globalMute.setAttribute("aria-label", muted ? "Unmute" : "Mute");
+      globalMute.innerHTML = muted ? icon("volumeOff") : icon("volumeOn");
+    }
   }
 
   function togglePlayActive() {
     const slide = stage.querySelector(`[data-reel-id="${CSS.escape(activeId || "")}"]`);
     const video = slide?.querySelector("video");
-    togglePlay(video);
+    togglePlay(video, slide);
   }
 
   /**
    * @param {Element | null | undefined} video
+   * @param {Element | null | undefined} slide
    */
-  function togglePlay(video) {
+  function togglePlay(video, slide) {
     if (!(video instanceof HTMLVideoElement)) return;
-    if (video.paused) video.play().catch(() => {});
-    else video.pause();
+    if (video.paused) {
+      video.muted = muted;
+      video
+        .play()
+        .then(() => {
+          slide?.classList.remove("needs-gesture", "is-paused");
+          slide?.querySelector("[data-tap-hint]")?.setAttribute("hidden", "");
+          flashCenterIcon(slide, "play");
+        })
+        .catch(() => {
+          slide?.classList.add("needs-gesture");
+          slide?.querySelector("[data-tap-hint]")?.removeAttribute("hidden");
+        });
+    } else {
+      video.pause();
+      slide?.classList.add("is-paused");
+      flashCenterIcon(slide, "pause");
+    }
   }
 
   /**
@@ -316,17 +454,19 @@ export async function mountReelViewer(root, options = {}) {
   function step(delta) {
     const index = Math.max(0, reels.findIndex((reel) => reel.id === activeId));
     const next = reels[index + delta];
-    if (next) scrollToReel(next.id);
+    if (next) scrollToReel(next.id, true);
   }
 
   /**
    * @param {string} id
+   * @param {boolean} smooth
    */
-  function scrollToReel(id) {
+  function scrollToReel(id, smooth) {
     const slide = stage.querySelector(`[data-reel-id="${CSS.escape(id)}"]`);
-    slide?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    slide?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     activeId = id;
     playActive();
+    preloadAround(id);
   }
 
   /**
@@ -393,60 +533,142 @@ export async function mountReelViewer(root, options = {}) {
  * @param {{ liked: boolean, followed: boolean, muted: boolean }} state
  * @returns {string}
  */
+/**
+ * @param {Array<object>} list
+ * @param {string} id
+ * @returns {Array<object>}
+ */
+function prioritizeReel(list, id) {
+  const index = list.findIndex((reel) => reel.id === id);
+  if (index <= 0) return list;
+  const copy = [...list];
+  const [item] = copy.splice(index, 1);
+  return [item, ...copy];
+}
+
+/**
+ * @param {object} reel
+ * @param {{ liked: boolean, followed: boolean, muted: boolean, eager?: boolean }} state
+ * @returns {string}
+ */
 function slideHtml(reel, state) {
   const shop = reel.shop;
-  const shopLink = shop?.slug
-    ? shopHref(shop.slug)
-    : url("pages/products.html");
+  const shopLink = shop?.slug ? shopHref(shop.slug) : url("pages/products.html");
   const caption = reel.caption || "";
   const longCaption = caption.length > 90;
+  const products = reel.products || [];
+  const first = products[0] || null;
+  const extra = Math.max(0, products.length - 1);
 
   return `
     <article class="reel-slide" data-reel-id="${escapeHtml(reel.id)}">
       <div class="reel-media" data-tap-video>
         <video
           playsinline
+          webkit-playsinline
           loop
           muted
-          poster="${escapeHtml(reel.thumbnailUrl || "")}"
-          preload="none"
-          src="${escapeHtml(reel.videoUrl || "")}"
+          poster="${escapeHtml(reel.thumbnailUrl || first?.imageUrl || "")}"
+          preload="${state.eager ? "auto" : "none"}"
+          data-src="${escapeHtml(reel.videoUrl || "")}"
+          ${state.eager && reel.videoUrl ? `src="${escapeHtml(reel.videoUrl)}"` : ""}
         ></video>
+        ${!reel.videoUrl ? `<div class="reel-media-empty">Video unavailable</div>` : ""}
+        <button class="reel-tap-hint" type="button" data-tap-hint hidden>Tap to play</button>
+        <div class="reel-center-flash" data-center-flash hidden></div>
         <div class="reel-progress"><span data-progress></span></div>
       </div>
-      <div class="reel-ui">
-        <div class="reel-shop">
-          <a class="reel-shop-link" href="${shopLink}">
-            ${shopLogoHtml(shop, "shop-logo-xs")}
-            <span>${escapeHtml(shop?.shop_name || "Shop")}</span>
+
+      <aside class="reel-rail" aria-label="Actions">
+        <div class="reel-avatar-wrap">
+          <a class="reel-avatar" href="${shopLink}" aria-label="${escapeHtml(shop?.shop_name || "Shop")}">
+            ${shopLogoHtml(shop, "shop-logo")}
           </a>
-          <button class="button button-ghost reel-follow" type="button" data-follow aria-pressed="${state.followed ? "true" : "false"}">
-            ${state.followed ? "Following" : "Follow"}
+          <button class="reel-follow-dot" type="button" data-follow aria-pressed="${state.followed ? "true" : "false"}" aria-label="Follow shop">
+            ${state.followed ? "✓" : "+"}
           </button>
         </div>
+        <button type="button" class="reel-rail-btn ${state.liked ? "is-liked" : ""}" data-like aria-pressed="${state.liked ? "true" : "false"}" aria-label="Like">
+          ${icon("heart")}
+          <span data-like-count>${escapeHtml(String(reel.likesCount || 0))}</span>
+        </button>
+        <button type="button" class="reel-rail-btn" data-comments aria-label="Comments">
+          ${icon("comment")}
+          <span>${escapeHtml(String(reel.commentsCount || 0))}</span>
+        </button>
+        <button type="button" class="reel-rail-btn" data-share aria-label="Share">
+          ${icon("share")}
+          <span>Share</span>
+        </button>
+        ${
+          products.length
+            ? `<button type="button" class="reel-rail-btn" data-products aria-label="Products">${icon("package")}<span>Bag</span></button>`
+            : ""
+        }
+      </aside>
+
+      <div class="reel-meta">
+        <a class="reel-shop-name" href="${shopLink}">${escapeHtml(shop?.shop_name || "Shop")}</a>
         <p class="reel-caption ${longCaption ? "" : "is-expanded"}">
           <span>${escapeHtml(caption)}</span>
           ${longCaption ? `<button type="button" data-caption-more>more</button>` : ""}
         </p>
-        <div class="reel-actions">
-          <button type="button" class="${state.liked ? "is-liked" : ""}" data-like aria-pressed="${state.liked ? "true" : "false"}" aria-label="Like">
-            ${icon("heart")}
-            <span data-like-count>${escapeHtml(String(reel.likesCount || 0))}</span>
-          </button>
-          <button type="button" data-comments aria-label="Comments">
-            ${icon("comment")}
-            <span>${escapeHtml(String(reel.commentsCount || 0))}</span>
-          </button>
-          <button type="button" data-share aria-label="Share">${icon("share")}<span>Share</span></button>
-          <button type="button" data-products aria-label="Products">${icon("package")}<span>Tags</span></button>
-          <button type="button" data-mute aria-pressed="${state.muted ? "true" : "false"}">${state.muted ? "Unmute" : "Mute"}</button>
-        </div>
-        ${reel.products?.length
-          ? `<button class="button button-primary reel-buy" type="button" data-buy>Buy Now</button>`
-          : ""}
+        ${first ? productCardHtml(first, extra) : ""}
       </div>
     </article>
   `;
+}
+
+/**
+ * @param {object} product
+ * @param {number} extra
+ * @returns {string}
+ */
+function productCardHtml(product, extra) {
+  const price = formatMoney(product.price, product.currency);
+  const compare = Number(product.compare_at_price);
+  const showCompare = Number.isFinite(compare) && compare > Number(product.price);
+  const img = product.imageUrl
+    ? `<img src="${escapeHtml(product.imageUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
+    : `<span class="reel-product-fallback">${escapeHtml((product.title || "?").slice(0, 1))}</span>`;
+  const stock = Number(product.stock) || 0;
+
+  return `
+    <div class="reel-product-card">
+      <div class="reel-product-card-media">${img}</div>
+      <div class="reel-product-card-body">
+        <p class="reel-product-card-title">${escapeHtml(product.title)}</p>
+        <p class="reel-product-card-price">
+          <strong>${escapeHtml(price)}</strong>
+          ${showCompare ? `<s>${escapeHtml(formatMoney(compare, product.currency))}</s>` : ""}
+          ${extra > 0 ? `<button type="button" class="reel-more-chip" data-more-products>+${extra} more</button>` : ""}
+        </p>
+        <div class="reel-product-card-actions">
+          <button class="button button-primary" type="button" data-buy-now>Buy Now</button>
+          <button class="button button-ghost" type="button" data-add-cart ${stock < 1 ? "disabled" : ""}>Add to cart</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * @param {object | null | undefined} product
+ */
+async function addProduct(product) {
+  if (!product?.id) {
+    toast("No product on this reel.", "info");
+    return;
+  }
+  try {
+    const result = await addToCart(product.id, 1);
+    toast(
+      result.capped ? `Only ${result.stock} in stock. Added that many.` : "Added to cart.",
+      result.capped ? "info" : "success",
+    );
+  } catch (error) {
+    toast(authErrorMessage(error), "error");
+  }
 }
 
 /**
@@ -457,6 +679,25 @@ function updateProgress(slide, video) {
   const bar = slide.querySelector("[data-progress]");
   if (!(bar instanceof HTMLElement) || !video.duration) return;
   bar.style.width = `${(video.currentTime / video.duration) * 100}%`;
+}
+
+/**
+ * @param {Element | null | undefined} slide
+ * @param {"play" | "pause"} kind
+ */
+function flashCenterIcon(slide, kind) {
+  const flash = slide?.querySelector("[data-center-flash]");
+  if (!(flash instanceof HTMLElement)) return;
+  flash.innerHTML = kind === "play" ? icon("play") : icon("pause");
+  flash.removeAttribute("hidden");
+  flash.classList.remove("is-on");
+  // Force reflow so the CSS animation restarts.
+  void flash.offsetWidth;
+  flash.classList.add("is-on");
+  window.setTimeout(() => {
+    flash.setAttribute("hidden", "");
+    flash.classList.remove("is-on");
+  }, 500);
 }
 
 /**
@@ -473,13 +714,20 @@ function showVideoError(slide, reel) {
     <button class="button button-primary" type="button" data-retry-video>Retry</button>
   `;
   slide.querySelector(".reel-media")?.append(panel);
-  panel.querySelector("[data-retry-video]")?.addEventListener("click", () => {
-    panel.remove();
-    const video = slide.querySelector("video");
-    if (video instanceof HTMLVideoElement) {
-      video.load();
-      video.play().catch(() => {});
-    }
+  panel.querySelector("[data-retry-video]")?.addEventListener("click", () => retryVideo(slide));
+}
+
+/**
+ * @param {Element} slide
+ */
+function retryVideo(slide) {
+  slide.querySelector(".reel-video-error")?.remove();
+  const video = slide.querySelector("video");
+  if (!(video instanceof HTMLVideoElement)) return;
+  video.load();
+  video.play().catch(() => {
+    slide.classList.add("needs-gesture");
+    slide.querySelector("[data-tap-hint]")?.removeAttribute("hidden");
   });
 }
 

@@ -1,49 +1,97 @@
 /**
- * Checkout helpers and a PLACEHOLDER placeOrder that does not write to the database.
- * Orders / order_items / payments have no client insert policy.
+ * Checkout helpers and secure place_order RPC (anon/authenticated client only).
+ * Prices and stock are verified server-side — never trust browser totals.
  */
 
 import { listCart } from "./cartApi.js";
 import { getAddress } from "./addressApi.js";
+import { getProduct } from "./productsApi.js";
 import { getSupabase } from "../supabaseClient.js";
 import { getCurrentProfile } from "../auth.js";
+import { notifyCounts } from "./notify.js";
+
+const BUY_NOW_KEY = "eme-buy-now";
 
 /**
- * UI-only payment method choices.
- * There is no payment_method enum in the schema; payments.provider is free text.
- * These values are for the future checkout RPC payload only.
+ * Delivery fee rule (must match public.f6_shipping_fee in supabase/f6_orders.sql).
+ * Dhaka (city or district contains "dhaka"): inside; otherwise outside.
+ */
+export const DELIVERY_FEES = Object.freeze({
+  currency: "BDT",
+  insideDhaka: 60,
+  outsideDhaka: 120,
+});
+
+/**
+ * UI payment methods. Only cash_on_delivery is accepted by place_order today.
  */
 export const PAYMENT_METHODS = [
-  { id: "cash_on_delivery", label: "Cash on delivery" },
-  { id: "bkash", label: "bKash" },
-  { id: "nagad", label: "Nagad" },
-  { id: "card", label: "Card" },
+  { id: "cash_on_delivery", label: "Cash on delivery / ক্যাশ অন ডেলিভারি", available: true },
+  { id: "bkash", label: "bKash", available: false },
+  { id: "nagad", label: "Nagad", available: false },
 ];
 
 /**
- * Default shipping fee from platform_settings (no shipping_methods table).
- * @returns {Promise<{ amount: number, currency: string }>}
+ * @param {{ city?: string, district?: string } | null | undefined} address
+ * @returns {{ amount: number, currency: string, zone: "dhaka" | "outside" }}
  */
-export async function getDefaultShippingFee() {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("platform_settings")
-    .select("value")
-    .eq("key", "default_shipping_fee")
-    .maybeSingle();
-
-  if (error) throw error;
-  const amount = Number(data?.value?.amount);
-  const currency = typeof data?.value?.currency === "string" ? data.value.currency : "BDT";
+export function shippingFeeForAddress(address) {
+  const city = String(address?.city || "").toLowerCase();
+  const district = String(address?.district || "").toLowerCase();
+  const dhaka = city.includes("dhaka") || district.includes("dhaka");
   return {
-    amount: Number.isFinite(amount) ? amount : 0,
-    currency: /^[A-Z]{3}$/.test(currency) ? currency : "BDT",
+    amount: dhaka ? DELIVERY_FEES.insideDhaka : DELIVERY_FEES.outsideDhaka,
+    currency: DELIVERY_FEES.currency,
+    zone: dhaka ? "dhaka" : "outside",
   };
 }
 
 /**
- * Builds a checkout summary from the live cart (billable lines only).
+ * @deprecated Prefer shippingFeeForAddress — kept for callers that need a default before an address is chosen.
+ * @returns {Promise<{ amount: number, currency: string }>}
+ */
+export async function getDefaultShippingFee() {
+  return {
+    amount: DELIVERY_FEES.insideDhaka,
+    currency: DELIVERY_FEES.currency,
+  };
+}
+
+/**
+ * @param {string} productId
+ * @param {number} [quantity]
+ */
+export function setBuyNow(productId, quantity = 1) {
+  const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  sessionStorage.setItem(BUY_NOW_KEY, JSON.stringify({ productId, quantity: qty }));
+}
+
+/** Clears buy-now checkout mode. */
+export function clearBuyNow() {
+  sessionStorage.removeItem(BUY_NOW_KEY);
+}
+
+/**
+ * @returns {{ productId: string, quantity: number } | null}
+ */
+export function getBuyNow() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(BUY_NOW_KEY) || "null");
+    if (!raw?.productId) return null;
+    return {
+      productId: String(raw.productId),
+      quantity: Math.max(1, Math.floor(Number(raw.quantity) || 1)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds a checkout summary from buy-now or the live cart (billable lines only).
  * @returns {Promise<{
+ *   mode: "cart" | "buy_now",
+ *   buyNow: { productId: string, quantity: number } | null,
  *   lines: Array<object>,
  *   shops: Array<{ shopName: string, shopSlug: string | null, shopLogo: string | null, lines: Array<object>, subtotal: number, currency: string }>,
  *   subtotal: number,
@@ -55,7 +103,40 @@ export async function buildCheckoutSummary() {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Sign in to check out.");
 
-  const lines = (await listCart()).filter((line) => line.billable);
+  const buyNow = getBuyNow();
+  /** @type {Array<object>} */
+  let lines = [];
+
+  if (buyNow) {
+    const product = await getProduct({ id: buyNow.productId });
+    if (!product) throw new Error("That product is not available.");
+    const stock = Number(product.stock) || 0;
+    const qty = Math.min(buyNow.quantity, Math.max(1, stock));
+    const shopRaw = product.vendor_profiles;
+    const shop = Array.isArray(shopRaw) ? shopRaw[0] : shopRaw;
+    const unitPrice = Number(product.price);
+    const active = product.status === "active" && shop?.status === "approved" && stock > 0;
+    if (!active) throw new Error("That product is not available.");
+    lines = [
+      {
+        productId: product.id,
+        quantity: qty,
+        product,
+        shopName: shop?.shop_name || "Shop",
+        shopSlug: shop?.slug || null,
+        shopLogo: shop?.logo_url || null,
+        unitPrice,
+        currency: product.currency || "BDT",
+        lineTotal: unitPrice * qty,
+        stock,
+        warnings: [],
+        billable: true,
+      },
+    ];
+  } else {
+    lines = (await listCart()).filter((line) => line.billable);
+  }
+
   /** @type {Map<string, { shopName: string, shopSlug: string | null, shopLogo: string | null, lines: Array<object>, subtotal: number, currency: string }>} */
   const groups = new Map();
   let subtotal = 0;
@@ -82,6 +163,8 @@ export async function buildCheckoutSummary() {
   }
 
   return {
+    mode: buyNow ? "buy_now" : "cart",
+    buyNow,
     lines,
     shops: [...groups.values()],
     subtotal,
@@ -91,15 +174,15 @@ export async function buildCheckoutSummary() {
 }
 
 /**
- * PLACEHOLDER — does not insert into orders, order_items, or payments.
- * Validates the payload the future secure checkout function will need.
+ * Places an order via security-definer RPC. COD only.
  *
  * @param {{
  *   addressId: string,
  *   paymentMethod: string,
- *   couponCode?: string | null
+ *   source?: "direct" | "reel" | "live",
+ *   sourceId?: string | null
  * }} input
- * @returns {Promise<{ ok: true, payload: object, message: string }>}
+ * @returns {Promise<{ orderId: string }>}
  */
 export async function placeOrder(input) {
   const profile = await getCurrentProfile();
@@ -109,11 +192,9 @@ export async function placeOrder(input) {
   if (!addressId) throw new Error("Choose a delivery address.");
 
   const paymentMethod = String(input.paymentMethod || "").trim();
-  if (!PAYMENT_METHODS.some((method) => method.id === paymentMethod)) {
-    throw new Error("Choose a payment method.");
-  }
-
-  // No coupons table in the schema — ignore any coupon field.
+  const method = PAYMENT_METHODS.find((row) => row.id === paymentMethod);
+  if (!method) throw new Error("Choose a payment method.");
+  if (!method.available) throw new Error(`${method.label} is coming soon. Choose cash on delivery.`);
 
   const address = await getAddress(addressId);
   if (!address) throw new Error("That address is not available.");
@@ -121,57 +202,34 @@ export async function placeOrder(input) {
   const summary = await buildCheckoutSummary();
   if (summary.empty) throw new Error("Your cart is empty.");
 
-  const shipping = await getDefaultShippingFee();
-  const shippingFee = shipping.amount;
-  const total = summary.subtotal + shippingFee;
-
-  const payload = {
-    customer_id: profile.id,
-    address_id: address.id,
-    shipping_address: {
-      label: address.label,
-      recipient_name: address.recipient_name,
-      phone: address.phone,
-      line1: address.line1,
-      line2: address.line2,
-      city: address.city,
-      district: address.district,
-      postal_code: address.postal_code,
-    },
-    payment_method: paymentMethod,
-    currency: summary.currency,
-    subtotal: summary.subtotal,
-    shipping_fee: shippingFee,
-    total,
-    source: "direct",
-    shops: summary.shops.map((shop) => ({
-      shop_name: shop.shopName,
-      shop_slug: shop.shopSlug,
-      subtotal: shop.subtotal,
-      items: shop.lines.map((line) => ({
-        product_id: line.productId,
-        title: line.product?.title,
-        unit_price: line.unitPrice,
-        quantity: Math.min(line.quantity, line.stock),
-        line_total: line.lineTotal,
-        vendor_hint: line.shopSlug,
-      })),
-    })),
+  const supabase = getSupabase();
+  const args = {
+    p_address_id: addressId,
+    p_payment_method: paymentMethod,
+    p_product_id: summary.buyNow?.productId || null,
+    p_quantity: summary.buyNow?.quantity || null,
+    p_source: input.source || "direct",
+    p_source_id: input.sourceId || null,
   };
 
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-    // Development only — inspect the payload that a future RPC will receive.
-    console.info("[EME checkout placeholder] placeOrder payload", payload);
+  const { data, error } = await supabase.rpc("place_order", args);
+  if (error) {
+    console.error("place_order RPC:", error);
+    throw error;
   }
 
-  // FUTURE: call a secure Supabase RPC or Edge Function here, for example:
-  //   const { data, error } = await getSupabase().rpc("place_order", { payload });
-  //   or: await getSupabase().functions.invoke("checkout", { body: payload });
-  // Do not insert into public.orders / order_items / payments from the browser.
+  const orderId = data?.order_id || data?.orderId;
+  if (!orderId) {
+    console.error("place_order returned unexpected payload:", data);
+    throw new Error("Order was not created. Try again.");
+  }
 
-  return {
-    ok: true,
-    payload,
-    message: "Order placement will be enabled after the secure order function is added.",
-  };
+  clearBuyNow();
+  try {
+    await notifyCounts();
+  } catch (notifyError) {
+    console.error("notifyCounts after order:", notifyError);
+  }
+
+  return { orderId: String(orderId) };
 }

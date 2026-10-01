@@ -1,6 +1,6 @@
 /**
- * Read-only order history for the signed-in customer.
- * Clients cannot insert or update orders (RLS / grants).
+ * Customer order history + vendor order lines.
+ * Inserts go through place_order / cancel_my_order / vendor_set_item_status RPCs.
  */
 
 import { getCurrentProfile } from "../auth.js";
@@ -17,6 +17,16 @@ const ITEM_COLUMNS = `
   id, order_id, product_id, vendor_id, title, unit_price, quantity, line_total,
   item_status, created_at, updated_at
 `;
+
+/** Allowed vendor item_status transitions (mirrors f6_item_status_allowed). */
+export const ITEM_STATUS_NEXT = Object.freeze({
+  pending: ["processing", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: [],
+  refunded: [],
+});
 
 /**
  * @param {{ status?: string, limit?: number, offset?: number }} [filters]
@@ -92,6 +102,84 @@ export async function getMyOrder(id) {
     shops: groupItemsByShop(data.order_items || []),
     payments: data.payments || [],
   };
+}
+
+/**
+ * Cancel own pending order via RPC (restores stock).
+ * @param {string} orderId
+ * @returns {Promise<void>}
+ */
+export async function cancelMyOrder(orderId) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to cancel an order.");
+
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("cancel_my_order", { p_order_id: orderId });
+  if (error) {
+    console.error("cancel_my_order:", error);
+    throw error;
+  }
+}
+
+/**
+ * Order lines for the signed-in approved vendor.
+ * @param {{ itemStatus?: string, limit?: number, offset?: number }} [filters]
+ * @returns {Promise<{ rows: Array<object>, total: number }>}
+ */
+export async function listVendorOrderItems(filters = {}) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to manage orders.");
+
+  const supabase = getSupabase();
+  let query = supabase
+    .from("order_items")
+    .select(`
+      ${ITEM_COLUMNS},
+      orders!inner (
+        id, status, payment_status, total, currency, shipping_address, created_at, customer_id
+      ),
+      products ( id, slug, title )
+    `, { count: "exact" })
+    .eq("vendor_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (filters.itemStatus) query = query.eq("item_status", filters.itemStatus);
+
+  const limit = filters.limit ?? ORDERS_PAGE_SIZE;
+  const offset = filters.offset ?? 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  return {
+    rows: (data ?? []).map((row) => {
+      const order = Array.isArray(row.orders) ? row.orders[0] : row.orders;
+      return { ...row, order };
+    }),
+    total: count ?? 0,
+  };
+}
+
+/**
+ * @param {string} itemId
+ * @param {string} status
+ * @returns {Promise<object>}
+ */
+export async function vendorSetItemStatus(itemId, status) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in required.");
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc("vendor_set_item_status", {
+    p_item_id: itemId,
+    p_status: status,
+  });
+  if (error) {
+    console.error("vendor_set_item_status:", error);
+    throw error;
+  }
+  return data;
 }
 
 /**

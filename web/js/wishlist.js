@@ -1,7 +1,7 @@
 import { mountAccountNav } from "./accountShell.js";
 import { moveWishlistToCart, listWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=11";
+import { mountShell, toast } from "./components.js?v=14";
 import { escapeHtml } from "./html.js";
 import { imageHtml, priceHtml, productHref } from "./productView.js?v=9";
 import { soldByHtml } from "./shopView.js";

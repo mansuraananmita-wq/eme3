@@ -233,6 +233,47 @@ export async function unsaveReel(reelId) {
   }
 }
 
+/**
+ * Reels the signed-in user saved, newest save first.
+ * @returns {Promise<Array<object>>}
+ */
+export async function listSavedReels() {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+
+  const supabase = getSupabase();
+  const { data: saves, error } = await supabase
+    .from("reel_saves")
+    .select("reel_id, created_at")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  if (error) throw error;
+  const ids = (saves ?? []).map((row) => row.reel_id).filter(Boolean);
+  if (!ids.length) return [];
+
+  const { data, error: reelError } = await supabase
+    .from("reels")
+    .select(`
+      ${REEL_COLUMNS},
+      vendor_profiles!inner (
+        profile_id,
+        shop_name,
+        slug,
+        logo_url,
+        status
+      )
+    `)
+    .in("id", ids)
+    .eq("status", "published")
+    .eq("vendor_profiles.status", "approved");
+
+  if (reelError) throw reelError;
+  const byId = new Map((data ?? []).map((row) => [row.id, normalizeReel(row)]));
+  return ids.map((id) => byId.get(id)).filter(Boolean);
+}
+
 const SESSION_KEY = "eme-session";
 
 /**
@@ -445,12 +486,14 @@ export async function postReelComment(reelId, body, parentId = null) {
   }
 
   const supabase = getSupabase();
-  const { error } = await supabase.from("reel_comments").insert({
+  /** @type {{ reel_id: string, user_id: string, body: string, parent_id?: string }} */
+  const row = {
     reel_id: reelId,
     user_id: profile.id,
     body: text,
-    parent_id: parentId || null,
-  });
+  };
+  if (parentId) row.parent_id = parentId;
+  const { error } = await supabase.from("reel_comments").insert(row);
 
   if (error) {
     console.error("post reel comment:", error);
@@ -666,14 +709,19 @@ export async function uploadReelVideo(reelId, file, onProgress) {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Sign in to upload.");
 
-  if (!REEL_VIDEO_MIME.includes(file.type)) {
+  if (!REEL_VIDEO_MIME.includes(file.type) && !/\.(mp4|webm|mov)$/i.test(file.name)) {
     throw new Error("Use an MP4, WebM, or MOV file.");
   }
   if (file.size > REEL_VIDEO_MAX_BYTES) {
     throw new Error("Video must be 50 MB or smaller.");
   }
 
-  const ext = file.type === "video/webm" ? "webm" : file.type === "video/quicktime" ? "mov" : "mp4";
+  const fromName = file.name.split(".").pop()?.toLowerCase() || "";
+  const ext = file.type === "video/webm" || fromName === "webm"
+    ? "webm"
+    : file.type === "video/quicktime" || fromName === "mov"
+      ? "mov"
+      : "mp4";
   const path = `${profile.id}/${reelId}.${ext}`;
   const supabase = getSupabase();
 

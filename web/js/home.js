@@ -3,7 +3,7 @@
  */
 
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=11";
+import { mountShell, toast } from "./components.js?v=14";
 import { mountCarousel } from "./carousel.js";
 import {
   HERO_BANNERS,
@@ -13,7 +13,7 @@ import {
   isBannerActive,
 } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=11";
+import { t } from "./i18n.js?v=14";
 import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";
@@ -138,6 +138,7 @@ function renderDealHero(deals, arrivals) {
     const paint = () => {
       main.setAttribute("aria-busy", "false");
       main.innerHTML = dealMainHtml(slides[index]);
+      cutoutHeroPhotos(main);
     };
     paint();
     if (dealTimer) window.clearInterval(dealTimer);
@@ -151,6 +152,7 @@ function renderDealHero(deals, arrivals) {
   const fresh = arrivals[0];
   if (arrival instanceof HTMLElement && fresh) {
     arrival.innerHTML = arrivalHtml(fresh);
+    cutoutHeroPhotos(arrival);
   }
 }
 
@@ -173,7 +175,239 @@ function heroImage(product) {
   const image = pickProductImage(product.product_images);
   const src = image ? productImageUrl(image.storage_path) : "";
   if (!src) return "";
-  return `<img src="${escapeHtml(src)}" alt="" onerror="this.hidden=true">`;
+  return `<img data-cutout src="${escapeHtml(src)}" alt="" crossorigin="anonymous" onerror="this.hidden=true">`;
+}
+
+/**
+ * Lifts a product off a flat studio background so it sits on the card.
+ * @param {ParentNode} root
+ */
+function cutoutHeroPhotos(root) {
+  root.querySelectorAll("img[data-cutout]").forEach((node) => {
+    if (!(node instanceof HTMLImageElement)) return;
+    const start = () => {
+      isolateProduct(node).catch((error) => {
+        console.error("Hero cutout:", error);
+        node.removeAttribute("data-cutout");
+      });
+    };
+    if (node.complete && node.naturalWidth) start();
+    else node.addEventListener("load", start, { once: true });
+  });
+}
+
+/**
+ * @param {HTMLImageElement} img
+ * @returns {Promise<void>}
+ */
+async function isolateProduct(img) {
+  if (!img.hasAttribute("data-cutout")) return;
+  try {
+    const source = img.currentSrc || img.src;
+    const loaded = await loadHeroImage(source);
+    const maxEdge = 720;
+    const scale = Math.min(1, maxEdge / Math.max(loaded.naturalWidth, loaded.naturalHeight));
+    const width = Math.max(1, Math.round(loaded.naturalWidth * scale));
+    const height = Math.max(1, Math.round(loaded.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) {
+      img.removeAttribute("data-cutout");
+      return;
+    }
+    context.drawImage(loaded, 0, 0, width, height);
+    const frame = context.getImageData(0, 0, width, height);
+    const removed = clearStudioBackground(frame.data, width, height);
+    const total = width * height;
+    if (removed < total * 0.12 || removed > total * 0.93) {
+      img.removeAttribute("data-cutout");
+      return;
+    }
+    context.putImageData(frame, 0, 0);
+    const cropped = cropToSubject(canvas, frame.data, width, height);
+    if (!cropped) {
+      img.removeAttribute("data-cutout");
+      return;
+    }
+    img.classList.add("is-cutout");
+    img.onload = () => img.removeAttribute("data-cutout");
+    img.src = cropped.toDataURL("image/png");
+  } catch (error) {
+    console.error("Hero cutout:", error);
+    img.removeAttribute("data-cutout");
+  }
+}
+
+/**
+ * @param {string} src
+ * @returns {Promise<HTMLImageElement>}
+ */
+function loadHeroImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Hero image failed to load."));
+    image.src = src;
+  });
+}
+
+/**
+ * Clears the flat color connected to the photo edges (black, white, or gray studio).
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @returns {number}
+ */
+function clearStudioBackground(data, width, height) {
+  const background = borderColor(data, width, height);
+  if (!studioBorder(data, width, height, background)) return 0;
+  const luminance = (background[0] + background[1] + background[2]) / 3;
+  // Tight on purpose: a wide match eats the product's own shadow and leaves a hole.
+  const threshold = luminance < 90 ? 22 : 16;
+  const seen = new Uint8Array(width * height);
+  /** @type {number[]} */
+  const queue = [];
+  let head = 0;
+
+  const visit = (x, y) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const index = y * width + x;
+    if (seen[index]) return;
+    seen[index] = 1;
+    const offset = index * 4;
+    const distance = Math.hypot(
+      data[offset] - background[0],
+      data[offset + 1] - background[1],
+      data[offset + 2] - background[2],
+    );
+    if (distance > threshold) return;
+    data[offset + 3] = 0;
+    queue.push(index);
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    visit(x, 0);
+    visit(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    visit(0, y);
+    visit(width - 1, y);
+  }
+
+  while (head < queue.length) {
+    const index = queue[head];
+    head += 1;
+    const x = index % width;
+    const y = (index - x) / width;
+    visit(x + 1, y);
+    visit(x - 1, y);
+    visit(x, y + 1);
+    visit(x, y - 1);
+  }
+
+  let removed = 0;
+  for (let index = 0; index < width * height; index += 1) {
+    if (data[index * 4 + 3] === 0) removed += 1;
+  }
+  return removed;
+}
+
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @returns {HTMLCanvasElement | null}
+ */
+function cropToSubject(canvas, data, width, height) {
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] < 16) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < minX || maxY < minY) return null;
+  const pad = Math.round(Math.max(width, height) * 0.04);
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(width - 1, maxX + pad);
+  maxY = Math.min(height - 1, maxY + pad);
+  const cropWidth = maxX - minX + 1;
+  const cropHeight = maxY - minY + 1;
+  if (cropWidth * cropHeight < width * height * 0.06) return null;
+  const cropped = document.createElement("canvas");
+  cropped.width = cropWidth;
+  cropped.height = cropHeight;
+  cropped.getContext("2d")?.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+  return cropped;
+}
+
+/**
+ * True when the photo edge is one flat studio color, so it can be lifted off the card.
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @param {[number, number, number]} background
+ * @returns {boolean}
+ */
+function studioBorder(data, width, height, background) {
+  const target = background[0] + background[1] + background[2];
+  let total = 0;
+  let close = 0;
+  const take = (x, y) => {
+    const offset = (y * width + x) * 4;
+    const sum = data[offset] + data[offset + 1] + data[offset + 2];
+    total += 1;
+    if (Math.abs(sum - target) < 48) close += 1;
+  };
+  const stepX = Math.max(1, Math.floor(width / 48));
+  const stepY = Math.max(1, Math.floor(height / 48));
+  for (let x = 0; x < width; x += stepX) {
+    take(x, 0);
+    take(x, height - 1);
+  }
+  for (let y = 0; y < height; y += stepY) {
+    take(0, y);
+    take(width - 1, y);
+  }
+  return total > 0 && close / total >= 0.88;
+}
+
+/**
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @returns {[number, number, number]}
+ */
+function borderColor(data, width, height) {
+  /** @type {Array<[number, number, number]>} */
+  const samples = [];
+  const take = (x, y) => {
+    const offset = (y * width + x) * 4;
+    samples.push([data[offset], data[offset + 1], data[offset + 2]]);
+  };
+  const stepX = Math.max(1, Math.floor(width / 48));
+  const stepY = Math.max(1, Math.floor(height / 48));
+  for (let x = 0; x < width; x += stepX) {
+    take(x, 0);
+    take(x, height - 1);
+  }
+  for (let y = 0; y < height; y += stepY) {
+    take(0, y);
+    take(width - 1, y);
+  }
+  samples.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
+  return samples[Math.floor(samples.length / 2)] || [0, 0, 0];
 }
 
 /**

@@ -1,5 +1,5 @@
 import { authErrorMessage, sendPasswordReset } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=11";
+import { mountShell, toast } from "./components.js?v=14";
 
 mountShell({ page: "login" });
 

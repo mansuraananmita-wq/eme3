@@ -3,14 +3,14 @@
  */
 
 import { signOut } from "./auth.js?v=3";
-import { openModal, toast } from "./components.js?v=11";
+import { openModal, toast } from "./components.js?v=14";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js?v=4";
-import { t } from "./i18n.js?v=11";
+import { t } from "./i18n.js?v=14";
 
 /**
  * Injects account navigation into #account-nav.
- * @param {"home" | "profile" | "addresses" | "orders" | "wishlist" | "following" | "transactions"} active
+ * @param {"home" | "profile" | "addresses" | "orders" | "wishlist" | "following" | "transactions" | "saved"} active
  */
 export function mountAccountNav(active) {
   const root = document.querySelector("#account-nav");
@@ -23,6 +23,7 @@ export function mountAccountNav(active) {
     { id: "orders", href: url("pages/account/orders.html"), label: t("orders") },
     { id: "transactions", href: url("pages/account/transactions.html"), label: t("transactions") },
     { id: "following", href: url("pages/following.html"), label: t("following") },
+    { id: "saved", href: url("pages/saved-reels.html"), label: t("savedReels") },
     { id: "wishlist", href: url("pages/wishlist.html"), label: t("wishlist") },
   ];
 

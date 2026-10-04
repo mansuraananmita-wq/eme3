@@ -453,7 +453,7 @@ body.reels-lock {
   inset: 0;
   z-index: 70;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
@@ -563,6 +563,13 @@ body.reels-lock {
   margin: 0;
 }
 
+.reel-comment-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
 .reel-comment-form .button {
   width: auto;
   min-height: 40px;
@@ -580,6 +587,22 @@ body.reels-lock {
   margin-left: var(--space-4);
 }
 
+.reel-share-note {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  z-index: 8;
+  max-width: min(280px, 86%);
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 78%);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
 .reel-comment-form input {
   min-height: var(--tap);
   border: 1px solid var(--color-border);
@@ -587,7 +610,11 @@ body.reels-lock {
   padding: var(--space-2) var(--space-3);
 }
 
-/* Home reel row — vertical 9:16 thumbs */
+.saved-reels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
 .reels-row {
   display: grid;
   grid-auto-flow: column;

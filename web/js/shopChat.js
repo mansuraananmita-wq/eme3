@@ -7,7 +7,7 @@ import { listProducts } from "./api/productsApi.js";
 import { listApprovedShops } from "./api/shopsApi.js";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";
-import { t } from "./i18n.js?v=11";
+import { t } from "./i18n.js?v=14";
 import { icon } from "./icons.js";
 import { url } from "./paths.js?v=4";
 import { shopOf } from "./shopView.js";

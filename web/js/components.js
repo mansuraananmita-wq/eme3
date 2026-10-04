@@ -9,7 +9,7 @@ import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
-import { applyI18n, getLang, setLang, t } from "./i18n.js?v=11";
+import { applyI18n, getLang, setLang, t } from "./i18n.js?v=14";
 import { icon } from "./icons.js";
 import { getTheme, toggleTheme } from "./theme.js";
 import { url } from "./paths.js?v=4";
@@ -216,6 +216,7 @@ function renderChrome(profile, counts, page, categories) {
             ${escapeHtml(getTheme() === "dark" ? t("themeLight") : t("themeDark"))}
           </button>
         </div>
+        <a class="header-sell" href="${profile?.role === "vendor" ? `${url("pages/vendor.html")}#product` : `${sell}#sell-apply`}">${escapeHtml(profile?.role === "vendor" ? t("addProduct") : t("openShop"))}</a>
         <a class="header-link" href="${wishlist}" aria-label="${escapeHtml(t("wishlist"))}, ${counts.wishlist}">
           ${icon("heart")}
           <span class="action-label">${escapeHtml(t("wishlist"))}</span>
@@ -491,12 +492,16 @@ function accountMenu(name, roleLabel, cart, wishlist) {
       <div class="account-menu">
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
+        ${isVendor
+          ? `<a href="${vendorStudio}#product">${escapeHtml(t("addProduct"))}</a><a href="${vendorReels}">${escapeHtml(t("postReel"))}</a>`
+          : `<a href="${url("pages/sell.html")}#sell-apply">${escapeHtml(t("openShop"))}</a><a href="${vendorReels}">${escapeHtml(t("postReel"))}</a>`}
         <a href="${customer}">${escapeHtml(t("myAccount"))}</a>
         <a href="${profile}">${escapeHtml(t("profile"))}</a>
         <a href="${admin}">${escapeHtml(t("admin"))}</a>
         <a href="${orders}">${escapeHtml(t("orders"))}</a>
         <a href="${url("pages/account/transactions.html")}">${escapeHtml(t("transactions"))}</a>
         <a href="${following}">${escapeHtml(t("following"))}</a>
+        <a href="${url("pages/saved-reels.html")}">${escapeHtml(t("savedReels"))}</a>
         <a href="${messages}">${escapeHtml(t("messages"))}</a>
         <a href="${vendorStudio}">${escapeHtml(t("vendorStudio"))}</a>
         <a href="${url("pages/vendor.html")}#live">${escapeHtml(t("startLive"))}</a>
@@ -529,6 +534,7 @@ function guestLinks(login, register) {
       <div class="account-menu">
         <a href="${login}">${escapeHtml(t("login"))}</a>
         <a href="${register}">${escapeHtml(t("createAccount"))}</a>
+        <a href="${url("pages/sell.html")}#sell-apply">${escapeHtml(t("openShop"))}</a>
       </div>
     </div>
   `;

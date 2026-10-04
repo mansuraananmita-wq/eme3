@@ -13,9 +13,9 @@ import {
   updateReel,
   uploadReelThumbnail,
   uploadReelVideo,
-} from "../api/reelsApi.js";
+} from "../api/reelsApi.js?v=5";
 import { authErrorMessage } from "../auth.js?v=3";
-import { openModal, toast } from "../components.js?v=11";
+import { openModal, toast } from "../components.js?v=14";
 import { escapeHtml } from "../html.js";
 import { url } from "../paths.js?v=4";
 import { showState } from "../ui-state.js";
@@ -56,7 +56,7 @@ export async function mountVendorReelManager(root) {
             : `<p class="empty">No reels yet. Create one to get started.</p>`
         }
       </div>
-      <dialog class="vendor-reel-dialog" data-editor hidden>
+      <dialog class="vendor-reel-dialog" data-editor>
         <form class="vendor-reel-form" data-form>
           <header>
             <h2 data-editor-title>Edit reel</h2>
@@ -168,7 +168,6 @@ export async function mountVendorReelManager(root) {
       input.checked = reel?.productIds?.includes(input.value) ?? false;
     });
 
-    dialog.hidden = false;
     dialog.showModal();
   }
 
@@ -178,7 +177,6 @@ export async function mountVendorReelManager(root) {
   function closeEditor(dialog) {
     if (dialog instanceof HTMLDialogElement) {
       dialog.close();
-      dialog.hidden = true;
     }
   }
 
@@ -262,7 +260,7 @@ export async function mountVendorReelManager(root) {
     const input = event.currentTarget;
     if (!(input instanceof HTMLInputElement) || !input.files?.[0]) return;
     const file = input.files[0];
-    if (!REEL_VIDEO_MIME.includes(file.type)) {
+    if (!REEL_VIDEO_MIME.includes(file.type) && !/\.(mp4|webm|mov)$/i.test(file.name)) {
       toast("Use an MP4, WebM, or MOV file.", "error");
       input.value = "";
       return;

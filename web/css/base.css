@@ -342,6 +342,26 @@ p {
   text-decoration: none;
 }
 
+.header-sell {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  color: var(--color-header-deep);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.header-sell:hover {
+  background: #f4fbfc;
+  color: var(--color-header-deep);
+  text-decoration: none;
+}
+
 .search-form select,
 .search-form input {
   color: #12343a;

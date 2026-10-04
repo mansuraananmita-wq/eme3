@@ -21,10 +21,11 @@ import {
   uploadShopImage,
 } from "./api/vendorApi.js?v=3";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js?v=11";
+import { mountShell, openModal, toast } from "./components.js?v=14";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { productImageUrl } from "./media.js";
+import { t } from "./i18n.js?v=14";
 import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
@@ -43,7 +44,7 @@ let categories = [];
 /** @type {string | null} */
 let editingId = null;
 /** @type {boolean} */
-let creating = false;
+let creating = window.location.hash === "#product";
 
 async function boot() {
   if (!(root instanceof HTMLElement)) return;
@@ -58,13 +59,13 @@ async function boot() {
       root.setAttribute("aria-busy", "false");
       root.innerHTML = `
         <div class="account-card">
-          <h2>Vendor studio</h2>
-          <p>This is the vendor page. Products, the shop, and Go live live here. This login does not have a shop yet.</p>
+          <h2>${escapeHtml(t("openShop"))}</h2>
+          <p>${escapeHtml(t("noShopYet"))}</p>
           <label class="field">
-            <span>Shop name</span>
-            <input id="claim-shop-name" maxlength="80" placeholder="My shop" value="${escapeHtml(profile.full_name || "")}">
+            <span>${escapeHtml(t("shopName"))}</span>
+            <input id="claim-shop-name" maxlength="80" placeholder="${escapeHtml(t("myShop"))}" value="${escapeHtml(profile.full_name || "")}">
           </label>
-          <button class="button button-primary" type="button" id="become-vendor">Open my studio</button>
+          <button class="button button-primary" type="button" id="become-vendor">${escapeHtml(t("openStudio"))}</button>
           <p class="muted">Customers watch at <a href="${url("pages/lives.html")}">Live</a> after you press Go live.</p>
         </div>
       `;
@@ -73,7 +74,7 @@ async function boot() {
         const shopName = input instanceof HTMLInputElement ? input.value.trim() : "";
         try {
           await claimAccountRole("vendor", shopName);
-          toast("Studio is open. Use the Live tab to go on air.", "success");
+          toast(t("studioOpen"), "success");
           window.location.reload();
         } catch (error) {
           console.error("claim vendor:", error);
@@ -281,7 +282,7 @@ async function renderProducts(panel) {
   }
   if (!approved) {
     panel.setAttribute("aria-busy", "false");
-    panel.innerHTML = `<div class="account-card"><p>Product tools open after an admin approves this shop. You can still edit the shop name and description.</p></div>`;
+    panel.innerHTML = `<div class="account-card"><p>${escapeHtml(t("productAfterApproval"))}</p></div>`;
     return;
   }
 
@@ -291,7 +292,7 @@ async function renderProducts(panel) {
   panel.setAttribute("aria-busy", "false");
   panel.innerHTML = `
     <div class="studio-toolbar">
-      <button class="button button-primary" type="button" id="new-product">New product</button>
+      <button class="button button-primary" type="button" id="new-product">${escapeHtml(t("addProduct"))}</button>
     </div>
     ${editing ? productForm(editing) : ""}
     <div class="admin-list">

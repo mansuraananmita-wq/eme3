@@ -1,5 +1,5 @@
-import { mountShell } from "./components.js?v=11";
-import { mountReelViewer } from "./reels/reelViewer.js?v=2";
+import { mountShell } from "./components.js?v=14";
+import { mountReelViewer } from "./reels/reelViewer.js?v=5";
 import { showState } from "./ui-state.js";
 import { url } from "./paths.js?v=4";
 
@@ -11,7 +11,8 @@ window.addEventListener("beforeunload", () => {
 });
 
 const root = document.querySelector("#reels-root");
-const id = new URLSearchParams(window.location.search).get("id");
+const id = new URLSearchParams(window.location.search).get("id")
+  || new URLSearchParams(window.location.search).get("start");
 
 if (!(root instanceof HTMLElement)) {
   /* no-op */

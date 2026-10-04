@@ -4,10 +4,10 @@ import { listMyOrders } from "./api/ordersApi.js";
 import { listFollowedShops } from "./api/shopsApi.js";
 import { listWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=11";
+import { mountShell, toast } from "./components.js?v=14";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";
-import { t } from "./i18n.js?v=11";
+import { t } from "./i18n.js?v=14";
 import { url } from "./paths.js?v=4";
 
 const root = document.querySelector("#customer-root");
@@ -40,9 +40,13 @@ async function start() {
   const name = profile.full_name?.trim() || t("account");
   const roleKey = profile.role === "admin" ? "roleAdmin" : profile.role === "vendor" ? "roleVendor" : "roleCustomer";
   const cards = [
+    profile.role === "vendor"
+      ? [t("addProduct"), t("vendorStudioHint"), `${url("pages/vendor.html")}#product`]
+      : [t("openShop"), t("sellBlurb"), `${url("pages/sell.html")}#sell-apply`],
     [t("orders"), `${orders} ${t("ordersCount")}`, url("pages/account/orders.html")],
     [t("wishlist"), `${saved} ${t("savedProducts")}`, url("pages/wishlist.html")],
     [t("following"), `${shops} ${t("shopsCount")}`, url("pages/following.html")],
+    [t("savedReels"), t("savedReelsHint"), url("pages/saved-reels.html")],
     [t("messages"), t("chatWithShop"), url("pages/chat.html")],
     [t("live"), t("watchLiveShops"), url("pages/lives.html")],
     [t("addresses"), t("deliveryAddresses"), url("pages/account/addresses.html")],

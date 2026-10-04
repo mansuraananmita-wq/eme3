@@ -2,10 +2,11 @@
  * Comments bottom sheet for a reel.
  */
 
-import { listReelComments, postReelComment } from "../api/reelsApi.js";
+import { listReelComments, postReelComment } from "../api/reelsApi.js?v=5";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=11";
+import { toast } from "../components.js?v=14";
 import { escapeHtml } from "../html.js";
+import { t } from "../i18n.js?v=14";
 import { loginRedirect } from "../paths.js?v=4";
 import { closeProductSheet } from "./productSheet.js";
 
@@ -36,6 +37,7 @@ export async function openCommentsSheet(host, reelId) {
         <label class="sr-only" for="reel-comment-input">Add a comment</label>
         <input id="reel-comment-input" name="body" maxlength="2000" placeholder="Write a comment…" required>
         <button class="button button-primary" type="submit">Post</button>
+        <p class="reel-comment-error" data-comment-error hidden></p>
       </form>
     </div>
   `;
@@ -47,27 +49,42 @@ export async function openCommentsSheet(host, reelId) {
 
   const list = sheet.querySelector("[data-comments-list]");
   const form = sheet.querySelector("[data-comment-form]");
+  form?.addEventListener("keydown", (event) => event.stopPropagation());
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const profile = await getCurrentProfile();
-    if (!profile) {
-      window.location.assign(loginRedirect());
-      return;
-    }
     const form = event.currentTarget;
     if (!(form instanceof HTMLFormElement)) return;
-    const body = String(new FormData(form).get("body") || "");
-    const parentId = String(new FormData(form).get("parent_id") || "") || null;
+    const errorLine = form.querySelector("[data-comment-error]");
     const button = form.querySelector("button[type='submit']");
+    const showError = (message) => {
+      if (errorLine instanceof HTMLElement) {
+        errorLine.hidden = false;
+        errorLine.textContent = message;
+      }
+      toast(message, "error");
+    };
     if (button instanceof HTMLButtonElement) button.disabled = true;
     try {
+      const profile = await getCurrentProfile();
+      if (!profile) {
+        showError(t("commentNeedSignIn"));
+        window.location.assign(loginRedirect());
+        return;
+      }
+      const body = String(new FormData(form).get("body") || "");
+      const parentId = String(new FormData(form).get("parent_id") || "") || null;
+      if (errorLine instanceof HTMLElement) {
+        errorLine.hidden = true;
+        errorLine.textContent = "";
+      }
       await postReelComment(reelId, body, parentId);
       form.reset();
       clearReply(form);
-      toast("Comment posted.", "success");
+      toast(t("commentPosted"), "success");
       await renderComments(list, reelId, form);
     } catch (error) {
-      toast(authErrorMessage(error), "error");
+      console.error("Post comment:", error);
+      showError(authErrorMessage(error));
     } finally {
       if (button instanceof HTMLButtonElement) button.disabled = false;
     }

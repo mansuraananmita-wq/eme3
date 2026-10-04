@@ -18,18 +18,18 @@ import {
   unfollowShop,
   unlikeReel,
   unsaveReel,
-} from "../api/reelsApi.js";
+} from "../api/reelsApi.js?v=5";
 import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=11";
+import { toast } from "../components.js?v=14";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";
+import { t } from "../i18n.js?v=14";
 import { loginRedirect, url } from "../paths.js?v=4";
 import { shopHref, shopLogoHtml } from "../shopView.js";
-import { getMyShopApplication } from "../api/shopsApi.js";
 import { showState } from "../ui-state.js";
-import { openCommentsSheet } from "./commentsSheet.js?v=2";
+import { openCommentsSheet } from "./commentsSheet.js?v=5";
 import { closeProductSheet, openProductSheet } from "./productSheet.js";
 
 const MUTE_SESSION_KEY = "eme-reels-muted";
@@ -46,7 +46,8 @@ export async function mountReelViewer(root, options = {}) {
       <a class="reels-topbar-btn" href="${url("index.html")}" aria-label="Back">${icon("chevronLeft")}</a>
       <h1 class="reels-topbar-title">Reels</h1>
       <div class="reels-topbar-actions">
-        <a class="reels-topbar-link" href="${url("pages/vendor-reels.html")}" data-vendor-reels hidden>Create reel</a>
+        <a class="reels-topbar-link" href="${url("pages/saved-reels.html")}">${escapeHtml(t("savedReels"))}</a>
+        <a class="reels-topbar-link" href="${url("pages/vendor-reels.html")}">${escapeHtml(t("postReel"))}</a>
         <button class="reels-topbar-btn" type="button" data-global-mute aria-pressed="true" aria-label="Unmute">${icon("volumeOff")}</button>
       </div>
     </header>
@@ -79,14 +80,6 @@ export async function mountReelViewer(root, options = {}) {
   let activeId = null;
 
   const startId = options.startId || null;
-
-  getMyShopApplication()
-    .then((shop) => {
-      if (shop?.status === "approved") {
-        root.querySelector("[data-vendor-reels]")?.removeAttribute("hidden");
-      }
-    })
-    .catch((error) => console.error("Vendor reels link:", error));
 
   try {
     const first = await listPublishedReels({ limit: REELS_PAGE_SIZE, offset: 0, sort: "newest" });
@@ -159,6 +152,8 @@ export async function mountReelViewer(root, options = {}) {
    * @param {KeyboardEvent} event
    */
   function onKey(event) {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable='true']")) return;
     if (event.key === "ArrowDown" || event.key === "ArrowRight") {
       event.preventDefault();
       step(1);
@@ -532,11 +527,13 @@ export async function mountReelViewer(root, options = {}) {
         button?.setAttribute("aria-pressed", "false");
         button?.classList.remove("is-saved");
         reel.savesCount = Math.max(0, (reel.savesCount || 1) - 1);
+        toast(t("reelUnsaved"), "info");
       } else {
         await saveReel(reel.id);
         button?.setAttribute("aria-pressed", "true");
         button?.classList.add("is-saved");
         reel.savesCount = (reel.savesCount || 0) + 1;
+        toast(t("reelSaved"), "success");
       }
       const count = slide.querySelector("[data-save-count]");
       if (count) count.textContent = String(reel.savesCount);
@@ -789,21 +786,41 @@ function retryVideo(slide) {
  * @param {object} reel
  */
 async function shareReel(reel) {
-  const link = `${url("pages/reel.html")}?id=${encodeURIComponent(reel.id)}`;
+  const link = new URL(`${url("pages/reel.html")}?id=${encodeURIComponent(reel.id)}`, window.location.href).href;
+  let copied = false;
   try {
     if (navigator.share) {
-      await navigator.share({ title: reel.shop?.shop_name || "EME Reel", url: link });
-      await recordReelShare(reel.id);
-      return;
+      await navigator.share({
+        title: reel.shop?.shop_name || "EME",
+        text: reel.caption || "EME reel",
+        url: link,
+      });
+      copied = true;
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") return;
   }
-  try {
-    await navigator.clipboard.writeText(link);
-    await recordReelShare(reel.id);
-    toast("Link copied.", "success");
-  } catch {
-    toast(link, "info");
+  if (!copied) {
+    try {
+      await navigator.clipboard.writeText(link);
+      copied = true;
+    } catch (error) {
+      console.error("Copy reel link:", error);
+      window.prompt(t("reelLinkCopied"), link);
+      copied = true;
+    }
   }
+  const slide = document.querySelector(`[data-reel-id="${CSS.escape(reel.id)}"]`);
+  if (slide instanceof HTMLElement) {
+    slide.querySelector("[data-share-note]")?.remove();
+    const note = document.createElement("p");
+    note.className = "reel-share-note";
+    note.dataset.shareNote = "";
+    note.textContent = t("reelLinkCopied");
+    slide.append(note);
+    window.setTimeout(() => note.remove(), 2800);
+  } else {
+    toast(t("reelLinkCopied"), "success");
+  }
+  recordReelShare(reel.id).catch((error) => console.error("Record share:", error));
 }

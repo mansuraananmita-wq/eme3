@@ -24,10 +24,10 @@ import {
 } from "./api/adminApi.js?v=7";
 import { slugifyShopName } from "./api/shopsApi.js";
 import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js?v=11";
+import { mountShell, openModal, toast } from "./components.js?v=14";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=11";
+import { t } from "./i18n.js?v=14";
 import { loginRedirect, url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 

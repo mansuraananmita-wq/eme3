@@ -6,7 +6,7 @@ import {
   vendorSetItemStatus,
 } from "./api/ordersApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=11";
+import { mountShell, toast } from "./components.js?v=14";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js?v=4";

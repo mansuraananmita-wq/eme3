@@ -74,7 +74,7 @@ html[data-theme="light"] {
   --z-header: 40;
   --z-bottom: 45;
   --z-modal: 50;
-  --z-toast: 60;
+  --z-toast: 100;
   --z-banner: 70;
 }
 

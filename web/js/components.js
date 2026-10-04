@@ -449,6 +449,7 @@ function accountMenu(name, roleLabel, cart, wishlist) {
   const addresses = url("pages/account/addresses.html");
   const orders = url("pages/account/orders.html");
   const vendorOrders = url("pages/vendor-orders.html");
+  const vendorStudio = url("pages/vendor.html");
   const vendorReels = url("pages/vendor-reels.html");
   const admin = url("pages/admin.html");
   const isVendor = roleLabel === "Vendor";
@@ -465,6 +466,7 @@ function accountMenu(name, roleLabel, cart, wishlist) {
         <a href="${profile}">Profile</a>
         ${isAdmin ? `<a href="${admin}">Admin</a>` : ""}
         <a href="${orders}">Orders</a>
+        ${isVendor ? `<a href="${vendorStudio}">Studio</a>` : ""}
         ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
         ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}
         <a href="${addresses}">Addresses</a>

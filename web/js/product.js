@@ -1,4 +1,4 @@
-import { listReviews, getProduct, productsFromShop, relatedProducts } from "./api/productsApi.js";
+import { listReviews, canReviewProduct, getProduct, productsFromShop, relatedProducts, saveReview } from "./api/productsApi.js";
 import { getShop } from "./api/shopsApi.js";
 import { addToCart } from "./api/cartApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
@@ -124,6 +124,7 @@ function renderProduct(product, saved) {
         <div class="card-actions">
           <button class="button button-primary" type="button" id="buy-now" ${inStock ? "" : "disabled"}>Buy Now</button>
           <button class="button button-ghost" type="button" id="add-cart" ${inStock ? "" : "disabled"}>Add to cart</button>
+          <a class="button button-ghost" id="message-shop" href="${url("pages/chat.html")}?shop=${encodeURIComponent(product.vendor_id)}&product=${encodeURIComponent(product.id)}">Message shop</a>
           <button class="icon-button ${saved ? "is-saved" : ""}" type="button" id="save-wish" aria-pressed="${saved ? "true" : "false"}" aria-label="Save ${escapeHtml(product.title)}">
             Save
           </button>
@@ -294,7 +295,15 @@ async function renderMoreFromStore(product) {
 async function renderReviews(product) {
   if (!reviewRoot) return;
   try {
-    const reviews = await listReviews(product.id);
+    const profile = await getCurrentProfile();
+    const [reviews, allowed] = await Promise.all([
+      listReviews(product.id),
+      profile ? canReviewProduct(product.id).catch((error) => {
+        console.error("Review eligibility:", error);
+        return false;
+      }) : Promise.resolve(false),
+    ]);
+    const mine = profile ? reviews.find((review) => review.customerId === profile.id) : null;
     const items = reviews.length
       ? reviews.map((review) => `
           <article class="review">
@@ -312,12 +321,71 @@ async function renderReviews(product) {
       <div class="section-head">
         <h2>Reviews</h2>
       </div>
+      ${reviewFormHtml(profile, allowed, mine)}
       <div class="review-list">${items}</div>
     `;
+    reviewRoot.querySelector("#review-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!(form instanceof HTMLFormElement)) return;
+      const data = new FormData(form);
+      const button = form.querySelector("button[type='submit']");
+      if (button instanceof HTMLButtonElement) button.disabled = true;
+      try {
+        await saveReview({
+          productId: product.id,
+          reviewId: mine?.id,
+          rating: Number(data.get("rating")),
+          comment: String(data.get("comment") || ""),
+        });
+        toast(mine ? "Review updated." : "Review posted.", "success");
+        await renderReviews(product);
+      } catch (error) {
+        console.error("Save review:", error);
+        toast(authErrorMessage(error), "error");
+        if (button instanceof HTMLButtonElement) button.disabled = false;
+      }
+    });
   } catch (error) {
+    console.error("Reviews:", error);
     toast(authErrorMessage(error), "error");
     reviewRoot.innerHTML = `<p class="empty">Reviews could not be loaded.</p>`;
   }
+}
+
+/**
+ * @param {import("./auth.js").Profile | null} profile
+ * @param {boolean} allowed
+ * @param {{ id: string, rating: number, comment: string | null } | undefined} mine
+ * @returns {string}
+ */
+function reviewFormHtml(profile, allowed, mine) {
+  if (!profile) {
+    return `<p class="muted"><a href="${loginRedirect()}">Sign in</a> to review a product you have received.</p>`;
+  }
+  if (!allowed && !mine) {
+    return `<p class="muted">You can write a review after this product is delivered.</p>`;
+  }
+  const rating = mine?.rating || 5;
+  return `
+    <form id="review-form" class="account-card">
+      <h3>${mine ? "Your review" : "Write a review"}</h3>
+      <fieldset class="review-stars">
+        <legend>Rating</legend>
+        ${[1, 2, 3, 4, 5].map((value) => `
+          <label>
+            <input type="radio" name="rating" value="${value}" ${value === rating ? "checked" : ""} required>
+            ${value}
+          </label>
+        `).join("")}
+      </fieldset>
+      <label class="field">
+        <span>Comment (optional)</span>
+        <textarea name="comment" rows="3" maxlength="2000">${escapeHtml(mine?.comment || "")}</textarea>
+      </label>
+      <button class="button button-primary" type="submit">${mine ? "Update review" : "Post review"}</button>
+    </form>
+  `;
 }
 
 /**

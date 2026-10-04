@@ -98,12 +98,50 @@ export async function getMyOrder(id) {
   if (error) throw error;
   if (!data) return null;
 
+  const disputes = await supabase
+    .from("disputes")
+    .select("id, reason, status, resolution_note, created_at")
+    .eq("order_id", id)
+    .order("created_at", { ascending: false });
+
+  if (disputes.error) {
+    console.error("order disputes:", disputes.error);
+    throw disputes.error;
+  }
+
   return {
     ...data,
     order_items: data.order_items || [],
     shops: groupItemsByShop(data.order_items || []),
     payments: data.payments || [],
+    disputes: disputes.data || [],
   };
+}
+
+/**
+ * Cancel own pending order via RPC (restores stock).
+ * @param {string} orderId
+ * @returns {Promise<void>}
+ */
+/**
+ * Opens a dispute on a delivered order. An admin completes the refund.
+ * @param {string} orderId
+ * @param {string} reason
+ * @returns {Promise<void>}
+ */
+export async function requestOrderRefund(orderId, reason) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to request a refund.");
+
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("request_order_refund", {
+    p_order_id: orderId,
+    p_reason: reason,
+  });
+  if (error) {
+    console.error("request_order_refund:", error);
+    throw error;
+  }
 }
 
 /**

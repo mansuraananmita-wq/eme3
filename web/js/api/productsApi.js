@@ -1,4 +1,5 @@
 import { categoryBySlug } from "./categoriesApi.js";
+import { getCurrentProfile } from "../auth.js";
 import { getSupabase } from "../supabaseClient.js";
 
 /** Shopper catalog page size. */
@@ -252,9 +253,69 @@ export async function listReviews(productId) {
 
   return reviews.map((review) => ({
     id: review.id,
+    customerId: review.customer_id,
     rating: review.rating,
     comment: review.comment,
     created_at: review.created_at,
     author: names.get(review.customer_id) || "Customer",
   }));
+}
+
+/**
+ * True when this account has a delivered order that includes the product.
+ * @param {string} productId
+ * @returns {Promise<boolean>}
+ */
+export async function canReviewProduct(productId) {
+  const profile = await getCurrentProfile();
+  if (!profile) return false;
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc("customer_purchased_product", {
+    product_id: productId,
+  });
+  if (error) {
+    console.error("customer_purchased_product:", error);
+    throw error;
+  }
+  return data === true;
+}
+
+/**
+ * @param {{ productId: string, reviewId?: string, rating: number, comment?: string }} input
+ * @returns {Promise<void>}
+ */
+export async function saveReview(input) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to review a product.");
+  const rating = Number(input.rating);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new Error("Choose a rating from 1 to 5.");
+  }
+  const comment = String(input.comment || "").trim();
+  if (comment.length > 2000) throw new Error("Comment must be 2000 characters or fewer.");
+
+  const supabase = getSupabase();
+  const payload = { rating, comment: comment || null };
+  if (input.reviewId) {
+    const { error } = await supabase
+      .from("product_reviews")
+      .update(payload)
+      .eq("id", input.reviewId)
+      .eq("customer_id", profile.id);
+    if (error) {
+      console.error("update review:", error);
+      throw error;
+    }
+    return;
+  }
+
+  const { error } = await supabase.from("product_reviews").insert({
+    ...payload,
+    product_id: input.productId,
+    customer_id: profile.id,
+  });
+  if (error) {
+    console.error("insert review:", error);
+    throw error;
+  }
 }

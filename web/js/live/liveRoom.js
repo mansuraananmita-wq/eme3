@@ -1,5 +1,5 @@
 /**
- * Live room UI: placeholder video, chat, pinned product, products sheet.
+ * Live room UI: LiveKit video when the room is live, chat, pinned product, products sheet.
  * Dark chrome scoped to .live-room only.
  */
 
@@ -24,6 +24,7 @@ import { loginRedirect, url } from "../paths.js";
 import { shopHref, shopLogoHtml } from "../shopView.js";
 import { showState } from "../ui-state.js";
 import { openProductSheet } from "../reels/productSheet.js";
+import { getSupabase } from "../supabaseClient.js";
 import { mountVideo } from "./liveVideo.js";
 
 const MAX_BODY = 500;
@@ -49,6 +50,10 @@ export async function mountLiveRoom(root, streamId) {
   let lastSendAt = 0;
   /** @type {object | null} */
   let stream = null;
+  /** @type {boolean} */
+  let canPublish = false;
+  /** @type {object | null} */
+  let presenceChannel = null;
 
   const cleanup = () => {
     document.body.classList.remove("live-lock");
@@ -56,6 +61,10 @@ export async function mountLiveRoom(root, streamId) {
     unsubscribe = null;
     videoHandle?.destroy();
     videoHandle = null;
+    if (presenceChannel) {
+      getSupabase().removeChannel(presenceChannel);
+      presenceChannel = null;
+    }
   };
 
   window.addEventListener("eme-live-unmount", cleanup, { once: true });
@@ -70,6 +79,7 @@ export async function mountLiveRoom(root, streamId) {
     }
 
     const profile = await getCurrentProfile();
+    canPublish = Boolean(profile && profile.id === stream.vendorId);
     const followed = stream.shop?.profile_id
       ? await followedShopIds([stream.shop.profile_id]).catch(() => new Set())
       : new Set();
@@ -79,14 +89,18 @@ export async function mountLiveRoom(root, streamId) {
       signedIn: Boolean(profile),
     });
 
-    if (profile && (stream.status === "live" || stream.status === "ended")) {
-      const messages = await listLiveMessages(stream.id).catch((error) => {
-        toast(authErrorMessage(error), "error");
-        return [];
-      });
-      for (const message of messages) appendMessage(message, false);
-      scrollChatToEnd();
+    if (stream.status === "live" || stream.status === "ended") {
+      try {
+        const messages = await listLiveMessages(stream.id);
+        for (const message of messages) appendMessage(message, false);
+        scrollChatToEnd();
+      } catch (error) {
+        console.error("Live chat:", error);
+        if (profile) toast(authErrorMessage(error), "error");
+      }
     }
+
+    if (profile) watchPresence(stream.id, profile.id);
 
     unsubscribe = subscribeLiveRoom(stream.id, {
       onMessage: (row) => {
@@ -117,6 +131,8 @@ export async function mountLiveRoom(root, streamId) {
             stream.products.find((p) => p.id === patch.pinned_product_id) || stream.pinnedProduct;
         }
         if (patch.status === "ended" || patch.status === "removed") {
+          videoHandle?.destroy();
+          videoHandle = null;
           showEndedState(stream);
         } else {
           updateStatusChrome(stream);
@@ -151,6 +167,7 @@ export async function mountLiveRoom(root, streamId) {
             <button class="button button-ghost live-follow" type="button" data-follow aria-pressed="${ui.following ? "true" : "false"}">
               ${ui.following ? "Following" : "Follow"}
             </button>
+            <span class="live-peak" data-watching hidden>Watching 0</span>
             <span class="live-peak" data-peak ${Number(data.peakViewers) > 0 ? "" : "hidden"}>
               Peak ${escapeHtml(String(data.peakViewers || 0))}
             </span>
@@ -185,7 +202,7 @@ export async function mountLiveRoom(root, streamId) {
 
     const player = root.querySelector("[data-player]");
     if (player instanceof HTMLElement) {
-      videoHandle = mountVideo(player, data);
+      videoHandle = mountVideo(player, data, { publish: canPublish });
     }
 
     renderPinned(data);
@@ -269,8 +286,38 @@ export async function mountLiveRoom(root, streamId) {
       }
     });
 
-    // Keep ui unused warning silent when guest.
     void ui;
+  }
+
+  /**
+   * Signed-in viewers join the private presence channel live:{stream_id}.
+   * Guests are not counted. peak_viewers stays a database column.
+   * @param {string} streamId
+   * @param {string} userId
+   */
+  function watchPresence(streamId, userId) {
+    const supabase = getSupabase();
+    const channel = supabase.channel(`live:${streamId}`, {
+      config: {
+        private: true,
+        presence: { key: userId },
+      },
+    });
+    const show = () => {
+      const count = Object.keys(channel.presenceState()).length;
+      const node = root.querySelector("[data-watching]");
+      if (!(node instanceof HTMLElement)) return;
+      node.hidden = count < 1;
+      node.textContent = `Watching ${count}`;
+    };
+    channel.on("presence", { event: "sync" }, show);
+    channel.subscribe((status) => {
+      if (status !== "SUBSCRIBED") return;
+      channel.track({ at: new Date().toISOString() }).catch((error) => {
+        console.error("Live presence:", error);
+      });
+    });
+    presenceChannel = channel;
   }
 
   /**
@@ -334,7 +381,7 @@ export async function mountLiveRoom(root, streamId) {
     const player = root.querySelector("[data-player]");
     if (player instanceof HTMLElement) {
       videoHandle?.destroy();
-      videoHandle = mountVideo(player, data);
+      videoHandle = mountVideo(player, data, { publish: canPublish });
     }
   }
 

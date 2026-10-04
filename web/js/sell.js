@@ -52,8 +52,9 @@ async function renderApply() {
         <div class="notice">
           <p><strong>${escapeHtml(existing.shop_name)}</strong> · status: ${escapeHtml(existing.status)}</p>
           <p class="muted">An admin approves pending shops. You cannot change status from the browser.</p>
+          <a class="button button-primary" href="${url("pages/vendor.html")}">Open studio</a>
           ${existing.status === "approved"
-            ? `<a class="button button-primary" href="${url("pages/shop.html")}?slug=${encodeURIComponent(existing.slug)}">View your storefront</a>`
+            ? `<a class="button button-ghost" href="${url("pages/shop.html")}?slug=${encodeURIComponent(existing.slug)}">View your storefront</a>`
             : ""}
         </div>
       `;

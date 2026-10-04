@@ -172,6 +172,133 @@ export async function likedReelIds(reelIds) {
 }
 
 /**
+ * Whether the signed-in user saved these reels.
+ * @param {string[]} reelIds
+ * @returns {Promise<Set<string>>}
+ */
+export async function savedReelIds(reelIds) {
+  const profile = await getCurrentProfile();
+  if (!profile || !reelIds.length) return new Set();
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("reel_saves")
+    .select("reel_id")
+    .eq("user_id", profile.id)
+    .in("reel_id", reelIds);
+
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.reel_id));
+}
+
+/**
+ * @param {string} reelId
+ * @returns {Promise<void>}
+ */
+export async function saveReel(reelId) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to save reels.");
+
+  const supabase = getSupabase();
+  const { error } = await supabase.from("reel_saves").insert({
+    reel_id: reelId,
+    user_id: profile.id,
+  });
+
+  if (error) {
+    if (error.code === "23505") return;
+    console.error("save reel:", error);
+    throw error;
+  }
+}
+
+/**
+ * @param {string} reelId
+ * @returns {Promise<void>}
+ */
+export async function unsaveReel(reelId) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to save reels.");
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("reel_saves")
+    .delete()
+    .eq("reel_id", reelId)
+    .eq("user_id", profile.id);
+
+  if (error) {
+    console.error("unsave reel:", error);
+    throw error;
+  }
+}
+
+const SESSION_KEY = "eme-session";
+
+/**
+ * Stable browser session id for view and share counting.
+ * @returns {string}
+ */
+export function browserSessionId() {
+  const existing = window.localStorage.getItem(SESSION_KEY);
+  if (existing && existing.length >= 8 && existing.length <= 128) return existing;
+  const next = crypto.randomUUID();
+  window.localStorage.setItem(SESSION_KEY, next);
+  return next;
+}
+
+const pendingCounts = new Set();
+let engagementRpc = true;
+
+/**
+ * Counts one view per session. No-op until f9_reel_engagement.sql is applied.
+ * @param {string} reelId
+ * @returns {Promise<void>}
+ */
+export async function recordReelView(reelId) {
+  if (!engagementRpc) return;
+  const seenKey = `eme-reel-view-${reelId}`;
+  if (window.sessionStorage.getItem(seenKey) || pendingCounts.has(seenKey)) return;
+  pendingCounts.add(seenKey);
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("record_reel_view", {
+    p_reel_id: reelId,
+    p_session_id: browserSessionId(),
+  });
+  if (error) {
+    pendingCounts.delete(seenKey);
+    if (engagementRpc) console.error("record_reel_view:", error);
+    if (error.code === "PGRST202") engagementRpc = false;
+    return;
+  }
+  window.sessionStorage.setItem(seenKey, "1");
+}
+
+/**
+ * Counts one share per session after the link was actually shared or copied.
+ * @param {string} reelId
+ * @returns {Promise<void>}
+ */
+export async function recordReelShare(reelId) {
+  if (!engagementRpc) return;
+  const seenKey = `eme-reel-share-${reelId}`;
+  if (window.sessionStorage.getItem(seenKey) || pendingCounts.has(seenKey)) return;
+  pendingCounts.add(seenKey);
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("record_reel_share", {
+    p_reel_id: reelId,
+    p_session_id: browserSessionId(),
+  });
+  if (error) {
+    pendingCounts.delete(seenKey);
+    if (engagementRpc) console.error("record_reel_share:", error);
+    if (error.code === "PGRST202") engagementRpc = false;
+    return;
+  }
+  window.sessionStorage.setItem(seenKey, "1");
+}
+
+/**
  * Shops the signed-in user follows.
  * @param {string[]} vendorIds
  * @returns {Promise<Set<string>>}
@@ -270,7 +397,7 @@ export async function unfollowShop(vendorId) {
 /**
  * Comments on a public reel (anon can read).
  * @param {string} reelId
- * @returns {Promise<Array<{ id: string, body: string, created_at: string, author: string }>>}
+ * @returns {Promise<Array<{ id: string, parentId: string | null, body: string, created_at: string, author: string }>>}
  */
 export async function listReelComments(reelId) {
   const supabase = getSupabase();
@@ -278,9 +405,8 @@ export async function listReelComments(reelId) {
     .from("reel_comments")
     .select("id, body, created_at, user_id, parent_id")
     .eq("reel_id", reelId)
-    .is("parent_id", null)
-    .order("created_at", { ascending: false })
-    .limit(40);
+    .order("created_at", { ascending: true })
+    .limit(80);
 
   if (error) throw error;
   const rows = data ?? [];
@@ -296,6 +422,7 @@ export async function listReelComments(reelId) {
 
   return rows.map((row) => ({
     id: row.id,
+    parentId: row.parent_id,
     body: row.body,
     created_at: row.created_at,
     author: names.get(row.user_id) || "Customer",
@@ -305,9 +432,10 @@ export async function listReelComments(reelId) {
 /**
  * @param {string} reelId
  * @param {string} body
+ * @param {string | null} [parentId]
  * @returns {Promise<void>}
  */
-export async function postReelComment(reelId, body) {
+export async function postReelComment(reelId, body, parentId = null) {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Sign in to comment.");
 
@@ -321,9 +449,13 @@ export async function postReelComment(reelId, body) {
     reel_id: reelId,
     user_id: profile.id,
     body: text,
+    parent_id: parentId || null,
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error("post reel comment:", error);
+    throw error;
+  }
 }
 
 /**

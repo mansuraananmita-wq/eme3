@@ -15,6 +15,7 @@ export function icon(name) {
     grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     reels: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 9.5 15 12l-5 2.5z"/>',
     share: '<circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M8 11.2 16 6.8M8 12.8l8 4.4"/>',
+    bookmark: '<path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3.5L6 20V5a1 1 0 0 1 1-1z"/>',
     comment: '<path d="M5 6h14v9H9l-4 3z"/>',
     chevronUp: '<path d="M6 14l6-6 6 6"/>',
     chevronDown: '<path d="M6 10l6 6 6-6"/>',

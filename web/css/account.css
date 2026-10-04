@@ -82,12 +82,16 @@
   gap: var(--space-1);
 }
 
-.account-card input,
-.address-form input,
+.account-card input:not([type="checkbox"]):not([type="hidden"]),
+.account-card textarea,
+.account-card select,
+.address-form input:not([type="checkbox"]):not([type="hidden"]),
 .address-form textarea,
-.checkout-panel input,
+.checkout-panel input:not([type="checkbox"]):not([type="hidden"]),
 .checkout-panel select,
-.account-card select {
+.order-card select,
+.order-card input:not([type="checkbox"]):not([type="hidden"]),
+.order-card textarea {
   min-height: var(--tap);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
@@ -160,13 +164,39 @@
 }
 
 .status-badge.is-pending,
-.status-badge.is-processing { background: var(--color-accent-soft); color: var(--color-warning); }
+.status-badge.is-processing,
+.status-badge.is-open,
+.status-badge.is-investigating { background: var(--color-accent-soft); color: var(--color-warning); }
 .status-badge.is-paid,
 .status-badge.is-shipped { background: var(--color-primary-soft); color: var(--color-primary-strong); }
-.status-badge.is-delivered { background: var(--color-success-soft); color: var(--color-success); }
+.status-badge.is-delivered,
+.status-badge.is-resolved { background: var(--color-success-soft); color: var(--color-success); }
 .status-badge.is-cancelled,
 .status-badge.is-failed,
-.status-badge.is-refunded { background: var(--color-danger-soft); color: var(--color-danger); }
+.status-badge.is-refunded,
+.status-badge.is-rejected { background: var(--color-danger-soft); color: var(--color-danger); }
+
+@media print {
+  .site-header,
+  .site-footer,
+  .bottom-nav,
+  .skip-link,
+  #account-nav,
+  .toast-root,
+  .modal-root,
+  .order-actions,
+  #refund-form {
+    display: none !important;
+  }
+
+  .account-layout {
+    display: block;
+  }
+
+  body {
+    background: var(--color-bg);
+  }
+}
 
 .order-list {
   display: grid;
@@ -400,4 +430,103 @@
     position: sticky;
     top: calc(var(--header-height) + var(--space-3));
   }
+}
+
+.studio-toolbar {
+  margin-bottom: var(--space-3);
+}
+
+.studio-product {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.studio-product .vendor-orders-links {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .studio-product {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .studio-product .vendor-orders-links {
+    grid-column: auto;
+  }
+}
+
+.studio-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.studio-images {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.studio-images li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-images img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.studio-checks {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.studio-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+}
+
+.chat-log {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 420px;
+  overflow: auto;
+}
+
+.chat-bubble {
+  margin: 0;
+  max-width: 80%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.chat-bubble.is-mine {
+  justify-self: end;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
+.chat-form {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.chat-thread a,
+.account-card[href] {
+  text-decoration: none;
+  color: inherit;
 }

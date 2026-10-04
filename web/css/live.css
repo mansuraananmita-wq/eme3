@@ -228,6 +228,20 @@ body.live-lock {
   inset: 0;
 }
 
+.live-video-root video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.live-cam-btn {
+  position: relative;
+  z-index: 2;
+}
+
 .live-video-placeholder {
   position: absolute;
   inset: 0;

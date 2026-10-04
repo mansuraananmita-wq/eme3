@@ -37,6 +37,14 @@
   align-content: start;
 }
 
+.detail-copy .card-actions {
+  flex-wrap: wrap;
+}
+
+.detail-copy .card-actions .button {
+  flex: 1 1 8rem;
+}
+
 .detail-copy h1 {
   font-size: var(--text-3xl);
   line-height: 1.2;
@@ -151,6 +159,28 @@
 .summary .muted {
   color: var(--color-muted);
   font-size: var(--text-sm);
+}
+
+.review-stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.review-stars legend {
+  width: 100%;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.review-stars label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap);
 }
 
 .cart-layout {

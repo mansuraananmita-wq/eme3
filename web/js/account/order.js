@@ -1,6 +1,7 @@
 import { mountAccountNav } from "../accountShell.js";
 import { addToCart } from "../api/cartApi.js";
-import { cancelMyOrder, getMyOrder } from "../api/ordersApi.js";
+import { cancelMyOrder, getMyOrder, requestOrderRefund } from "../api/ordersApi.js";
+import { refundOrder } from "../api/adminApi.js";
 import { authErrorMessage, requireUser } from "../auth.js";
 import { mountShell, openModal, toast } from "../components.js";
 import { formatMoney } from "../format.js";
@@ -11,6 +12,9 @@ import { showState } from "../ui-state.js";
 
 const root = document.querySelector("#order-root");
 
+/** @type {import("../auth.js").Profile | null} */
+let viewer = null;
+
 /** Order flow steps for the timeline. Cancelled / refunded are handled separately. */
 const FLOW = ["pending", "paid", "processing", "shipped", "delivered"];
 
@@ -19,6 +23,7 @@ boot();
 async function boot() {
   const profile = await requireUser();
   if (!profile) return;
+  viewer = profile;
   mountShell({ page: "account" });
   mountAccountNav("orders");
   await load();
@@ -58,7 +63,15 @@ function render(order) {
   if (!root) return;
   const address = order.shipping_address || {};
   const payment = Array.isArray(order.payments) ? order.payments[0] : null;
-  const canCancel = order.status === "pending";
+  const canCancel = order.status === "pending" && viewer?.id === order.customer_id;
+  const disputes = order.disputes || [];
+  const openDispute = disputes.find((row) => row.status === "open" || row.status === "investigating");
+  const canRequestRefund = viewer?.id === order.customer_id
+    && order.status === "delivered"
+    && order.payment_status !== "refunded"
+    && order.payment_status !== "failed"
+    && !openDispute;
+  const canAdminRefund = viewer?.role === "admin" && order.status === "delivered";
 
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
@@ -72,7 +85,10 @@ function render(order) {
       <h2>Status / অবস্থা</h2>
       <ol class="timeline">${timelineHtml(order.status)}</ol>
       <p class="muted">Payment: <span class="status-badge is-${escapeHtml(order.payment_status)}">${escapeHtml(order.payment_status)}</span>
-        ${payment ? ` · ${escapeHtml(payment.provider)}` : ""}</p>
+        ${payment ? ` · ${escapeHtml(paymentLabel(payment.provider))} · ${escapeHtml(payment.status)}` : ""}</p>
+      ${payment?.provider === "cash_on_delivery" && order.payment_status === "pending"
+        ? `<p class="muted">Cash on delivery is marked paid when this order is delivered.</p>`
+        : ""}
     </section>
 
     <section class="account-card">
@@ -96,13 +112,33 @@ function render(order) {
       <p class="checkout-line"><span>Total</span><strong>${escapeHtml(formatMoney(order.total, order.currency))}</strong></p>
       <div class="order-actions">
         <button class="button button-primary" type="button" id="buy-again">Buy again</button>
+        <button class="button button-ghost" type="button" id="print-invoice">Print invoice</button>
         ${canCancel ? `<button class="button button-ghost" type="button" id="cancel-order">Cancel order</button>` : ""}
+        ${canAdminRefund ? `<button class="button button-ghost" type="button" id="admin-refund">Refund order</button>` : ""}
         <a class="button button-ghost" href="${url("pages/account/orders.html")}">Back to orders</a>
       </div>
-      ${canCancel
-        ? `<p class="muted">You can cancel while the order is still pending.</p>`
-        : `<p class="muted">This order can no longer be cancelled from your account.</p>`}
+      ${canCancel ? `<p class="muted">You can cancel while the order is still pending. Stock is restored.</p>` : ""}
     </section>
+
+    ${disputes.length || canRequestRefund ? `
+      <section class="account-card">
+        <h2>Refund</h2>
+        ${disputes.map((row) => `
+          <p><span class="status-badge is-${escapeHtml(row.status)}">${escapeHtml(row.status)}</span> ${escapeHtml(row.reason)}</p>
+          ${row.resolution_note ? `<p class="muted">${escapeHtml(row.resolution_note)}</p>` : ""}
+        `).join("")}
+        ${canRequestRefund ? `
+          <form id="refund-form">
+            <label class="field">
+              <span>Why do you want a refund?</span>
+              <textarea name="reason" rows="3" minlength="3" maxlength="2000" required></textarea>
+            </label>
+            <button class="button button-ghost" type="submit">Request refund</button>
+          </form>
+          <p class="muted">This opens a request. An admin marks the payment refunded. Stock is not returned automatically.</p>
+        ` : ""}
+      </section>
+    ` : ""}
   `;
 
   root.querySelector("#buy-again")?.addEventListener("click", async () => {
@@ -127,6 +163,46 @@ function render(order) {
       toast(authErrorMessage(error), "error");
       if (button instanceof HTMLButtonElement) button.disabled = false;
     }
+  });
+
+  root.querySelector("#print-invoice")?.addEventListener("click", () => {
+    window.print();
+  });
+
+  root.querySelector("#refund-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!(form instanceof HTMLFormElement)) return;
+    const reason = String(new FormData(form).get("reason") || "").trim();
+    const button = form.querySelector("button");
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+    try {
+      await requestOrderRefund(order.id, reason);
+      toast("Refund request sent.", "success");
+      await load();
+    } catch (error) {
+      console.error("Request refund:", error);
+      toast(authErrorMessage(error), "error");
+      if (button instanceof HTMLButtonElement) button.disabled = false;
+    }
+  });
+
+  root.querySelector("#admin-refund")?.addEventListener("click", () => {
+    openModal({
+      title: "Refund order",
+      body: "Mark this delivered order and its payment as refunded? Stock stays as it is.",
+      confirmLabel: "Refund",
+      onConfirm: async () => {
+        try {
+          await refundOrder(order.id, "Refunded from the order page.");
+          toast("Order refunded.", "success");
+          await load();
+        } catch (error) {
+          console.error("Admin refund:", error);
+          toast(authErrorMessage(error), "error");
+        }
+      },
+    });
   });
 
   root.querySelector("#cancel-order")?.addEventListener("click", () => {
@@ -185,6 +261,19 @@ function timelineHtml(status) {
   return FLOW.map((step, i) => `
     <li class="${i <= index ? "is-done" : ""}">${escapeHtml(step)}</li>
   `).join("");
+}
+
+/**
+ * @param {string} id
+ * @returns {string}
+ */
+/**
+ * @param {string} provider
+ * @returns {string}
+ */
+function paymentLabel(provider) {
+  if (provider === "cash_on_delivery") return "Cash on delivery";
+  return provider;
 }
 
 /**

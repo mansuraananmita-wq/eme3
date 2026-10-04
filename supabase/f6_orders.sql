@@ -96,6 +96,40 @@ begin
   where id = p_order_id
     and status is distinct from 'refunded'
     and status is distinct from v_next;
+
+  -- COD is collected when the order is delivered. Cancelled orders never collect it.
+  -- Do not touch a refunded order, or a payment that is already paid or failed.
+  if v_next = 'delivered' then
+    update public.payments
+    set status = 'paid'
+    where order_id = p_order_id
+      and provider = 'cash_on_delivery'
+      and status = 'pending'
+      and exists (
+        select 1
+        from public.orders as settled
+        where settled.id = p_order_id
+          and settled.status = 'delivered'
+          and settled.payment_status = 'pending'
+      );
+
+    update public.orders
+    set payment_status = 'paid'
+    where id = p_order_id
+      and status = 'delivered'
+      and payment_status = 'pending';
+  elsif v_next = 'cancelled' then
+    update public.payments
+    set status = 'failed'
+    where order_id = p_order_id
+      and status = 'pending';
+
+    update public.orders
+    set payment_status = 'failed'
+    where id = p_order_id
+      and status = 'cancelled'
+      and payment_status = 'pending';
+  end if;
 end;
 $$;
 

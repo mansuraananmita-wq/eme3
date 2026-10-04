@@ -93,6 +93,7 @@ function render(status) {
           <div class="order-meta">
             <span>${escapeHtml(formatDate(order.created_at))}</span>
             <span>${escapeHtml(formatMoney(order.total, order.currency))}</span>
+            <span class="status-badge is-${escapeHtml(order.payment_status)}">${escapeHtml(order.payment_status)}</span>
             <span>${escapeHtml(String(order.itemCount))} item${order.itemCount === 1 ? "" : "s"}</span>
           </div>
           <p class="muted">${escapeHtml(order.shopNames.join(" · ") || "Marketplace seller")}</p>

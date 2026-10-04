@@ -12,7 +12,7 @@
         }
       })();
     </script>
-    <title>Shop orders — EME</title>
+    <title>Vendor studio — EME</title>
     <link rel="icon" href="../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,35 +22,22 @@
     <link rel="stylesheet" href="../css/marketplace.css">
     <link rel="stylesheet" href="../css/account.css">
   </head>
-  <body data-page="vendor-orders">
+  <body data-page="vendor">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
-      <div class="wrap">
+      <div class="wrap admin-wrap">
         <header class="vendor-orders-head">
           <div>
-            <h1>Shop orders / অর্ডার</h1>
-            <p class="muted">Update your line items: pending → processing → shipped → delivered (or cancel). Cash on delivery is marked paid when the whole order is delivered.</p>
+            <h1>Vendor studio</h1>
+            <p class="muted">Products, shop, live rooms, payouts, and messages.</p>
           </div>
           <div class="vendor-orders-links">
+            <a class="button button-ghost" href="vendor-orders.html">Shop orders</a>
             <a class="button button-ghost" href="vendor-reels.html">Your reels</a>
           </div>
         </header>
-        <form id="vendor-order-filters" class="filter-bar">
-          <label class="field">
-            <span class="sr-only">Status</span>
-            <select name="status">
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </label>
-          <button class="button button-ghost" type="submit">Filter</button>
-        </form>
-        <div id="vendor-orders-root" aria-busy="true">
+        <div id="vendor-root" aria-busy="true">
           <div class="skeleton skeleton-card"></div>
         </div>
       </div>
@@ -59,6 +46,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/vendor-orders-page.js"></script>
+    <script type="module" src="../js/vendor-page.js"></script>
   </body>
 </html>

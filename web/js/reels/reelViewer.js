@@ -10,9 +10,14 @@ import {
   likeReel,
   likedReelIds,
   listPublishedReels,
+  recordReelShare,
+  recordReelView,
   REELS_PAGE_SIZE,
+  saveReel,
+  savedReelIds,
   unfollowShop,
   unlikeReel,
+  unsaveReel,
 } from "../api/reelsApi.js";
 import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js";
@@ -111,6 +116,7 @@ export async function mountReelViewer(root, options = {}) {
     if (startId) scrollToReel(startId, false);
     else if (reels[0]) {
       activeId = reels[0].id;
+      noteView(activeId);
       await playActive();
       preloadAround(activeId);
     }
@@ -190,6 +196,10 @@ export async function mountReelViewer(root, options = {}) {
       console.error("Reel likes:", error);
       return new Set();
     });
+    const saved = await savedReelIds(reels.map((reel) => reel.id)).catch((error) => {
+      console.error("Reel saves:", error);
+      return new Set();
+    });
     const followed = await followedShopIds(reels.map((reel) => reel.vendorId).filter(Boolean)).catch((error) => {
       console.error("Follow state:", error);
       return new Set();
@@ -200,6 +210,7 @@ export async function mountReelViewer(root, options = {}) {
       .map((reel) =>
         slideHtml(reel, {
           liked: liked.has(reel.id),
+          saved: saved.has(reel.id),
           followed: followed.has(reel.vendorId),
           muted,
           eager: reel.id === activeId || reel.id === reels[0]?.id,
@@ -244,6 +255,7 @@ export async function mountReelViewer(root, options = {}) {
       });
 
       slide.querySelector("[data-like]")?.addEventListener("click", () => toggleLike(reel, slide));
+      slide.querySelector("[data-save]")?.addEventListener("click", () => toggleSave(reel, slide));
       slide.querySelector("[data-follow]")?.addEventListener("click", () => toggleFollow(reel, slide));
       slide.querySelector("[data-share]")?.addEventListener("click", () => shareReel(reel));
       slide.querySelector("[data-products]")?.addEventListener("click", () => {
@@ -280,6 +292,7 @@ export async function mountReelViewer(root, options = {}) {
         const id = visible.target.getAttribute("data-reel-id");
         if (!id || id === activeId) return;
         activeId = id;
+        noteView(id);
         playActive();
         preloadAround(id);
         maybeLoadMore(id);
@@ -465,6 +478,7 @@ export async function mountReelViewer(root, options = {}) {
     const slide = stage.querySelector(`[data-reel-id="${CSS.escape(id)}"]`);
     slide?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     activeId = id;
+    noteView(id);
     playActive();
     preloadAround(id);
   }
@@ -504,6 +518,47 @@ export async function mountReelViewer(root, options = {}) {
    * @param {object} reel
    * @param {Element} slide
    */
+  async function toggleSave(reel, slide) {
+    const profile = await getCurrentProfile();
+    if (!profile) {
+      window.location.assign(loginRedirect());
+      return;
+    }
+    const button = slide.querySelector("[data-save]");
+    const saved = button?.getAttribute("aria-pressed") === "true";
+    try {
+      if (saved) {
+        await unsaveReel(reel.id);
+        button?.setAttribute("aria-pressed", "false");
+        button?.classList.remove("is-saved");
+        reel.savesCount = Math.max(0, (reel.savesCount || 1) - 1);
+      } else {
+        await saveReel(reel.id);
+        button?.setAttribute("aria-pressed", "true");
+        button?.classList.add("is-saved");
+        reel.savesCount = (reel.savesCount || 0) + 1;
+      }
+      const count = slide.querySelector("[data-save-count]");
+      if (count) count.textContent = String(reel.savesCount);
+    } catch (error) {
+      console.error("Save reel:", error);
+      toast(authErrorMessage(error), "error");
+    }
+  }
+
+  /**
+   * @param {string} reelId
+   */
+  function noteView(reelId) {
+    recordReelView(reelId).catch((error) => {
+      console.error("Reel view:", error);
+    });
+  }
+
+  /**
+   * @param {object} reel
+   * @param {Element} slide
+   */
   async function toggleFollow(reel, slide) {
     const profile = await getCurrentProfile();
     if (!profile) {
@@ -529,11 +584,6 @@ export async function mountReelViewer(root, options = {}) {
 }
 
 /**
- * @param {object} reel
- * @param {{ liked: boolean, followed: boolean, muted: boolean }} state
- * @returns {string}
- */
-/**
  * @param {Array<object>} list
  * @param {string} id
  * @returns {Array<object>}
@@ -548,7 +598,7 @@ function prioritizeReel(list, id) {
 
 /**
  * @param {object} reel
- * @param {{ liked: boolean, followed: boolean, muted: boolean, eager?: boolean }} state
+ * @param {{ liked: boolean, saved?: boolean, followed: boolean, muted: boolean, eager?: boolean }} state
  * @returns {string}
  */
 function slideHtml(reel, state) {
@@ -591,6 +641,10 @@ function slideHtml(reel, state) {
         <button type="button" class="reel-rail-btn ${state.liked ? "is-liked" : ""}" data-like aria-pressed="${state.liked ? "true" : "false"}" aria-label="Like">
           ${icon("heart")}
           <span data-like-count>${escapeHtml(String(reel.likesCount || 0))}</span>
+        </button>
+        <button type="button" class="reel-rail-btn ${state.saved ? "is-saved" : ""}" data-save aria-pressed="${state.saved ? "true" : "false"}" aria-label="Save">
+          ${icon("bookmark")}
+          <span data-save-count>${escapeHtml(String(reel.savesCount || 0))}</span>
         </button>
         <button type="button" class="reel-rail-btn" data-comments aria-label="Comments">
           ${icon("comment")}
@@ -739,13 +793,15 @@ async function shareReel(reel) {
   try {
     if (navigator.share) {
       await navigator.share({ title: reel.shop?.shop_name || "EME Reel", url: link });
+      await recordReelShare(reel.id);
       return;
     }
-  } catch {
-    // Fall through to clipboard.
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return;
   }
   try {
     await navigator.clipboard.writeText(link);
+    await recordReelShare(reel.id);
     toast("Link copied.", "success");
   } catch {
     toast(link, "info");

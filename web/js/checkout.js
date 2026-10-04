@@ -14,6 +14,7 @@ import {
 import { authErrorMessage, requireUser } from "./auth.js";
 import { mountShell, toast } from "./components.js";
 import { formatMoney } from "./format.js";
+import { divisionChoices } from "./bdDivisions.js";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js";
 import { showState } from "./ui-state.js";
@@ -110,7 +111,12 @@ function render() {
               <label class="field"><span>Address line / ঠিকানা</span><input name="line1" required maxlength="180"></label>
               <label class="field"><span>Address line 2</span><input name="line2" maxlength="180"></label>
               <label class="field"><span>Area / city (এলাকা)</span><input name="city" required maxlength="80" placeholder="e.g. Mirpur"></label>
-              <label class="field"><span>District (জেলা)</span><input name="district" required maxlength="80" placeholder="e.g. Dhaka"></label>
+              <label class="field"><span>Division / বিভাগ</span>
+                <select name="district" required>
+                  <option value="">Choose</option>
+                  ${divisionChoices("").map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}
+                </select>
+              </label>
               <label class="field"><span>Postal code</span><input name="postal_code" maxlength="20"></label>
               <label class="field-inline"><input name="is_default" type="checkbox" checked> <span>Set as default</span></label>
               <button class="button button-primary" type="submit">Save address</button>
@@ -126,9 +132,9 @@ function render() {
               : `Outside Dhaka · ${escapeHtml(formatMoney(DELIVERY_FEES.outsideDhaka, DELIVERY_FEES.currency))}`}
           </p>
           <p class="muted">
-            Fee is ${escapeHtml(String(DELIVERY_FEES.insideDhaka))} BDT in Dhaka,
-            ${escapeHtml(String(DELIVERY_FEES.outsideDhaka))} BDT elsewhere
-            (matched on district/city containing “Dhaka”). Confirmed on the server when you place the order.
+            Fee is ${escapeHtml(String(DELIVERY_FEES.insideDhaka))} BDT for the Dhaka division,
+            ${escapeHtml(String(DELIVERY_FEES.outsideDhaka))} BDT for the other seven.
+            The server checks the division when you place the order.
           </p>
         </section>
 
@@ -147,6 +153,7 @@ function render() {
               </label>
             `).join("")}
           </div>
+          <p class="muted">Cash on delivery stays unpaid until the order is delivered. bKash and Nagad are not charged here.</p>
         </section>
       </div>
 

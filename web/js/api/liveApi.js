@@ -1,8 +1,7 @@
 /**
  * Public live shopping streams and chat.
- * live_messages: authenticated only (select/insert). Anon cannot read chat.
- * Realtime: live_messages, live_streams, live_stream_products (see 0018_realtime.sql).
- * peak_viewers is readable but not client-writable. No live viewer-count column.
+ * live_messages: signed-in users can send. Guests can read after f8_live_guest_chat.sql.
+ * Viewer count uses Realtime presence on live:{stream_id}. peak_viewers is not client-writable.
  */
 
 import { getCurrentProfile } from "../auth.js";

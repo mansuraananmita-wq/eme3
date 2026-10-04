@@ -9,6 +9,7 @@ import {
 } from "../api/addressApi.js";
 import { authErrorMessage, requireUser } from "../auth.js";
 import { mountShell, openModal, toast } from "../components.js";
+import { divisionChoices } from "../bdDivisions.js";
 import { escapeHtml } from "../html.js";
 import { showState } from "../ui-state.js";
 
@@ -150,8 +151,13 @@ function formHtml(row = null) {
       <label class="field"><span>City / area</span>
         <input name="city" maxlength="80" required value="${escapeHtml(row?.city || "")}">
       </label>
-      <label class="field"><span>District</span>
-        <input name="district" maxlength="80" required value="${escapeHtml(row?.district || "")}">
+      <label class="field"><span>Division / বিভাগ</span>
+        <select name="district" required>
+          ${row?.district ? "" : `<option value="">Choose</option>`}
+          ${divisionChoices(row?.district).map((name) => `
+            <option value="${escapeHtml(name)}" ${name === row?.district ? "selected" : ""}>${escapeHtml(name)}</option>
+          `).join("")}
+        </select>
       </label>
       <label class="field"><span>Postal code (optional)</span>
         <input name="postal_code" maxlength="20" value="${escapeHtml(row?.postal_code || "")}">

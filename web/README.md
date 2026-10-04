@@ -38,16 +38,19 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 - `/pages/products.html` — catalog filters + search (`?q=` has Products | Stores tabs)
 - `/pages/product.html?slug=` — product details
 - `/pages/cart.html` — cart grouped by store → checkout
-- `/pages/checkout.html` — address, Dhaka vs outside delivery fee, COD (bKash/Nagad coming soon), `place_order` RPC
+- `/pages/checkout.html` — address with division dropdown, Dhaka 60 / outside 120, COD (`place_order`). bKash/Nagad stay unavailable. Run `supabase/f7_payments.sql` so delivery marks COD paid and refunds work
+- `/pages/account/order.html?id=` — invoice print, cancel while pending, refund request after delivery
 - `/pages/account/orders.html` — customer order list
 - `/pages/account/order.html?id=` — order detail, timeline, cancel while pending
+- `/pages/vendor.html` — vendor studio: products, shop profile, live host, payouts (read-only), messages
+- `/pages/chat.html?shop=` — customer starts a shop thread; `?id=` opens it
 - `/pages/vendor-orders.html` — **approved vendors**: own line items + status transitions
-- `/pages/admin.html` — **admins only** (`profiles.role = admin`): vendors, moderation, all orders
+- `/pages/admin.html` — **admins only** (`profiles.role = admin`): vendors, moderation, orders, roles, categories, settings, disputes, payouts
 - `/pages/reels.html` — full-screen reels feed (`?start=<id>` opens at that reel)
 - `/pages/reel.html?id=` — deep link into the same feed (scroll continues to next reels)
 - `/pages/vendor-reels.html` — **approved vendors only**: upload, tag products, publish, delete reels
 - `/pages/lives.html` — Live now + Upcoming stream cards
-- `/pages/live.html?id=` — live room (video is a placeholder; chat + pinned products work)
+- `/pages/live.html?id=` — live room. Video connects through the `livekit-token` edge function when LiveKit secrets are set. Chat send needs login. Guest read needs `supabase/f8_live_guest_chat.sql`
 - `/pages/login.html` and `/pages/register.html`
 
 ### Account (requires login, `?redirect=` on guests)

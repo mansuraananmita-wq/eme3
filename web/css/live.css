@@ -242,7 +242,7 @@ body.live-lock {
   z-index: 2;
 }
 
-.live-video-placeholder {
+.live-video-stage {
   position: absolute;
   inset: 0;
   display: grid;
@@ -250,7 +250,7 @@ body.live-lock {
   background: #111;
 }
 
-.live-video-placeholder img {
+.live-video-stage img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -278,7 +278,7 @@ body.live-lock {
   font-size: var(--text-sm);
 }
 
-.live-video-placeholder .live-badge {
+.live-video-stage .live-badge {
   top: auto;
   bottom: 14px;
   left: 14px;

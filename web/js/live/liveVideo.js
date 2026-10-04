@@ -18,7 +18,7 @@ export function mountVideo(container, stream, options = {}) {
   container.classList.add("live-video-root");
 
   const frame = document.createElement("div");
-  frame.className = "live-video-placeholder";
+  frame.className = "live-video-stage";
   paintFrame(frame, stream, statusNote(stream.status));
   container.append(frame);
 

@@ -141,19 +141,15 @@ function render() {
         <section class="checkout-panel">
           <h2 class="checkout-step-title">3. Payment / পেমেন্ট</h2>
           <div class="payment-options" id="payment-pick">
-            ${PAYMENT_METHODS.map((method) => `
-              <label class="${method.id === selectedPayment ? "is-selected" : ""} ${method.available ? "" : "is-disabled"}">
+            ${PAYMENT_METHODS.filter((method) => method.available).map((method) => `
+              <label class="${method.id === selectedPayment ? "is-selected" : ""}">
                 <input type="radio" name="payment_method" value="${escapeHtml(method.id)}"
-                  ${method.id === selectedPayment ? "checked" : ""}
-                  ${method.available ? "" : "disabled"}>
-                <span>
-                  ${escapeHtml(method.label)}
-                  ${method.available ? "" : `<em class="coming-soon">Coming soon</em>`}
-                </span>
+                  ${method.id === selectedPayment ? "checked" : ""}>
+                <span>${escapeHtml(method.label)}</span>
               </label>
             `).join("")}
           </div>
-          <p class="muted">Cash on delivery stays unpaid until the order is delivered. bKash and Nagad are not charged here.</p>
+          <p class="muted">Cash on delivery stays unpaid until the order is delivered.</p>
         </section>
       </div>
 

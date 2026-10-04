@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -258,17 +262,20 @@ p {
 }
 
 .logo {
-  font-weight: var(--weight-bold);
-  font-size: 24px;
-  letter-spacing: -0.04em;
-  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
-  line-height: 1;
+  line-height: 0;
+}
+
+.logo img {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 .logo:hover {
   text-decoration: none;
-  color: var(--color-primary-strong);
 }
 
 .header-actions {
@@ -1132,10 +1139,52 @@ select:focus-visible,
 }
 
 .auth-card {
-  width: min(420px, 100%);
+  width: min(520px, 100%);
   margin: var(--space-6) auto;
   display: grid;
   gap: var(--space-3);
+}
+
+.role-pick {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.role-pick legend {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.role-pick label {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.role-pick label:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.role-pick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-pick span {
+  font-weight: 600;
+}
+
+.role-pick small {
+  color: var(--color-muted);
 }
 
 .state-panel,

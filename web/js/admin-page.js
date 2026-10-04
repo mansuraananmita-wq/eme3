@@ -22,7 +22,7 @@ import {
   setVendorStatus,
 } from "./api/adminApi.js";
 import { slugifyShopName } from "./api/shopsApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js";
 import { mountShell, openModal, toast } from "./components.js";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
@@ -86,7 +86,12 @@ async function boot() {
   }
 
   if (profile.role !== "admin") {
-    showGate("This account is not an admin.", url("index.html"), "Back home");
+    showGate(
+      "This page is the admin desk. This login is not an admin yet. Use the button to switch this same account, or register a new account and pick Admin.",
+      url("pages/customer.html"),
+      "My account",
+      "admin",
+    );
     return;
   }
 
@@ -116,16 +121,33 @@ async function boot() {
  * @param {string} href
  * @param {string} label
  */
-function showGate(message, href, label) {
+/**
+ * @param {string} message
+ * @param {string} href
+ * @param {string} label
+ * @param {"admin" | "vendor" | ""} [claimRole]
+ */
+function showGate(message, href, label, claimRole = "") {
   if (!(root instanceof HTMLElement)) return;
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
     <div class="state-panel">
       <p>Admin</p>
       <p class="muted">${escapeHtml(message)}</p>
-      <p><a class="button button-primary" href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>
+      ${claimRole ? `<p><button class="button button-primary" type="button" id="claim-role">Use this account as ${escapeHtml(claimRole)}</button></p>` : ""}
+      <p><a class="button button-ghost" href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>
     </div>
   `;
+  root.querySelector("#claim-role")?.addEventListener("click", async () => {
+    try {
+      await claimAccountRole("admin");
+      toast("This account is an admin.", "success");
+      window.location.reload();
+    } catch (error) {
+      console.error("claim admin:", error);
+      toast(roleChangeMessage(error), "error");
+    }
+  });
 }
 
 async function render() {

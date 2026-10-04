@@ -315,9 +315,9 @@ function renderFeatured(shops) {
 function renderLivesHome(lives) {
   if (!(livesHomeSection instanceof HTMLElement) || !(livesHomeRow instanceof HTMLElement)) return;
   if (!lives.length) {
-    livesHomeSection.hidden = true;
+    livesHomeSection.hidden = false;
     livesHomeRow.setAttribute("aria-busy", "false");
-    livesHomeRow.innerHTML = "";
+    livesHomeRow.innerHTML = `<p class="muted">No shop is live right now. Vendors start a room from Vendor studio, then it appears here and on <a href="${url("pages/lives.html")}">Live</a>.</p>`;
     return;
   }
   livesHomeSection.hidden = false;

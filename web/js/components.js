@@ -193,7 +193,7 @@ function renderChrome(profile, counts, page, categories) {
       </div>
     </div>
     <div class="header-main">
-      <a class="logo" href="${home}">EME</a>
+      <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
       <form class="search-form" action="${products}" method="get" role="search">
         <label class="sr-only" for="search-category">Category</label>
         <select id="search-category" name="category">
@@ -253,8 +253,8 @@ function renderChrome(profile, counts, page, categories) {
   footer.innerHTML = `
     <div class="footer-grid">
       <div class="footer-col">
-        <h3>About</h3>
-        <p>EME is a multi-vendor marketplace for everyday shopping in Bangladesh.</p>
+        <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
+        <p>eme is a multi-vendor marketplace for everyday shopping in Bangladesh.</p>
         <a href="${home}">Home</a>
         <a href="${shops}">Browse stores</a>
         <a href="${reels}">Reels</a>
@@ -456,7 +456,6 @@ function accountMenu(name, roleLabel, cart, wishlist) {
   const following = url("pages/following.html");
   const messages = url("pages/chat.html");
   const isVendor = roleLabel === "Vendor";
-  const isAdmin = roleLabel === "Admin";
   return `
     <div class="account">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
@@ -468,11 +467,11 @@ function accountMenu(name, roleLabel, cart, wishlist) {
         <span class="badge">${escapeHtml(roleLabel)}</span>
         <a href="${customer}">My account</a>
         <a href="${profile}">Profile</a>
-        ${isAdmin ? `<a href="${admin}">Admin</a>` : ""}
+        <a href="${admin}">Admin</a>
         <a href="${orders}">Orders</a>
         <a href="${following}">Following</a>
         <a href="${messages}">Messages</a>
-        ${isVendor ? `<a href="${vendorStudio}">Studio</a>` : ""}
+        <a href="${vendorStudio}">Vendor studio</a>
         ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
         ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}
         <a href="${addresses}">Addresses</a>

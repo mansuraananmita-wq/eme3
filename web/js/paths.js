@@ -33,8 +33,14 @@ export function safeNext(next) {
   if (!/^[A-Za-z0-9_./?=&%-]+$/.test(next)) {
     return url("index.html");
   }
+  const fromWebRoot = next.replace(/^\/+/, "");
+  if (/^(pages\/|index\.html)/.test(fromWebRoot)) {
+    return new URL(fromWebRoot, webRoot).href;
+  }
   try {
-    return new URL(next, window.location.href).href;
+    const resolved = new URL(next, window.location.href);
+    if (resolved.origin !== window.location.origin) return url("index.html");
+    return resolved.href;
   } catch {
     return url("index.html");
   }

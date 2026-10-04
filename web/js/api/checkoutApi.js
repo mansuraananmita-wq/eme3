@@ -27,8 +27,6 @@ export const DELIVERY_FEES = Object.freeze({
  */
 export const PAYMENT_METHODS = [
   { id: "cash_on_delivery", label: "Cash on delivery / ক্যাশ অন ডেলিভারি", available: true },
-  { id: "bkash", label: "bKash", available: false },
-  { id: "nagad", label: "Nagad", available: false },
 ];
 
 /**
@@ -194,7 +192,7 @@ export async function placeOrder(input) {
   const paymentMethod = String(input.paymentMethod || "").trim();
   const method = PAYMENT_METHODS.find((row) => row.id === paymentMethod);
   if (!method) throw new Error("Choose a payment method.");
-  if (!method.available) throw new Error(`${method.label} is coming soon. Choose cash on delivery.`);
+  if (!method.available) throw new Error("Choose cash on delivery.");
 
   const address = await getAddress(addressId);
   if (!address) throw new Error("That address is not available.");

@@ -26,7 +26,30 @@
     <main id="main">
       <form class="auth-card" id="register-form" novalidate>
         <h1>Create account</h1>
-        <p class="muted">New accounts start as customers. Shop approval and admin access are granted later.</p>
+        <p class="muted">Pick who this login is. Customer shops. Vendor opens a studio and can go live. Admin opens the admin desk.</p>
+        <fieldset class="role-pick">
+          <legend>I am joining as</legend>
+          <label>
+            <input type="radio" name="signup_role" value="customer" checked>
+            <span>Customer</span>
+            <small>Buy, follow shops, and watch live.</small>
+          </label>
+          <label>
+            <input type="radio" name="signup_role" value="vendor">
+            <span>Vendor</span>
+            <small>Open a shop, add products, and go live.</small>
+          </label>
+          <label>
+            <input type="radio" name="signup_role" value="admin">
+            <span>Admin</span>
+            <small>Approve shops, orders, and payouts.</small>
+          </label>
+        </fieldset>
+        <label class="field" id="shop-name-field" hidden>
+          <span>Shop name</span>
+          <input name="shop_name" type="text" maxlength="80" autocomplete="organization">
+          <small class="field-error" id="shop-error"></small>
+        </label>
         <label class="field">
           <span>Full name</span>
           <input name="full_name" type="text" autocomplete="name" maxlength="120" required>
@@ -50,6 +73,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/register.js"></script>
+    <script type="module" src="../js/register.js?v=3"></script>
   </body>
 </html>

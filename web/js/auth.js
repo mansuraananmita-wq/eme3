@@ -54,21 +54,58 @@ export function authErrorMessage(error) {
  * @param {string} email
  * @param {string} password
  * @param {string} fullName
+ * @param {'customer' | 'vendor' | 'admin'} [role]
+ * @param {string} [shopName]
  * @returns {Promise<{ needsEmailConfirm: boolean }>}
  */
-export async function signUp(email, password, fullName) {
+export async function signUp(email, password, fullName, role = "customer", shopName = "") {
   const supabase = getSupabase();
+  const chosen = role === "vendor" || role === "admin" ? role : "customer";
+  /** @type {Record<string, string>} */
+  const meta = { full_name: fullName, signup_role: chosen };
+  if (chosen === "vendor" && shopName.trim()) meta.shop_name = shopName.trim();
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: meta,
       emailRedirectTo: new URL(url("index.html"), window.location.href).href,
     },
   });
 
   if (error) throw error;
   return { needsEmailConfirm: !data.session };
+}
+
+/**
+ * Sets the signed-in account to customer, vendor, or admin.
+ * Vendor also creates or approves that user's shop.
+ * Needs supabase/f10_signup_roles.sql applied once.
+ * @param {'customer' | 'vendor' | 'admin'} role
+ * @param {string} [shopName]
+ * @returns {Promise<void>}
+ */
+export async function claimAccountRole(role, shopName = "") {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("claim_account_role", {
+    new_role: role,
+    shop_name: shopName.trim() || null,
+  });
+  if (error) throw error;
+}
+
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+export function roleChangeMessage(error) {
+  const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+  const text = error instanceof Error ? error.message : String(error ?? "");
+  if (code === "PGRST202" || /claim_account_role/i.test(text) || /schema cache/i.test(text)) {
+    return "Run supabase/f10_signup_roles.sql once in the Supabase SQL editor. After that, pick customer, vendor, or admin here. The email role update is not needed.";
+  }
+  return authErrorMessage(error);
 }
 
 /**

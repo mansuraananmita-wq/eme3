@@ -1,7 +1,7 @@
-import { authErrorMessage, redirectAfterAuth, signUp } from "./auth.js";
+import { authErrorMessage, signUp } from "./auth.js";
 import { mergeGuestCart } from "./api/cartApi.js";
 import { mountShell, toast } from "./components.js";
-import { url } from "./paths.js";
+import { safeNext, url } from "./paths.js";
 
 mountShell({ page: "register" });
 
@@ -13,6 +13,9 @@ form?.addEventListener("submit", async (event) => {
   const fullName = String(data.get("full_name") || "").trim();
   const email = String(data.get("email") || "").trim();
   const password = String(data.get("password") || "");
+  const roleValue = String(data.get("signup_role") || "customer");
+  const role = roleValue === "vendor" || roleValue === "admin" ? roleValue : "customer";
+  const shopName = String(data.get("shop_name") || "").trim();
   const fields = {
     full_name: document.querySelector("#name-error"),
     email: document.querySelector("#email-error"),
@@ -35,18 +38,24 @@ form?.addEventListener("submit", async (event) => {
     if (fields.password) fields.password.textContent = "Password must be at least 6 characters.";
     valid = false;
   }
+  const shopError = document.querySelector("#shop-error");
+  if (shopError) shopError.textContent = "";
+  if (role === "vendor" && (shopName.length < 2 || shopName.length > 80)) {
+    if (shopError) shopError.textContent = "Shop name must be 2 to 80 characters.";
+    valid = false;
+  }
   if (!valid) return;
 
   const button = form.querySelector("button[type='submit']");
   if (button) button.disabled = true;
 
   try {
-    const result = await signUp(email, password, fullName);
+    const result = await signUp(email, password, fullName, role, shopName);
     const back = new URLSearchParams(window.location.search).get("redirect");
     if (result.needsEmailConfirm) {
       toast("Account created. Confirm the email, then sign in.", "success");
-      const extra = back ? `?redirect=${encodeURIComponent(back)}` : "";
-      window.location.assign(`${url("pages/login.html")}${extra}`);
+      const next = back || (role === "vendor" ? "pages/vendor.html" : role === "admin" ? "pages/admin.html" : "pages/customer.html");
+      window.location.assign(`${url("pages/login.html")}?redirect=${encodeURIComponent(next)}`);
       return;
     }
     try {
@@ -55,7 +64,13 @@ form?.addEventListener("submit", async (event) => {
       toast(authErrorMessage(error), "error");
     }
     toast("Account created.", "success");
-    window.location.assign(redirectAfterAuth());
+    const asked = new URLSearchParams(window.location.search).get("redirect");
+    const home = role === "vendor"
+      ? "pages/vendor.html"
+      : role === "admin"
+        ? "pages/admin.html"
+        : "pages/customer.html";
+    window.location.assign(asked ? safeNext(asked) : url(home));
   } catch (error) {
     toast(authErrorMessage(error), "error");
     if (button) button.disabled = false;
@@ -65,3 +80,19 @@ form?.addEventListener("submit", async (event) => {
 const back = new URLSearchParams(window.location.search).get("redirect");
 const extra = back ? `?redirect=${encodeURIComponent(back)}` : "";
 document.querySelector("#login-link")?.setAttribute("href", `${url("pages/login.html")}${extra}`);
+
+const shopField = document.querySelector("#shop-name-field");
+
+function syncShopField() {
+  const vendor = form?.querySelector("[name='signup_role'][value='vendor']");
+  const showShop = vendor instanceof HTMLInputElement && vendor.checked;
+  if (shopField instanceof HTMLElement) {
+    shopField.hidden = !showShop;
+    shopField.style.display = showShop ? "grid" : "none";
+  }
+}
+
+form?.querySelectorAll("[name='signup_role']").forEach((input) => {
+  input.addEventListener("change", syncShopField);
+});
+syncShopField();

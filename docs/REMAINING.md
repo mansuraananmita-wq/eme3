@@ -11,15 +11,9 @@
 1. `supabase/f7_payments.sql` — ডেলিভার হলে COD `paid`, পুরো ক্যানসেল হলে pending পেমেন্ট `failed`, কাস্টমার রিফান্ড আবেদন, অ্যাডমিন রিফান্ড। না চালালে এই চারটা কাজ করে না।
 2. `supabase/f8_live_guest_chat.sql` — লগইন ছাড়া লাইভ চ্যাট পড়া। মেসেজ পাঠাতে এখনো লগইন লাগে।
 3. `supabase/f9_reel_engagement.sql` — রিল ভিউ ও শেয়ার একবার প্রতি ব্রাউজার সেশনে। না চালালে সেই দুই সংখ্যা বাড়ে না। সেভ, লাইক, কমেন্ট, রিপ্লাই আগের টেবিল দিয়েই চলে।
-4. প্রথম অ্যাডমিন। `supabase/admin_panel.sql`-এর শেষের কমেন্ট, ইমেইল বসিয়ে SQL এডিটরে চালাতে হবে:
+4. `supabase/f10_signup_roles.sql` — একবার পেস্ট করে Run। এরপর রেজিস্টারে Customer, Vendor, Admin বাছাই করা যায়। পুরনো অ্যাকাউন্ট কাস্টমার পেজ, ভেন্ডর স্টুডিও, বা অ্যাডমিন পেজ থেকে “Use this account as …” বাটনেই রোল বদলায়। ইমেইল দিয়ে `role = 'admin'` আপডেট আর দরকার নেই। এই ফাইল না চালালে বাটনটা এই বাক্যটাই দেখাবে।
 
-```sql
-update public.profiles as p
-set role = 'admin'
-from auth.users as u
-where p.id = u.id
-  and u.email = 'you@example.com';
-```
+ভেন্ডর বাছলে দোকান সাথে সাথে approved হয়, তাই স্টুডিওর Live ট্যাব থেকে Go live করা যায়। কাস্টমার সেই রুম হোম, My account, আর `pages/lives.html`-এ দেখে।
 
 5. লাইভ ক্যামেরা। LiveKit ক্লাউড অ্যাকাউন্ট লাগবে, তারপর:
 
@@ -66,6 +60,8 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 অ্যাকাউন্ট ও পরিষ্কার করা:
 
 - পুরো UI দ্বিভাষিক নয়। BN/EN বাটন এখনো ভাষা বদলায় না
+- `claim_account_role` এখন যেকোনো লগইন ইউজারকে admin বানাতে পারে, যাতে টেস্টে SQL লাগে না। সাইটে বাইরের কাস্টমার আসার আগে SQL এডিটরে চালাতে হবে: `revoke execute on function public.claim_account_role(text, text) from authenticated;` এবং রেজিস্টার পেজ থেকে Admin অপশন সরিয়ে ফেলতে হবে
+- লাইভ ক্যামেরার ছবি আসে শুধু LiveKit সিক্রেট সেট থাকলে (উপরের ধাপ ৫)
 - `web/README.md` মার্কেটপ্লেস নোট পুরনো: চেকআউট অর্ডার ইনসার্ট করে না বলা আছে, লাইভ ভিডিওকে placeholder বলা আছে, শিপিং ফি `platform_settings` থেকে আসে বলা আছে
 - `docs/DATABASE.md` বলে `sales_count` কেউ লেখে না। `place_order` স্টক কমায় এবং `sales_count` বাড়ায়
 - রুট `pages/` আর `web/pages/` দুটো ফ্রন্টএন্ড
@@ -84,4 +80,6 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 - অ্যাডমিন: দোকান, মডারেশন, অর্ডার ও রিফান্ড, রোল, ক্যাটাগরি, সেটিংস, ডিসপিউট, পেআউট
 - দোকান ফলো, Following তালিকা, প্রোডাক্ট/দোকান থেকে মেসেজ, Help পেজ, পাসওয়ার্ড রিসেট ইমেইল
 - কাস্টমার হোম `pages/customer.html`, ভেন্ডর স্টুডিও `pages/vendor.html`, অ্যাডমিন `pages/admin.html`
+- রেজিস্টারে Customer / Vendor / Admin। একই অ্যাকাউন্ট থেকেও রোল বদল (`f10_signup_roles.sql` একবার চালালে)
+- কাস্টমার হোম ও হোমে Live now। ভেন্ডর স্টুডিওর Live ট্যাবে Go live। দর্শক `pages/lives.html` ও `pages/live.html`
 - মার্কেটপ্লেস রঙ কমলা (দোকানের বাটন, সার্চ, অফার বার)। দাম লালচে অ্যাকসেন্ট

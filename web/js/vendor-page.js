@@ -19,7 +19,7 @@ import {
   uploadProductImage,
   uploadShopImage,
 } from "./api/vendorApi.js";
-import { authErrorMessage, requireUser } from "./auth.js";
+import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js";
 import { mountShell, openModal, toast } from "./components.js";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
@@ -53,11 +53,30 @@ async function boot() {
     shop = await getMyShopApplication();
     if (!shop) {
       root.setAttribute("aria-busy", "false");
-      showState(
-        root,
-        "Apply to open a shop before using the studio.",
-        () => window.location.assign(url("pages/sell.html")),
-      );
+      root.innerHTML = `
+        <div class="account-card">
+          <h2>Vendor studio</h2>
+          <p>This is the vendor page. Products, the shop, and Go live live here. This login does not have a shop yet.</p>
+          <label class="field">
+            <span>Shop name</span>
+            <input id="claim-shop-name" maxlength="80" placeholder="My shop" value="${escapeHtml(profile.full_name || "")}">
+          </label>
+          <button class="button button-primary" type="button" id="become-vendor">Open my studio</button>
+          <p class="muted">Customers watch at <a href="${url("pages/lives.html")}">Live</a> after you press Go live.</p>
+        </div>
+      `;
+      root.querySelector("#become-vendor")?.addEventListener("click", async () => {
+        const input = root.querySelector("#claim-shop-name");
+        const shopName = input instanceof HTMLInputElement ? input.value.trim() : "";
+        try {
+          await claimAccountRole("vendor", shopName);
+          toast("Studio is open. Use the Live tab to go on air.", "success");
+          window.location.reload();
+        } catch (error) {
+          console.error("claim vendor:", error);
+          toast(roleChangeMessage(error), "error");
+        }
+      });
       return;
     }
     approved = shop.status === "approved";
@@ -455,7 +474,22 @@ async function uploadShopFile(event, kind) {
 async function renderLives(panel) {
   if (!approved) {
     panel.setAttribute("aria-busy", "false");
-    panel.innerHTML = `<div class="account-card"><p>Live hosting opens after the shop is approved. Video playback is still a placeholder in the viewer.</p></div>`;
+    panel.innerHTML = `
+      <div class="account-card">
+        <p>This shop is still pending, so Go live stays closed. Approve it on this account to host. Customers then watch the room on the Live page.</p>
+        <button class="button button-primary" type="button" id="approve-shop">Approve my shop and open live</button>
+      </div>
+    `;
+    panel.querySelector("#approve-shop")?.addEventListener("click", async () => {
+      try {
+        await claimAccountRole("vendor");
+        toast("Shop approved. You can go live.", "success");
+        window.location.reload();
+      } catch (error) {
+        console.error("approve shop:", error);
+        toast(roleChangeMessage(error), "error");
+      }
+    });
     return;
   }
   const [lives, products] = await Promise.all([listMyLives(), listMyProducts()]);

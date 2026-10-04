@@ -297,19 +297,6 @@
   background: var(--color-primary-soft);
 }
 
-.payment-options label.is-disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.coming-soon {
-  display: inline-block;
-  margin-left: 6px;
-  font-style: normal;
-  font-size: var(--text-xs);
-  color: var(--color-muted);
-}
-
 .vendor-orders-head {
   display: flex;
   flex-wrap: wrap;

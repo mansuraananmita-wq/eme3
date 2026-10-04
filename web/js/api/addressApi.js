@@ -3,7 +3,7 @@
  * Columns: label, recipient_name, phone, line1, line2, city, district, postal_code, is_default.
  */
 
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 
 const COLUMNS = `

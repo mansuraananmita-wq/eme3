@@ -3,7 +3,7 @@
  * Editable columns: full_name, phone, avatar_url. Role and email are read-only.
  */
 
-import { getCurrentProfile, getSession } from "../auth.js";
+import { getCurrentProfile, getSession } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 import { isBdMobile } from "./addressApi.js";
 

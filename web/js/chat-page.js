@@ -5,7 +5,7 @@ import {
   openCustomerThread,
   sendMessage,
 } from "./api/vendorApi.js";
-import { authErrorMessage, getCurrentProfile, requireUser } from "./auth.js";
+import { authErrorMessage, getCurrentProfile, requireUser } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js";

@@ -2,7 +2,7 @@ import { listProducts, PAGE_SIZE } from "./api/productsApi.js";
 import { getShop, listShopLives, listShopReels } from "./api/shopsApi.js";
 import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { wishlistIds } from "./api/wishlistApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js";

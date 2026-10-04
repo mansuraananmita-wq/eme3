@@ -1,6 +1,6 @@
 import { addToCart } from "./cartApi.js";
 import { notifyCounts } from "./notify.js";
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 
 /**

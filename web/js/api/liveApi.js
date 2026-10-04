@@ -4,7 +4,7 @@
  * Viewer count uses Realtime presence on live:{stream_id}. peak_viewers is not client-writable.
  */
 
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 import { pickProductImage, productImageUrl } from "../media.js";
 

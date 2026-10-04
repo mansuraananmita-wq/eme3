@@ -3,7 +3,7 @@ import { listLiveNow } from "./api/liveApi.js";
 import { listMyOrders } from "./api/ordersApi.js";
 import { listFollowedShops } from "./api/shopsApi.js";
 import { listWishlist } from "./api/wishlistApi.js";
-import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js";
+import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";

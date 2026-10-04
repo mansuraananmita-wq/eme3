@@ -1,5 +1,5 @@
 import { mountShell } from "./components.js";
-import { mountLiveRoom } from "./live/liveRoom.js";
+import { mountLiveRoom } from "./live/liveRoom.js?v=3";
 import { showState } from "./ui-state.js";
 import { url } from "./paths.js";
 

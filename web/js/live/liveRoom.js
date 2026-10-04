@@ -11,13 +11,13 @@ import {
 } from "../api/liveApi.js";
 import { addToCart } from "../api/cartApi.js";
 import { listProducts } from "../api/productsApi.js";
-import { setLiveStatus } from "../api/vendorApi.js";
+import { setLiveStatus } from "../api/vendorApi.js?v=3";
 import {
   followShop,
   followedShopIds,
   unfollowShop,
 } from "../api/reelsApi.js";
-import { authErrorMessage, getCurrentProfile } from "../auth.js";
+import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
 import { toast } from "../components.js";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
@@ -28,6 +28,7 @@ import { showState } from "../ui-state.js";
 import { openProductSheet } from "../reels/productSheet.js";
 import { getSupabase } from "../supabaseClient.js";
 import { pickProductImage, productImageUrl } from "../media.js";
+import { mountVideo } from "./liveVideo.js?v=3";
 
 const MAX_BODY = 500;
 const SEND_GAP_MS = 1000;

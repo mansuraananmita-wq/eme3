@@ -1,4 +1,4 @@
-import { authErrorMessage, sendPasswordReset } from "./auth.js";
+import { authErrorMessage, sendPasswordReset } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 
 mountShell({ page: "login" });

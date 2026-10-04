@@ -7,7 +7,7 @@ import { listCart } from "./cartApi.js";
 import { getAddress } from "./addressApi.js";
 import { getProduct } from "./productsApi.js";
 import { getSupabase } from "../supabaseClient.js";
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { notifyCounts } from "./notify.js";
 
 const BUY_NOW_KEY = "eme-buy-now";

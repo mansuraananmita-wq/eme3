@@ -3,7 +3,7 @@ import {
   getCurrentProfile,
   onAuthStateChange,
   signOut,
-} from "./auth.js";
+} from "./auth.js?v=3";
 import { cartCount, mergeGuestCart } from "./api/cartApi.js";
 import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
@@ -144,7 +144,7 @@ async function refreshShell(page) {
 }
 
 /**
- * @param {import("./auth.js").Profile | null} profile
+ * @param {import("./auth.js?v=3").Profile | null} profile
  * @param {{ cart: number, wishlist: number }} counts
  * @param {string} page
  * @param {Array<{ id: string, parent_id: string | null, name: string, slug: string, image_url: string | null }>} categories

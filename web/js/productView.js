@@ -1,6 +1,6 @@
 import { addToCart } from "./api/cartApi.js";
 import { addWishlist, removeWishlist } from "./api/wishlistApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";

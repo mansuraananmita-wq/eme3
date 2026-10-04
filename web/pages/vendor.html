@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="color-scheme" content="light only">
     <script>
       (function () {
@@ -38,8 +39,19 @@
             <a class="button button-ghost" href="vendor-reels.html">Your reels</a>
           </div>
         </header>
-        <div id="vendor-root" aria-busy="true">
-          <div class="skeleton skeleton-card"></div>
+        <div id="vendor-root">
+          <form id="live-now-form" class="account-card" novalidate>
+            <h2>Start a live</h2>
+            <p class="muted">This is the live section. Customers see your shop on the home page while you are on air.</p>
+            <label class="field"><span>Title</span><input name="title" required minlength="2" maxlength="140" placeholder="Evening sale"></label>
+            <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="500"></textarea></label>
+            <label class="field"><span>Date and time</span><input name="scheduled_at" type="datetime-local"></label>
+            <p class="muted">Pick a future date to schedule. Go live now opens the room and the camera immediately.</p>
+            <div class="vendor-orders-links">
+              <button class="button button-primary" type="submit" value="now">Go live now</button>
+              <button class="button button-ghost" type="submit" value="schedule">Schedule for this date</button>
+            </div>
+          </form>
         </div>
       </div>
     </main>
@@ -47,6 +59,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/vendor-page.js?v=2"></script>
+    <script type="module" src="../js/vendor-page.js?v=3"></script>
   </body>
 </html>

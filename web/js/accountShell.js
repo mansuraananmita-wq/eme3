@@ -2,7 +2,7 @@
  * Shared account chrome: sidebar on desktop, tab bar on mobile.
  */
 
-import { signOut } from "./auth.js";
+import { signOut } from "./auth.js?v=3";
 import { openModal, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js";

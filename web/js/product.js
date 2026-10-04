@@ -4,7 +4,7 @@ import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { addToCart } from "./api/cartApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
@@ -393,7 +393,7 @@ async function renderReviews(product) {
 }
 
 /**
- * @param {import("./auth.js").Profile | null} profile
+ * @param {import("./auth.js?v=3").Profile | null} profile
  * @param {boolean} allowed
  * @param {{ id: string, rating: number, comment: string | null } | undefined} mine
  * @returns {string}

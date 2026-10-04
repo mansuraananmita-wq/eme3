@@ -1,5 +1,5 @@
 import { categoryBySlug } from "./categoriesApi.js";
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 
 /** Shopper catalog page size. */

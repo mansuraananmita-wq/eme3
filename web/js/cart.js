@@ -1,5 +1,5 @@
 import { listCart, removeFromCart, setCartQuantity } from "./api/cartApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";

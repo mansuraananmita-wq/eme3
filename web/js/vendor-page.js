@@ -1,5 +1,5 @@
 import { listCategories } from "./api/categoriesApi.js";
-import { getMyShopApplication, slugifyShopName } from "./api/shopsApi.js";
+import { getMyShopApplication, slugifyShopName } from "./api/shopsApi.js?v=3";
 import {
   createScheduledLive,
   startLiveNow,
@@ -19,9 +19,9 @@ import {
   uploadLiveThumbnail,
   uploadProductImage,
   uploadShopImage,
-} from "./api/vendorApi.js";
-import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js";
-import { mountShell, openModal, toast } from "./components.js";
+} from "./api/vendorApi.js?v=3";
+import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
+import { mountShell, openModal, toast } from "./components.js?v=3";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { productImageUrl } from "./media.js";
@@ -47,10 +47,12 @@ let creating = false;
 
 async function boot() {
   if (!(root instanceof HTMLElement)) return;
-  const profile = await requireUser();
-  if (!profile) return;
+  paintStudio();
 
   try {
+    const profile = await requireUser();
+    if (!profile) return;
+
     shop = await getMyShopApplication();
     if (!shop) {
       root.setAttribute("aria-busy", "false");
@@ -81,28 +83,144 @@ async function boot() {
       return;
     }
     approved = shop.status === "approved";
-    categories = await listCategories();
     if (window.location.hash === "#live") tab = "live";
     render();
-    document.querySelector("[data-start-live]")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      tab = "live";
-      history.replaceState(null, "", "#live");
-      render();
-      document.getElementById("studio-panel")?.scrollIntoView({ block: "start" });
-    });
-    window.addEventListener("hashchange", () => {
-      if (window.location.hash !== "#live") return;
-      tab = "live";
-      render();
-    });
+    listCategories()
+      .then((rows) => {
+        categories = rows;
+      })
+      .catch((error) => console.error("Categories:", error));
   } catch (error) {
     console.error("Vendor studio:", error);
     root.setAttribute("aria-busy", "false");
     const message = authErrorMessage(error);
     toast(message, "error");
+    const panel = root.querySelector("#studio-panel");
+    if (panel instanceof HTMLElement && panel.querySelector("#live-now-form")) {
+      const note = document.createElement("p");
+      note.className = "muted";
+      note.textContent = message;
+      panel.append(note);
+      return;
+    }
     showState(root, message, boot);
   }
+}
+
+/**
+ * Shows the live form before any network call, so the page cannot sit on an empty skeleton.
+ */
+function paintStudio() {
+  if (!(root instanceof HTMLElement)) return;
+  root.removeAttribute("aria-busy");
+  root.innerHTML = `
+    <div class="admin-tabs" role="tablist">
+      ${tabButton("products", "Products")}
+      ${tabButton("shop", "Shop")}
+      ${tabButton("live", "Live")}
+      ${tabButton("payouts", "Payouts")}
+      ${tabButton("messages", "Messages")}
+    </div>
+    <div id="studio-panel">${tab === "live" ? liveComposerHtml() : `<p class="muted">Opening your studio…</p>`}</div>
+  `;
+  bindStudioTabs();
+  bindLiveComposer(root);
+  bindLiveNav();
+}
+
+/** @type {boolean} */
+let liveNavBound = false;
+
+function bindLiveNav() {
+  if (liveNavBound) return;
+  liveNavBound = true;
+  document.querySelector("[data-start-live]")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    tab = "live";
+    history.replaceState(null, "", "#live");
+    if (shop) render();
+    else paintStudio();
+    document.getElementById("studio-panel")?.scrollIntoView({ block: "start" });
+  });
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash !== "#live") return;
+    tab = "live";
+    if (shop) render();
+    else paintStudio();
+  });
+}
+
+function bindStudioTabs() {
+  root?.querySelectorAll("[data-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      tab = button.getAttribute("data-tab") || "products";
+      editingId = null;
+      creating = false;
+      if (shop) render();
+      else paintStudio();
+    });
+  });
+}
+
+/**
+ * @returns {string}
+ */
+function liveComposerHtml() {
+  return `
+    <form id="live-now-form" class="account-card" novalidate>
+      <h2>Start a live</h2>
+      <p class="muted">This is the live section. Customers see your shop on the home page while you are on air.</p>
+      <label class="field"><span>Title</span><input name="title" required minlength="2" maxlength="140" placeholder="Evening sale"></label>
+      <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="500"></textarea></label>
+      <label class="field"><span>Date and time</span><input name="scheduled_at" type="datetime-local"></label>
+      <p class="muted">Pick a future date to schedule. Go live now opens the room and the camera immediately.</p>
+      <div class="vendor-orders-links">
+        <button class="button button-primary" type="submit" value="now">Go live now</button>
+        <button class="button button-ghost" type="submit" value="schedule">Schedule for this date</button>
+      </div>
+    </form>
+  `;
+}
+
+/**
+ * @param {ParentNode} scope
+ */
+function bindLiveComposer(scope) {
+  const form = scope.querySelector("#live-now-form");
+  if (!(form instanceof HTMLFormElement) || form.dataset.bound === "1") return;
+  form.dataset.bound = "1";
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const intent = event.submitter instanceof HTMLButtonElement ? event.submitter.value : "now";
+    const data = new FormData(form);
+    const title = String(data.get("title") || "");
+    const description = String(data.get("description") || "");
+    const when = String(data.get("scheduled_at") || "");
+    const buttons = [...form.querySelectorAll("button")];
+    buttons.forEach((button) => {
+      if (button instanceof HTMLButtonElement) button.disabled = true;
+    });
+    try {
+      if (intent === "schedule") {
+        if (!when) throw new Error("Pick a date and time to schedule.");
+        await createScheduledLive({ title, description, scheduled_at: when });
+        toast("Live scheduled.", "success");
+        form.reset();
+        const panel = root?.querySelector("#studio-panel");
+        if (panel instanceof HTMLElement && shop) await renderLives(panel);
+        return;
+      }
+      const id = await startLiveNow({ title, description });
+      toast("You are live. Allow the camera when the browser asks.", "success");
+      window.location.assign(`${url("pages/live.html")}?id=${encodeURIComponent(id)}`);
+    } catch (error) {
+      console.error("start live:", error);
+      toast(authErrorMessage(error), "error");
+      buttons.forEach((button) => {
+        if (button instanceof HTMLButtonElement) button.disabled = false;
+      });
+    }
+  });
 }
 
 function render() {
@@ -117,16 +235,10 @@ function render() {
       ${tabButton("payouts", "Payouts")}
       ${tabButton("messages", "Messages")}
     </div>
-    <div id="studio-panel" aria-busy="true"><div class="skeleton skeleton-card"></div></div>
+    <div id="studio-panel">${tab === "live" ? `${liveComposerHtml()}<div id="live-list" class="admin-list"><p class="muted">Loading your rooms…</p></div>` : `<div class="skeleton skeleton-card"></div>`}</div>
   `;
-  root.querySelectorAll("[data-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      tab = button.getAttribute("data-tab") || "products";
-      editingId = null;
-      creating = false;
-      render();
-    });
-  });
+  bindStudioTabs();
+  if (tab === "live") bindLiveComposer(root);
   loadTab();
 }
 
@@ -160,6 +272,13 @@ async function loadTab() {
  * @param {HTMLElement} panel
  */
 async function renderProducts(panel) {
+  if (!categories.length) {
+    try {
+      categories = await listCategories();
+    } catch (error) {
+      console.error("Categories:", error);
+    }
+  }
   if (!approved) {
     panel.setAttribute("aria-busy", "false");
     panel.innerHTML = `<div class="account-card"><p>Product tools open after an admin approves this shop. You can still edit the shop name and description.</p></div>`;
@@ -506,77 +625,40 @@ async function renderLives(panel) {
     });
     return;
   }
-  const [lives, products] = await Promise.all([listMyLives(), listMyProducts()]);
-  const sellable = products.filter((product) => product.status === "active");
-  panel.setAttribute("aria-busy", "false");
-  panel.innerHTML = `
-    <form id="live-now-form" class="account-card" novalidate>
-      <h2>Start live now</h2>
-      <p class="muted">This room shows on the customer home page while you are on air. The next screen asks for the camera.</p>
-      <label class="field"><span>Live title</span><input name="title" required minlength="2" maxlength="140" placeholder="Evening sale"></label>
-      <button class="button button-primary" type="submit">Go live</button>
-    </form>
-    <form id="live-form" class="account-card" novalidate>
-      <h2>Schedule for later</h2>
-      <label class="field"><span>Title</span><input name="title" required maxlength="140"></label>
-      <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="500"></textarea></label>
-      <label class="field"><span>Starts</span><input name="scheduled_at" type="datetime-local" required></label>
-      <button class="button button-ghost" type="submit">Create scheduled live</button>
-    </form>
-    <div class="admin-list">
-      ${lives.map((stream) => liveCard(stream, sellable)).join("") || `<p class="muted">No live rooms yet.</p>`}
-    </div>
-  `;
-  panel.querySelector("#live-now-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!(form instanceof HTMLFormElement)) return;
-    const title = String(new FormData(form).get("title") || "");
-    const button = form.querySelector("button");
-    if (button instanceof HTMLButtonElement) button.disabled = true;
-    try {
-      const id = await startLiveNow({ title });
-      toast("You are live. Allow the camera when the browser asks.", "success");
-      window.location.assign(`${url("pages/live.html")}?id=${encodeURIComponent(id)}`);
-    } catch (error) {
-      console.error("start live now:", error);
-      toast(authErrorMessage(error), "error");
-      if (button instanceof HTMLButtonElement) button.disabled = false;
+  const listId = "live-list";
+  if (!panel.querySelector("#live-now-form")) {
+    panel.innerHTML = `${liveComposerHtml()}<div id="${listId}" class="admin-list"></div>`;
+    bindLiveComposer(panel);
+  }
+  const list = panel.querySelector(`#${listId}`);
+  try {
+    const [lives, products] = await Promise.all([listMyLives(), listMyProducts()]);
+    const sellable = products.filter((product) => product.status === "active");
+    panel.setAttribute("aria-busy", "false");
+    if (list instanceof HTMLElement) {
+      list.innerHTML = lives.map((stream) => liveCard(stream, sellable)).join("") || `<p class="muted">No live rooms yet.</p>`;
     }
-  });
-  panel.querySelector("#live-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!(form instanceof HTMLFormElement)) return;
-    const data = new FormData(form);
-    try {
-      await createScheduledLive({
-        title: String(data.get("title") || ""),
-        description: String(data.get("description") || ""),
-        scheduled_at: String(data.get("scheduled_at") || ""),
-      });
-      toast("Live scheduled.", "success");
-      await renderLives(panel);
-    } catch (error) {
-      console.error("Create live:", error);
-      toast(authErrorMessage(error), "error");
-    }
-  });
-  panel.querySelectorAll("[data-go-live]").forEach((button) => {
-    button.addEventListener("click", () => changeLive(button.getAttribute("data-go-live") || "", "live", panel));
-  });
-  panel.querySelectorAll("[data-end-live]").forEach((button) => {
-    button.addEventListener("click", () => changeLive(button.getAttribute("data-end-live") || "", "ended", panel));
-  });
-  panel.querySelectorAll("[data-save-products]").forEach((button) => {
-    button.addEventListener("click", () => saveAttached(button, lives, panel));
-  });
-  panel.querySelectorAll("[data-pin]").forEach((button) => {
-    button.addEventListener("click", () => savePin(button, panel));
-  });
-  panel.querySelectorAll("[data-thumb]").forEach((input) => {
-    input.addEventListener("change", () => saveThumb(input, panel));
-  });
+    panel.querySelectorAll("[data-go-live]").forEach((button) => {
+      button.addEventListener("click", () => changeLive(button.getAttribute("data-go-live") || "", "live", panel));
+    });
+    panel.querySelectorAll("[data-end-live]").forEach((button) => {
+      button.addEventListener("click", () => changeLive(button.getAttribute("data-end-live") || "", "ended", panel));
+    });
+    panel.querySelectorAll("[data-save-products]").forEach((button) => {
+      button.addEventListener("click", () => saveAttached(button, lives, panel));
+    });
+    panel.querySelectorAll("[data-pin]").forEach((button) => {
+      button.addEventListener("click", () => savePin(button, panel));
+    });
+    panel.querySelectorAll("[data-thumb]").forEach((input) => {
+      input.addEventListener("change", () => saveThumb(input, panel));
+    });
+  } catch (error) {
+    console.error("Live rooms:", error);
+    panel.setAttribute("aria-busy", "false");
+    toast(authErrorMessage(error), "error");
+    if (list instanceof HTMLElement) list.textContent = authErrorMessage(error);
+  }
 }
 
 /**

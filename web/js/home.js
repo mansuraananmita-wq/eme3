@@ -2,7 +2,7 @@
  * Home marketplace: hero, flash sale, promo rows, catalog sections.
  */
 
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { mountCarousel } from "./carousel.js";
 import {

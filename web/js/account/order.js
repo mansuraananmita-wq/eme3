@@ -2,7 +2,7 @@ import { mountAccountNav } from "../accountShell.js";
 import { addToCart } from "../api/cartApi.js";
 import { cancelMyOrder, getMyOrder, requestOrderRefund } from "../api/ordersApi.js";
 import { refundOrder } from "../api/adminApi.js";
-import { authErrorMessage, requireUser } from "../auth.js";
+import { authErrorMessage, requireUser } from "../auth.js?v=3";
 import { mountShell, openModal, toast } from "../components.js";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
@@ -12,7 +12,7 @@ import { showState } from "../ui-state.js";
 
 const root = document.querySelector("#order-root");
 
-/** @type {import("../auth.js").Profile | null} */
+/** @type {import("../auth.js?v=3").Profile | null} */
 let viewer = null;
 
 /** Order flow steps for the timeline. Cancelled / refunded are handled separately. */

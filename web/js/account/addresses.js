@@ -7,7 +7,7 @@ import {
   updateAddress,
   validateAddressInput,
 } from "../api/addressApi.js";
-import { authErrorMessage, requireUser } from "../auth.js";
+import { authErrorMessage, requireUser } from "../auth.js?v=3";
 import { mountShell, openModal, toast } from "../components.js";
 import { divisionChoices } from "../bdDivisions.js";
 import { escapeHtml } from "../html.js";

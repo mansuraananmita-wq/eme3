@@ -1,5 +1,5 @@
 import { getSupabase } from "../supabaseClient.js";
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 
 const SHOP_COLUMNS = `
   profile_id,

@@ -4,7 +4,7 @@ import {
   getMyShopApplication,
   slugifyShopName,
 } from "./api/shopsApi.js";
-import { authErrorMessage, getCurrentProfile } from "./auth.js";
+import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { loginRedirect, url } from "./paths.js";

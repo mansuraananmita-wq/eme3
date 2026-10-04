@@ -30,7 +30,7 @@ export function safeNext(next) {
   if (!next || next.includes("://") || next.startsWith("//") || next.startsWith("/\\")) {
     return url("index.html");
   }
-  if (!/^[A-Za-z0-9_./?=&%-]+$/.test(next)) {
+  if (!/^[A-Za-z0-9_./?=&%-#]+$/.test(next)) {
     return url("index.html");
   }
   const fromWebRoot = next.replace(/^\/+/, "");
@@ -51,7 +51,7 @@ export function safeNext(next) {
  * @returns {string}
  */
 export function loginRedirect() {
-  const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+  const redirect = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
   return `${url("pages/login.html")}?redirect=${redirect}`;
 }
 

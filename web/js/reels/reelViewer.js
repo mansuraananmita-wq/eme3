@@ -20,7 +20,7 @@ import {
   unsaveReel,
 } from "../api/reelsApi.js";
 import { addToCart } from "../api/cartApi.js";
-import { authErrorMessage, getCurrentProfile } from "../auth.js";
+import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
 import { toast } from "../components.js";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";

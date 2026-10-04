@@ -3,7 +3,7 @@
  * Inserts go through place_order / cancel_my_order / vendor_set_item_status RPCs.
  */
 
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 
 export const ORDERS_PAGE_SIZE = 10;

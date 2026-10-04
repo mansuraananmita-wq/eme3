@@ -3,7 +3,7 @@
  */
 
 import { listReelComments, postReelComment } from "../api/reelsApi.js";
-import { authErrorMessage, getCurrentProfile } from "../auth.js";
+import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
 import { toast } from "../components.js";
 import { escapeHtml } from "../html.js";
 import { loginRedirect } from "../paths.js";

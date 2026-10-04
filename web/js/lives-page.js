@@ -3,7 +3,7 @@
  */
 
 import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
-import { authErrorMessage } from "./auth.js";
+import { authErrorMessage } from "./auth.js?v=3";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";

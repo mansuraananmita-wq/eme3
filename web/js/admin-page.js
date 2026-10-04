@@ -22,7 +22,7 @@ import {
   setVendorStatus,
 } from "./api/adminApi.js";
 import { slugifyShopName } from "./api/shopsApi.js";
-import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js";
+import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js?v=3";
 import { mountShell, openModal, toast } from "./components.js";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";

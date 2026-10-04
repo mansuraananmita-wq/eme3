@@ -3,7 +3,7 @@
  * Clients cannot write views_count / shares_count (trigger-guarded).
  */
 
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { getSupabase } from "../supabaseClient.js";
 import { pickProductImage, productImageUrl } from "../media.js";
 

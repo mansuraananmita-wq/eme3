@@ -3,7 +3,7 @@
  * Writes use the anon key. RLS allows them only for the signed-in shop.
  */
 
-import { getCurrentProfile } from "../auth.js";
+import { getCurrentProfile } from "../auth.js?v=3";
 import { productImageUrl } from "../media.js";
 import { slugifyShopName } from "./shopsApi.js";
 import { getSupabase } from "../supabaseClient.js";

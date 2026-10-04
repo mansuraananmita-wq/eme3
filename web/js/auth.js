@@ -157,24 +157,51 @@ export async function getSession() {
  * @returns {Promise<Profile | null>}
  */
 export async function getCurrentProfile() {
-  const supabase = getSupabase();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) {
-    const missing = userError.name === "AuthSessionMissingError"
-      || /session missing/i.test(String(userError.message || ""));
-    if (missing) return null;
-    throw userError;
-  }
-  if (!userData.user) return null;
+  const user = await sessionUser();
+  if (!user) return null;
 
-  const { data, error } = await supabase
+  const supabase = getSupabase();
+  const query = supabase
     .from("profiles")
     .select("id, role, full_name, phone, avatar_url, created_at, updated_at")
-    .eq("id", userData.user.id)
+    .eq("id", user.id)
     .maybeSingle();
-
+  const { data, error } = await raceTimeout(query, "Your account took too long to load. Refresh the page.");
   if (error) throw error;
   return data;
+}
+
+/**
+ * Local session only. getUser() can stay pending and leave the page on a blank skeleton.
+ * @returns {Promise<{ id: string } | null>}
+ */
+async function sessionUser() {
+  const supabase = getSupabase();
+  const result = await raceTimeout(
+    supabase.auth.getSession(),
+    "Sign-in check timed out. Refresh the page.",
+  );
+  if (result.error) {
+    const missing = result.error.name === "AuthSessionMissingError"
+      || /session missing/i.test(String(result.error.message || ""));
+    if (missing) return null;
+    throw result.error;
+  }
+  return result.data.session?.user ?? null;
+}
+
+/**
+ * @template T
+ * @param {Promise<T>} promise
+ * @param {string} message
+ * @returns {Promise<T>}
+ */
+function raceTimeout(promise, message) {
+  let timer = 0;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(message)), 8000);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
 }
 
 /**
@@ -221,7 +248,7 @@ export async function requireRole(roles) {
   }
 
   if (!profile) {
-    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
     window.location.assign(`${url("pages/login.html")}?redirect=${redirect}`);
     return null;
   }
@@ -249,7 +276,7 @@ export function redirectAfterAuth() {
 export async function requireUser() {
   const profile = await getCurrentProfile();
   if (!profile) {
-    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
     window.location.assign(`${url("pages/login.html")}?redirect=${redirect}`);
     return null;
   }

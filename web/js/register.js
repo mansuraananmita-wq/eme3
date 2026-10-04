@@ -1,4 +1,4 @@
-import { authErrorMessage, signUp } from "./auth.js";
+import { authErrorMessage, signUp } from "./auth.js?v=3";
 import { mergeGuestCart } from "./api/cartApi.js";
 import { mountShell, toast } from "./components.js";
 import { safeNext, url } from "./paths.js";

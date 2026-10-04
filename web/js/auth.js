@@ -83,6 +83,19 @@ export async function signIn(email, password) {
 }
 
 /**
+ * Emails a recovery link. The link returns to the profile page, where the password can be changed.
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function sendPasswordReset(email) {
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: new URL(url("pages/account/profile.html"), window.location.href).href,
+  });
+  if (error) throw error;
+}
+
+/**
  * @returns {Promise<void>}
  */
 export async function signOut() {

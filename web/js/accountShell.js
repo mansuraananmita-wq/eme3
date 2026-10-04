@@ -9,16 +9,18 @@ import { url } from "./paths.js";
 
 /**
  * Injects account navigation into #account-nav.
- * @param {"profile" | "addresses" | "orders" | "wishlist"} active
+ * @param {"home" | "profile" | "addresses" | "orders" | "wishlist" | "following"} active
  */
 export function mountAccountNav(active) {
   const root = document.querySelector("#account-nav");
   if (!root) return;
 
   const links = [
+    { id: "home", href: url("pages/customer.html"), label: "Account" },
     { id: "profile", href: url("pages/account/profile.html"), label: "Profile" },
     { id: "addresses", href: url("pages/account/addresses.html"), label: "Addresses" },
     { id: "orders", href: url("pages/account/orders.html"), label: "Orders" },
+    { id: "following", href: url("pages/following.html"), label: "Following" },
     { id: "wishlist", href: url("pages/wishlist.html"), label: "Wishlist" },
   ];
 

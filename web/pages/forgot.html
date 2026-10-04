@@ -12,7 +12,7 @@
         }
       })();
     </script>
-    <title>Sign in — EME</title>
+    <title>Reset password — EME</title>
     <link rel="icon" href="../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,28 +24,22 @@
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header" id="site-header"></header>
     <main id="main">
-      <form class="auth-card" id="login-form" novalidate>
-        <h1>Sign in</h1>
-        <p class="muted">Use the email and password for your EME account.</p>
+      <form class="auth-card" id="forgot-form" novalidate>
+        <h1>Reset password</h1>
+        <p class="muted">We email a link. After you open it, change the password on your profile.</p>
         <label class="field">
           <span>Email</span>
           <input name="email" type="email" autocomplete="email" required>
           <small class="field-error" id="email-error"></small>
         </label>
-        <label class="field">
-          <span>Password</span>
-          <input name="password" type="password" autocomplete="current-password" required>
-          <small class="field-error" id="password-error"></small>
-        </label>
-        <button class="button button-primary" type="submit">Sign in</button>
-        <p class="muted">New here? <a id="register-link" href="register.html">Create an account</a></p>
-        <p class="muted"><a href="forgot.html">Forgot password?</a></p>
+        <button class="button button-primary" type="submit">Send reset link</button>
+        <p class="muted"><a href="login.html">Back to sign in</a></p>
       </form>
     </main>
     <footer class="site-footer" id="site-footer"></footer>
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/login.js"></script>
+    <script type="module" src="../js/forgot.js"></script>
   </body>
 </html>

@@ -167,6 +167,7 @@ function renderChrome(profile, counts, page, categories) {
   const cart = url("pages/cart.html");
   const wishlist = url("pages/wishlist.html");
   const orders = url("pages/account/orders.html");
+  const help = url("pages/help.html");
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q") || "";
   const category = params.get("category") || "";
@@ -183,7 +184,7 @@ function renderChrome(profile, counts, page, categories) {
         <div class="announce-links">
           <a href="${orders}">Track order</a>
           <a href="${sell}">Sell on EME</a>
-          <button type="button" data-help>Help</button>
+          <a href="${help}">Help</a>
           <div class="lang-toggle" role="group" aria-label="Language">
             <button type="button" data-lang="bn">BN</button>
             <button type="button" class="is-active" data-lang="en">EN</button>
@@ -256,6 +257,8 @@ function renderChrome(profile, counts, page, categories) {
         <p>EME is a multi-vendor marketplace for everyday shopping in Bangladesh.</p>
         <a href="${home}">Home</a>
         <a href="${shops}">Browse stores</a>
+        <a href="${reels}">Reels</a>
+        <a href="${lives}">Live</a>
       </div>
       <div class="footer-col">
         <h3>Customer service</h3>
@@ -263,6 +266,7 @@ function renderChrome(profile, counts, page, categories) {
         <a href="${cart}">Your cart</a>
         <a href="${wishlist}">Wishlist</a>
         <a href="${products}">Browse products</a>
+        <a href="${help}">Help</a>
       </div>
       <div class="footer-col">
         <h3>Sell on EME</h3>
@@ -293,7 +297,7 @@ function renderChrome(profile, counts, page, categories) {
     <a class="${page === "reels" ? "is-active" : ""}" href="${reels}">${icon("reels")}<span>Reels</span></a>
     <a class="${page === "lives" ? "is-active" : ""}" href="${lives}">${icon("live")}<span>Live</span></a>
     <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
-    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" || page === "categories" || page === "products" ? "is-active" : ""}" href="${profile ? url("pages/account/profile.html") : login}">
+    <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" || page === "categories" || page === "products" ? "is-active" : ""}" href="${profile ? url("pages/customer.html") : login}">
       ${icon("user")}<span>Account</span>
     </a>
   `;
@@ -330,10 +334,6 @@ function bindHeaderInteractions(header, home) {
       button.classList.add("is-active");
       toast("Language switching comes in a later step.", "info");
     });
-  });
-
-  header.querySelector("[data-help]")?.addEventListener("click", () => {
-    toast("Email support@eme.test — help center comes later.", "info");
   });
 
   const megaWrap = header.querySelector(".mega-wrap");
@@ -445,6 +445,7 @@ function categoryRoundHtml(category, products) {
  * @returns {string}
  */
 function accountMenu(name, roleLabel, cart, wishlist) {
+  const customer = url("pages/customer.html");
   const profile = url("pages/account/profile.html");
   const addresses = url("pages/account/addresses.html");
   const orders = url("pages/account/orders.html");
@@ -452,6 +453,8 @@ function accountMenu(name, roleLabel, cart, wishlist) {
   const vendorStudio = url("pages/vendor.html");
   const vendorReels = url("pages/vendor-reels.html");
   const admin = url("pages/admin.html");
+  const following = url("pages/following.html");
+  const messages = url("pages/chat.html");
   const isVendor = roleLabel === "Vendor";
   const isAdmin = roleLabel === "Admin";
   return `
@@ -463,9 +466,12 @@ function accountMenu(name, roleLabel, cart, wishlist) {
       <div class="account-menu">
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
+        <a href="${customer}">My account</a>
         <a href="${profile}">Profile</a>
         ${isAdmin ? `<a href="${admin}">Admin</a>` : ""}
         <a href="${orders}">Orders</a>
+        <a href="${following}">Following</a>
+        <a href="${messages}">Messages</a>
         ${isVendor ? `<a href="${vendorStudio}">Studio</a>` : ""}
         ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
         ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}

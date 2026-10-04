@@ -1,4 +1,4 @@
-/* EME marketplace tokens. Deep teal brand, neutral greys, Inter + Bangla. */
+/* EME marketplace tokens. Orange commerce brand, neutral greys, Inter + Bangla. */
 
 /* Site is always light. Dark video chrome belongs only on immersive reels/live players. */
 html {
@@ -16,12 +16,12 @@ html {
   --color-text: #111827;
   --color-muted: #6b7280;
   --color-border: #e5e7eb;
-  --color-primary: #0f766e;
-  --color-primary-strong: #0d5f59;
-  --color-primary-soft: #ccfbf1;
+  --color-primary: #f57224;
+  --color-primary-strong: #c2410c;
+  --color-primary-soft: #fff4eb;
   --color-on-primary: #ffffff;
-  --color-accent: #ea580c;
-  --color-accent-soft: #ffedd5;
+  --color-accent: #ee4d2d;
+  --color-accent-soft: #ffe8e3;
   --color-success: #15803d;
   --color-danger: #dc2626;
   --color-warning: #b45309;

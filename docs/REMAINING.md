@@ -30,7 +30,22 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 
 সিক্রেট না থাকলে রুম, চ্যাট, পিন প্রোডাক্ট থাকে। ক্যামেরা আসে না।
 
+6. Supabase → Authentication → URL configuration। Site URL আর Redirect URLs-এ যোগ করতে হবে:
+
+- `http://localhost:8770`
+- `https://eme3.netlify.app`
+
+নাহলে পাসওয়ার্ড রিসেট আর ইমেইল কনফার্ম লিংক সাইটে ফিরে আসে না। রিসেট লিঙ্ক প্রোফাইল পেজে খোলে (`pages/account/profile.html`)।
+
+7. Netlify-এর publish directory `web`। ভিজিটর সবাই দেখতে পারবে এমন করতে Site configuration → Access থেকে সাইট public করতে হবে। নাহলে “Sign in to Netlify” আসে।
+
 `supabase/f6_orders.sql` আগে চালানো থাকলে আবার চালানোর দরকার নেই। পেমেন্ট সেটেলমেন্ট `f7_payments.sql`-এ আছে।
+
+তিন রোলের পাতা আলাদা:
+
+- কাস্টমার: `web/pages/customer.html`
+- ভেন্ডর: `web/pages/vendor.html` (অর্ডার `vendor-orders.html`, রিল `vendor-reels.html`)
+- অ্যাডমিন: `web/pages/admin.html`
 
 ## এখনো বানানো হয়নি
 
@@ -50,8 +65,7 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 
 অ্যাকাউন্ট ও পরিষ্কার করা:
 
-- “পাসওয়ার্ড ভুলে গেছি” নেই। লগইন থাকলে প্রোফাইল থেকে পাসওয়ার্ড বদলানো যায়
-- পুরো UI দ্বিভাষিক নয়
+- পুরো UI দ্বিভাষিক নয়। BN/EN বাটন এখনো ভাষা বদলায় না
 - `web/README.md` মার্কেটপ্লেস নোট পুরনো: চেকআউট অর্ডার ইনসার্ট করে না বলা আছে, লাইভ ভিডিওকে placeholder বলা আছে, শিপিং ফি `platform_settings` থেকে আসে বলা আছে
 - `docs/DATABASE.md` বলে `sales_count` কেউ লেখে না। `place_order` স্টক কমায় এবং `sales_count` বাড়ায়
 - রুট `pages/` আর `web/pages/` দুটো ফ্রন্টএন্ড
@@ -68,3 +82,6 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 - প্রোডাক্ট রিভিউ (ডেলিভার হওয়া অর্ডারের পর)
 - লাইভ রুম প্লেয়ার (`livekit-token`) ও সাইন-ইন দর্শক গোনা
 - অ্যাডমিন: দোকান, মডারেশন, অর্ডার ও রিফান্ড, রোল, ক্যাটাগরি, সেটিংস, ডিসপিউট, পেআউট
+- দোকান ফলো, Following তালিকা, প্রোডাক্ট/দোকান থেকে মেসেজ, Help পেজ, পাসওয়ার্ড রিসেট ইমেইল
+- কাস্টমার হোম `pages/customer.html`, ভেন্ডর স্টুডিও `pages/vendor.html`, অ্যাডমিন `pages/admin.html`
+- মার্কেটপ্লেস রঙ কমলা (দোকানের বাটন, সার্চ, অফার বার)। দাম লালচে অ্যাকসেন্ট

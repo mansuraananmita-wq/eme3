@@ -4,7 +4,7 @@
   <defs>
     <linearGradient id="g5" x1="1" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#4c1d95"/>
-      <stop offset="100%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#f57224"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="400" fill="url(#g5)"/>
@@ -12,8 +12,8 @@
   <g transform="translate(860,90)">
     <path d="M20 80 L120 20 L220 80 Z" fill="#fde68a"/>
     <rect x="40" y="80" width="160" height="140" fill="#fff"/>
-    <rect x="70" y="120" width="40" height="40" fill="#0f766e"/>
-    <rect x="130" y="120" width="40" height="40" fill="#0f766e"/>
+    <rect x="70" y="120" width="40" height="40" fill="#c2410c"/>
+    <rect x="130" y="120" width="40" height="40" fill="#f57224"/>
     <rect x="100" y="160" width="40" height="60" fill="#ea580c"/>
   </g>
   <text x="72" y="140" fill="#ddd6fe" font-family="Segoe UI,Arial,sans-serif" font-size="26" font-weight="700">GROW WITH EME</text>

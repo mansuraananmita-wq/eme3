@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light only">
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\\/g, "/");
+        if (/\/web$/i.test(path)) {
+          location.replace(path + "/" + location.search + location.hash);
+        }
+      })();
+    </script>
+    <title>Help — EME</title>
+    <link rel="icon" href="../assets/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/tokens.css">
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/marketplace.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header" id="site-header"></header>
+    <main id="main">
+      <div class="wrap">
+        <div class="page-intro">
+          <h1>Help</h1>
+          <p class="muted">How shopping, shops, reels, and live selling connect on EME. Email support@eme.test.</p>
+        </div>
+        <div class="help-grid">
+          <article class="help-card">
+            <h2>Shop</h2>
+            <a href="products.html">Browse products</a>
+            <a href="categories.html">Categories</a>
+            <a href="shops.html">Stores</a>
+            <a href="cart.html">Cart</a>
+            <a href="checkout.html">Checkout</a>
+          </article>
+          <article class="help-card">
+            <h2>Your orders</h2>
+            <p class="muted">Sign in, then open an order to see the status, print the invoice, cancel while it is pending, or ask for a refund after delivery.</p>
+            <a href="account/orders.html">Track orders</a>
+            <a href="customer.html">My account</a>
+            <a href="account/addresses.html">Addresses</a>
+            <a href="wishlist.html">Wishlist</a>
+            <a href="following.html">Shops you follow</a>
+          </article>
+          <article class="help-card">
+            <h2>A shop</h2>
+            <p class="muted">Each product names its shop. Visit the store for more products, reels, and live rooms. Message the shop from the product page.</p>
+            <a href="shops.html">Find a store</a>
+            <a href="chat.html">Messages</a>
+            <a href="reels.html">Reels</a>
+            <a href="lives.html">Live</a>
+          </article>
+          <article class="help-card">
+            <h2>Sell</h2>
+            <p class="muted">Apply on Sell on EME. After approval, Studio is where you add products, go live, and answer messages. Shop orders are a separate page.</p>
+            <a href="sell.html">Sell on EME</a>
+            <a href="vendor.html">Studio</a>
+            <a href="vendor-orders.html">Shop orders</a>
+            <a href="vendor-reels.html">Your reels</a>
+            <a href="login.html">Sign in</a>
+            <a href="forgot.html">Forgot password</a>
+          </article>
+        </div>
+      </div>
+    </main>
+    <footer class="site-footer" id="site-footer"></footer>
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
+    <div class="toast-root" id="toast-root"></div>
+    <div class="modal-root" id="modal-root"></div>
+    <script type="module" src="../js/help-page.js"></script>
+  </body>
+</html>

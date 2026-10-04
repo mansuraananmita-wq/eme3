@@ -1,13 +1,14 @@
 import { listProducts, PAGE_SIZE } from "./api/productsApi.js";
 import { getShop, listShopLives, listShopReels } from "./api/shopsApi.js";
+import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js";
+import { loginRedirect, url } from "./paths.js";
 import { shopLogoHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";
-import { url } from "./paths.js";
 
 mountShell({ page: "shop" });
 
@@ -44,7 +45,7 @@ async function load() {
     }
 
     document.title = `${shop.shop_name} — EME`;
-    renderHeader(shop);
+    await renderHeader(shop);
     renderTabs(tab);
     await renderPanel(tab);
   } catch (error) {
@@ -57,12 +58,22 @@ async function load() {
 /**
  * @param {object} shopRow
  */
-function renderHeader(shopRow) {
+async function renderHeader(shopRow) {
   if (!root) return;
   const joined = formatJoined(shopRow.created_at);
   const banner = shopRow.banner_url
     ? `<img src="${escapeHtml(shopRow.banner_url)}" alt="" onerror="this.hidden=true">`
     : "";
+  const profile = await getCurrentProfile().catch(() => null);
+  const ownShop = profile?.id === shopRow.profile_id;
+  let following = false;
+  if (profile && !ownShop) {
+    try {
+      following = (await followedShopIds([shopRow.profile_id])).has(shopRow.profile_id);
+    } catch (error) {
+      console.error("shop follow:", error);
+    }
+  }
 
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
@@ -71,11 +82,41 @@ function renderHeader(shopRow) {
       ${shopLogoHtml(shopRow, "shop-logo-lg")}
       <div>
         <h1>${escapeHtml(shopRow.shop_name)}</h1>
-        <p class="muted">${escapeHtml(String(shopRow.productCount))} products · Joined ${escapeHtml(joined)}</p>
+        <p class="muted">${escapeHtml(String(shopRow.productCount))} products · ${escapeHtml(String(shopRow.followers_count ?? 0))} followers · Joined ${escapeHtml(joined)}</p>
         <p>${escapeHtml(shopRow.description || "Independent seller on the EME marketplace.")}</p>
+        <div class="storefront-actions">
+          ${ownShop
+            ? `<a class="button button-primary" href="${url("pages/vendor.html")}">Open studio</a>`
+            : `<button class="button button-primary" type="button" data-follow aria-pressed="${following ? "true" : "false"}">${following ? "Following" : "Follow"}</button>`}
+          <a class="button button-ghost" href="${url("pages/chat.html")}?shop=${encodeURIComponent(shopRow.profile_id)}">Message</a>
+          <a class="button button-ghost" href="${url("pages/reels.html")}">Reels</a>
+          <a class="button button-ghost" href="${url("pages/lives.html")}">Live</a>
+        </div>
       </div>
     </div>
   `;
+
+  root.querySelector("[data-follow]")?.addEventListener("click", async () => {
+    if (!profile) {
+      window.location.assign(loginRedirect());
+      return;
+    }
+    const button = root.querySelector("[data-follow]");
+    if (!(button instanceof HTMLButtonElement)) return;
+    const on = button.getAttribute("aria-pressed") === "true";
+    button.disabled = true;
+    try {
+      if (on) await unfollowShop(shopRow.profile_id);
+      else await followShop(shopRow.profile_id);
+      button.setAttribute("aria-pressed", on ? "false" : "true");
+      button.textContent = on ? "Follow" : "Following";
+    } catch (error) {
+      console.error("toggle follow:", error);
+      toast(authErrorMessage(error), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 /**

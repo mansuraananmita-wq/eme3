@@ -254,6 +254,38 @@ export async function getCommissionPercent() {
 }
 
 /**
+ * Shops the signed-in customer follows.
+ * @returns {Promise<Array<object>>}
+ */
+export async function listFollowedShops() {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vendor_follows")
+    .select("vendor_id, created_at, vendor_profiles(shop_name, slug, logo_url, followers_count, status)")
+    .eq("customer_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("list followed shops:", error);
+    throw error;
+  }
+
+  return (data ?? []).map((row) => {
+    const shop = Array.isArray(row.vendor_profiles) ? row.vendor_profiles[0] : row.vendor_profiles;
+    return {
+      vendorId: row.vendor_id,
+      shopName: shop?.shop_name || "Shop",
+      slug: shop?.slug || "",
+      logoUrl: shop?.logo_url || "",
+      followers: shop?.followers_count ?? 0,
+      status: shop?.status || "",
+    };
+  });
+}
+
+/**
  * @param {object} shop
  * @returns {object}
  */

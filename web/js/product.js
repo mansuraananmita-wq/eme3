@@ -1,5 +1,6 @@
 import { listReviews, canReviewProduct, getProduct, productsFromShop, relatedProducts, saveReview } from "./api/productsApi.js";
 import { getShop } from "./api/shopsApi.js";
+import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { addToCart } from "./api/cartApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
@@ -238,6 +239,17 @@ async function renderSeller(product) {
     ? `<p class="muted">${escapeHtml(String(productCount))} products</p>`
     : `<p class="muted">Independent seller on EME</p>`;
 
+  const profile = await getCurrentProfile().catch(() => null);
+  let following = false;
+  if (profile && profile.id !== shop.profile_id) {
+    try {
+      following = (await followedShopIds([shop.profile_id])).has(shop.profile_id);
+    } catch (error) {
+      console.error("product follow:", error);
+    }
+  }
+  const ownShop = profile?.id === shop.profile_id;
+
   sellerRoot.innerHTML = `
     <div class="seller-card">
       <div class="seller-card-row">
@@ -247,9 +259,36 @@ async function renderSeller(product) {
           ${countLine}
         </div>
       </div>
-      <a class="button button-primary" href="${shopHref(shop.slug)}">Visit store</a>
+      <div class="storefront-actions">
+        <a class="button button-primary" href="${shopHref(shop.slug)}">Visit store</a>
+        ${ownShop ? "" : `<button class="button button-ghost" type="button" data-follow-shop aria-pressed="${following ? "true" : "false"}">${following ? "Following" : "Follow"}</button>`}
+        <a class="button button-ghost" href="${url("pages/chat.html")}?shop=${encodeURIComponent(shop.profile_id)}&product=${encodeURIComponent(product.id)}">Message</a>
+      </div>
     </div>
   `;
+
+  sellerRoot.querySelector("[data-follow-shop]")?.addEventListener("click", async () => {
+    const signedIn = await getCurrentProfile();
+    if (!signedIn) {
+      window.location.assign(loginRedirect());
+      return;
+    }
+    const button = sellerRoot.querySelector("[data-follow-shop]");
+    if (!(button instanceof HTMLButtonElement)) return;
+    const on = button.getAttribute("aria-pressed") === "true";
+    button.disabled = true;
+    try {
+      if (on) await unfollowShop(shop.profile_id);
+      else await followShop(shop.profile_id);
+      button.setAttribute("aria-pressed", on ? "false" : "true");
+      button.textContent = on ? "Follow" : "Following";
+    } catch (error) {
+      console.error("toggle follow:", error);
+      toast(authErrorMessage(error), "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 /**

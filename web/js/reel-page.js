@@ -1,7 +1,7 @@
-import { mountShell } from "./components.js";
+import { mountShell } from "./components.js?v=6";
 import { mountReelViewer } from "./reels/reelViewer.js";
 import { showState } from "./ui-state.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 
 mountShell({ page: "reels" });
 

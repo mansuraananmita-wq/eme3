@@ -3,11 +3,11 @@ import { listProducts, PAGE_SIZE } from "./api/productsApi.js";
 import { listApprovedShops } from "./api/shopsApi.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js";
 import { shopCardHtml } from "./shopView.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
 mountShell({ page: "products" });

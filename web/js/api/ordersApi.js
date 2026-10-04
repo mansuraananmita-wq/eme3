@@ -268,3 +268,26 @@ function groupItemsByShop(items) {
 
   return [...map.values()];
 }
+
+/**
+ * Payment rows for the signed-in customer. RLS allows rows whose order they own.
+ * @returns {Promise<Array<object>>}
+ */
+export async function listMyTransactions() {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Sign in to view transactions.");
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("payments")
+    .select("id, order_id, provider, provider_reference, amount, currency, status, created_at, orders!inner(customer_id)")
+    .eq("orders.customer_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("transactions:", error);
+    throw error;
+  }
+  return data ?? [];
+}

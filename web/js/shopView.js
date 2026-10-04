@@ -1,6 +1,6 @@
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 
 /**
  * @param {object | null | undefined} product

@@ -3,11 +3,11 @@ import { addToCart } from "../api/cartApi.js";
 import { cancelMyOrder, getMyOrder, requestOrderRefund } from "../api/ordersApi.js";
 import { refundOrder } from "../api/adminApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, openModal, toast } from "../components.js";
+import { mountShell, openModal, toast } from "../components.js?v=6";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { pickProductImage, productImageUrl } from "../media.js";
-import { url } from "../paths.js";
+import { url } from "../paths.js?v=4";
 import { showState } from "../ui-state.js";
 
 const root = document.querySelector("#order-root");

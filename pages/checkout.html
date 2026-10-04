@@ -1,56 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#F8F9FC" />
-  <meta name="description" content="Checkout placeholder." />
-  <title>Checkout · EME</title>
-
-  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <script>
-    (function () {
-      var key = "eme-theme";
-      var theme = "light";
-      try {
-        var stored = localStorage.getItem(key);
-        if (stored === "light" || stored === "dark") theme = stored;
-        else if (window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
-      } catch (err) {}
-      var root = document.documentElement;
-      root.setAttribute("data-theme", theme);
-      root.style.colorScheme = theme;
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute("content", theme === "dark" ? "#0B0B12" : "#F8F9FC");
-    })();
-  </script>
-  <link rel="stylesheet" href="../assets/css/tokens.css" />
-  <link rel="stylesheet" href="../assets/css/base.css" />
-  <link rel="stylesheet" href="../assets/css/components.css" />
-  <link rel="stylesheet" href="../assets/css/layout.css" />
-  <link rel="stylesheet" href="../assets/css/utilities.css" />
-
-</head>
-<body data-page="checkout">
-  <a class="skip-link" href="#main">Skip to content</a>
-  <div id="shell-header"></div>
-
-  <main id="main" class="page-main">
-    <div class="container">
-      <article class="placeholder">
-        <p class="kicker">Bag</p>
-        <h1>Checkout</h1>
-        <p class="placeholder-copy">Address, delivery, and payment steps will be built here.</p>
-      </article>
-    </div>
-  </main>
-
-  <div id="shell-footer"></div>
-  <div id="shell-tabbar"></div>
-  <script type="module" src="../assets/js/boot.js"></script>
-  
-</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EME</title>
+    <script>
+      location.replace("../web/pages/checkout.html" + location.search + location.hash);
+    </script>
+  </head>
+  <body>
+    <p><a href="../web/pages/checkout.html">Open the EME shop</a></p>
+  </body>
 </html>

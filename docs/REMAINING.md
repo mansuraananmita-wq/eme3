@@ -59,7 +59,7 @@ supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LI
 
 অ্যাকাউন্ট ও পরিষ্কার করা:
 
-- পুরো UI দ্বিভাষিক নয়। BN/EN বাটন এখনো ভাষা বদলায় না
+- পুরো UI-এর প্রতিটি বাক্য দ্বিভাষিক নয়। হেডার, ফুটার, হোম শিরোনাম, কার্ডের কার্টে যোগ, প্রোডাক্ট ডিটেইলস ও লেনদেন পাতা BN/EN বদলায়।
 - `claim_account_role` এখন যেকোনো লগইন ইউজারকে admin বানাতে পারে, যাতে টেস্টে SQL লাগে না। সাইটে বাইরের কাস্টমার আসার আগে SQL এডিটরে চালাতে হবে: `revoke execute on function public.claim_account_role(text, text) from authenticated;` এবং রেজিস্টার পেজ থেকে Admin অপশন সরিয়ে ফেলতে হবে
 - লাইভ ক্যামেরার ছবি আসে শুধু LiveKit সিক্রেট সেট থাকলে (উপরের ধাপ ৫)
 - `web/README.md` মার্কেটপ্লেস নোট পুরনো: চেকআউট অর্ডার ইনসার্ট করে না বলা আছে, লাইভ ভিডিওকে placeholder বলা আছে, শিপিং ফি `platform_settings` থেকে আসে বলা আছে

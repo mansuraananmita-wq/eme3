@@ -18,11 +18,11 @@ import {
   unfollowShop,
 } from "../api/reelsApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js";
+import { toast } from "../components.js?v=6";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";
-import { loginRedirect, url } from "../paths.js";
+import { loginRedirect, url } from "../paths.js?v=4";
 import { shopHref, shopLogoHtml } from "../shopView.js";
 import { showState } from "../ui-state.js";
 import { openProductSheet } from "../reels/productSheet.js";

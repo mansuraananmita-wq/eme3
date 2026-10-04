@@ -1,7 +1,7 @@
 import { authErrorMessage, signUp } from "./auth.js?v=3";
 import { mergeGuestCart } from "./api/cartApi.js";
-import { mountShell, toast } from "./components.js";
-import { safeNext, url } from "./paths.js";
+import { mountShell, toast } from "./components.js?v=6";
+import { safeNext, url } from "./paths.js?v=4";
 
 mountShell({ page: "register" });
 

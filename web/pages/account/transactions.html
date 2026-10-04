@@ -14,7 +14,6 @@
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
     <script>
       (function () {
         var path = location.pathname.replace(/\\/g, "/");
@@ -23,7 +22,7 @@
         }
       })();
     </script>
-    <title>Orders — EME</title>
+    <title>Transactions — EME</title>
     <link rel="icon" href="../../assets/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,27 +38,10 @@
       <div class="wrap account-layout">
         <aside id="account-nav"></aside>
         <div class="account-main">
-          <h1>Orders</h1>
-          <form class="filters-bar" id="order-filters">
-            <label>Status
-              <select name="status">
-                <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-              </select>
-            </label>
-            <button class="button button-primary" type="submit">Filter</button>
-          </form>
-          <div id="orders-root" aria-busy="true">
-            <div class="skeleton skeleton-card"></div>
+          <h1 data-i18n="transactions">Transactions</h1>
+          <div id="transactions-root" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
           </div>
-          <div class="load-more" id="orders-more"></div>
         </div>
       </div>
     </main>
@@ -67,6 +49,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../../js/account/orders.js"></script>
+    <script type="module" src="../../js/account/transactions.js"></script>
   </body>
 </html>

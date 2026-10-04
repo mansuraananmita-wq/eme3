@@ -5,13 +5,14 @@ import { addToCart } from "./api/cartApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
-import { loginRedirect, url } from "./paths.js";
+import { loginRedirect, url } from "./paths.js?v=4";
 import { bindCatalogActions, priceHtml, productCardHtml } from "./productView.js";
 import { shopHref, shopLogoHtml, shopOf, soldByHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";
+import { t } from "./i18n.js";
 
 mountShell({ page: "product" });
 
@@ -112,22 +113,24 @@ function renderProduct(product, saved) {
       <div class="detail-copy">
         ${soldByHtml(product)}
         <h1>${escapeHtml(product.title)}</h1>
+        <p class="muted">${escapeHtml(t("productDetails"))}</p>
         ${priceHtml(product)}
-        <p class="muted">${escapeHtml(ratingText)} average · ${escapeHtml(String(product.reviews_count ?? 0))} reviews</p>
-        <p class="${inStock ? "stock-ok" : "warning"}">${inStock ? `In stock (${stock})` : "Out of stock"}</p>
-        <p class="description">${product.description ? escapeHtml(product.description) : "No description yet."}</p>
+        <p class="muted">${escapeHtml(ratingText)} ${escapeHtml(t("average"))} · ${escapeHtml(String(product.reviews_count ?? 0))} ${escapeHtml(t("reviews"))}</p>
+        <p class="${inStock ? "stock-ok" : "warning"}">${inStock ? `${escapeHtml(t("inStock"))} (${stock})` : escapeHtml(t("outOfStock"))}</p>
+        <h2>${escapeHtml(t("description"))}</h2>
+        <p class="description">${product.description ? escapeHtml(product.description) : escapeHtml(t("noDescription"))}</p>
         <div class="qty">
-          <button type="button" data-step="-1" aria-label="Decrease quantity" ${inStock ? "" : "disabled"}>−</button>
-          <label class="sr-only" for="qty">Quantity</label>
+          <button type="button" data-step="-1" aria-label="${escapeHtml(t("decrease"))}" ${inStock ? "" : "disabled"}>−</button>
+          <label class="sr-only" for="qty">${escapeHtml(t("quantity"))}</label>
           <input id="qty" type="number" min="1" max="${stock}" value="1" ${inStock ? "" : "disabled"}>
-          <button type="button" data-step="1" aria-label="Increase quantity" ${inStock ? "" : "disabled"}>+</button>
+          <button type="button" data-step="1" aria-label="${escapeHtml(t("increase"))}" ${inStock ? "" : "disabled"}>+</button>
         </div>
         <div class="card-actions">
-          <button class="button button-primary" type="button" id="buy-now" ${inStock ? "" : "disabled"}>Buy Now</button>
-          <button class="button button-ghost" type="button" id="add-cart" ${inStock ? "" : "disabled"}>Add to cart</button>
-          <a class="button button-ghost" id="message-shop" href="${url("pages/chat.html")}?shop=${encodeURIComponent(product.vendor_id)}&product=${encodeURIComponent(product.id)}">Message shop</a>
-          <button class="icon-button ${saved ? "is-saved" : ""}" type="button" id="save-wish" aria-pressed="${saved ? "true" : "false"}" aria-label="Save ${escapeHtml(product.title)}">
-            Save
+          <button class="button button-primary" type="button" id="buy-now" ${inStock ? "" : "disabled"}>${escapeHtml(t("buyNow"))}</button>
+          <button class="button button-ghost" type="button" id="add-cart" ${inStock ? "" : "disabled"}>${escapeHtml(t("addToCart"))}</button>
+          <a class="button button-ghost" id="message-shop" href="${url("pages/chat.html")}?shop=${encodeURIComponent(product.vendor_id)}&product=${encodeURIComponent(product.id)}">${escapeHtml(t("messageShop"))}</a>
+          <button class="icon-button ${saved ? "is-saved" : ""}" type="button" id="save-wish" aria-pressed="${saved ? "true" : "false"}" aria-label="${escapeHtml(t("save"))} ${escapeHtml(product.title)}">
+            ${escapeHtml(t("save"))}
           </button>
         </div>
       </div>

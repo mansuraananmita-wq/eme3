@@ -1,12 +1,13 @@
 import { addToCart } from "./api/cartApi.js";
 import { addWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { toast } from "./components.js";
+import { toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";
 import { icon } from "./icons.js";
+import { t } from "./i18n.js";
 import { pickProductImage, productImageUrl } from "./media.js";
-import { loginRedirect, url } from "./paths.js";
+import { loginRedirect, url } from "./paths.js?v=4";
 import { shopOf, soldByHtml } from "./shopView.js";
 
 /**
@@ -95,7 +96,7 @@ export function productCardHtml(product, options = {}) {
         ${priceHtml(product)}
         ${soldBar}
         <div class="card-actions">
-          <button class="button button-primary" type="button" data-add-cart="${escapeHtml(product.id)}">Add to cart</button>
+          <button class="button button-primary" type="button" data-add-cart="${escapeHtml(product.id)}">${escapeHtml(t("addToCart"))}</button>
         </div>
       </div>
     </article>

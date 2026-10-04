@@ -2,8 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          var stored = localStorage.getItem("eme-theme");
+          if (stored === "dark" || stored === "light") theme = stored;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light only">
+    
     <title>EME — Shop</title>
     <meta name="description" content="Multi-vendor marketplace with products from approved stores.">
     <script>
@@ -72,7 +83,7 @@
         <!-- 3. Category icons -->
         <section class="section" aria-labelledby="category-heading">
           <div class="section-head">
-            <h2 id="category-heading">Shop by category</h2>
+            <h2 id="category-heading" data-i18n="shopByCategory">Shop by category</h2>
             <a href="pages/categories.html">All categories</a>
           </div>
           <div class="category-icons" id="category-row" aria-busy="true">
@@ -88,7 +99,7 @@
         <section class="section flash-section is-hidden" aria-labelledby="flash-heading" id="flash-section" hidden>
           <div class="section-head flash-head">
             <div class="flash-title-row">
-              <h2 id="flash-heading">Flash Sale</h2>
+              <h2 id="flash-heading" data-i18n="flashSale">Flash Sale</h2>
               <div class="flash-countdown" id="flash-countdown" aria-live="polite"></div>
             </div>
             <a href="pages/products.html?sort=trending">View all</a>
@@ -99,7 +110,7 @@
         <!-- 5. Trending -->
         <section class="section" aria-labelledby="trending-heading">
           <div class="section-head">
-            <h2 id="trending-heading">Trending</h2>
+            <h2 id="trending-heading" data-i18n="trending">Trending</h2>
             <a href="pages/products.html?sort=trending">View all</a>
           </div>
           <div class="product-grid" id="trending-grid" aria-busy="true">
@@ -116,7 +127,7 @@
         <!-- 7. Live now -->
         <section class="section" aria-labelledby="lives-home-heading" id="lives-home-section">
           <div class="section-head">
-            <h2 id="lives-home-heading">Live now</h2>
+            <h2 id="lives-home-heading" data-i18n="liveNow">Live now</h2>
             <a href="pages/lives.html">All lives</a>
           </div>
           <div class="lives-home-row" id="lives-home-row" aria-busy="true"></div>
@@ -125,7 +136,7 @@
         <!-- 8. Reels -->
         <section class="section" aria-labelledby="reels-heading">
           <div class="section-head">
-            <h2 id="reels-heading">Reels</h2>
+            <h2 id="reels-heading" data-i18n="reels">Reels</h2>
             <a href="pages/reels.html">Watch all</a>
           </div>
           <div class="reels-row" id="reels-row" aria-busy="true">
@@ -139,7 +150,7 @@
         <!-- 9. Featured stores -->
         <section class="section" aria-labelledby="featured-heading">
           <div class="section-head">
-            <h2 id="featured-heading">Featured stores</h2>
+            <h2 id="featured-heading" data-i18n="featuredStores">Featured stores</h2>
             <a href="pages/shops.html">All stores</a>
           </div>
           <div class="featured-shops" id="featured-shops" aria-busy="true">
@@ -152,7 +163,7 @@
         <!-- 10. New arrivals -->
         <section class="section" aria-labelledby="arrivals-heading">
           <div class="section-head">
-            <h2 id="arrivals-heading">New arrivals</h2>
+            <h2 id="arrivals-heading" data-i18n="newArrivals">New arrivals</h2>
             <a href="pages/products.html?sort=newest">View all</a>
           </div>
           <div class="product-grid" id="arrivals-grid" aria-busy="true">
@@ -166,7 +177,7 @@
         <!-- 10. Become a seller -->
         <section class="seller-banner seller-banner-wide" aria-labelledby="become-seller-heading">
           <div class="seller-banner-copy">
-            <h2 id="become-seller-heading">Become a seller</h2>
+            <h2 id="become-seller-heading" data-i18n="becomeSeller">Become a seller</h2>
             <p>Open an independent storefront on EME and sell alongside other vendors. বাংলাদেশজুড়ে কাস্টমারদের কাছে পৌঁছান।</p>
             <a class="button" href="pages/sell.html">Sell on EME</a>
           </div>
@@ -178,7 +189,7 @@
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
     <noscript><p class="empty wrap">EME needs JavaScript to load the shop.</p></noscript>
-    <script type="module" src="js/home.js"></script>
+    <script type="module" src="js/home.js?v=6"></script>
     <script>
       setTimeout(function () {
         var header = document.getElementById("site-header");

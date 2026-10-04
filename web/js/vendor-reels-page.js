@@ -1,7 +1,7 @@
 import { getMyShopApplication } from "./api/shopsApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
-import { url } from "./paths.js";
+import { mountShell, toast } from "./components.js?v=6";
+import { url } from "./paths.js?v=4";
 import { mountVendorReelManager } from "./reels/vendorManager.js";
 import { showState } from "./ui-state.js";
 

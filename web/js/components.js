@@ -10,8 +10,10 @@ import { wishlistCount } from "./api/wishlistApi.js";
 import { ANNOUNCEMENTS } from "./data/banners.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
+import { applyI18n, getLang, setLang, t } from "./i18n.js";
 import { icon } from "./icons.js";
-import { url } from "./paths.js";
+import { getTheme, toggleTheme } from "./theme.js";
+import { url } from "./paths.js?v=4";
 import { syncConfigBanner } from "./ui-state.js";
 
 /** @type {number} */
@@ -182,44 +184,49 @@ function renderChrome(profile, counts, page, categories) {
         <button class="announce-close" type="button" data-announce-close aria-label="Close announcement">×</button>
         <p class="announce-msg" data-announce-msg>${escapeHtml(ANNOUNCEMENTS[0] || "")}</p>
         <div class="announce-links">
-          <a href="${orders}">Track order</a>
-          <a href="${sell}">Sell on EME</a>
-          <a href="${help}">Help</a>
-          <div class="lang-toggle" role="group" aria-label="Language">
-            <button type="button" data-lang="bn">BN</button>
-            <button type="button" class="is-active" data-lang="en">EN</button>
-          </div>
+          <a href="${orders}">${escapeHtml(t("trackOrder"))}</a>
+          <a href="${sell}">${escapeHtml(t("sellOnEme"))}</a>
+          <a href="${help}">${escapeHtml(t("help"))}</a>
         </div>
       </div>
     </div>
     <div class="header-main">
       <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
       <form class="search-form" action="${products}" method="get" role="search">
-        <label class="sr-only" for="search-category">Category</label>
+        <label class="sr-only" for="search-category">${escapeHtml(t("all"))}</label>
         <select id="search-category" name="category">
-          <option value="">All</option>
+          <option value="">${escapeHtml(t("all"))}</option>
           ${roots.map((row) => `
             <option value="${escapeHtml(row.slug)}" ${row.slug === category ? "selected" : ""}>
               ${escapeHtml(row.name)}
             </option>
           `).join("")}
         </select>
-        <label class="sr-only" for="site-search">Search products</label>
-        <input id="site-search" name="q" type="search" placeholder="Search in EME" value="${escapeHtml(query)}" autocomplete="off">
-        <button class="button button-primary" type="submit" aria-label="Search">${icon("search")}</button>
+        <label class="sr-only" for="site-search">${escapeHtml(t("searchProducts"))}</label>
+        <input id="site-search" name="q" type="search" placeholder="${escapeHtml(t("searchInEme"))}" value="${escapeHtml(query)}" autocomplete="off">
+        <button class="button button-primary" type="submit" aria-label="${escapeHtml(t("search"))}">${icon("search")}</button>
       </form>
       <div class="header-actions">
+        <div class="header-tools">
+          <div class="lang-toggle" role="group" aria-label="${escapeHtml(t("language"))}">
+            <button type="button" data-lang="bn" class="${getLang() === "bn" ? "is-active" : ""}">BN</button>
+            <button type="button" data-lang="en" class="${getLang() === "en" ? "is-active" : ""}">EN</button>
+          </div>
+          <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="${getTheme() === "dark" ? "true" : "false"}">
+            ${escapeHtml(getTheme() === "dark" ? t("themeLight") : t("themeDark"))}
+          </button>
+        </div>
         ${profile
           ? accountMenu(name, roleLabel, cart, wishlist)
           : guestLinks(login, register)}
-        <a class="header-link" href="${wishlist}" aria-label="Wishlist, ${counts.wishlist} items">
+        <a class="header-link" href="${wishlist}" aria-label="${escapeHtml(t("wishlist"))}, ${counts.wishlist}">
           ${icon("heart")}
-          <span class="action-label">Wishlist</span>
+          <span class="action-label">${escapeHtml(t("wishlist"))}</span>
           <span class="count-badge">${counts.wishlist}</span>
         </a>
-        <a class="header-link" href="${cart}" aria-label="Cart, ${counts.cart} items">
+        <a class="header-link" href="${cart}" aria-label="${escapeHtml(t("cart"))}, ${counts.cart}">
           ${icon("cart")}
-          <span class="action-label">Cart</span>
+          <span class="action-label">${escapeHtml(t("cart"))}</span>
           <span class="count-badge">${counts.cart}</span>
         </a>
       </div>
@@ -228,16 +235,16 @@ function renderChrome(profile, counts, page, categories) {
       <div class="cat-nav-inner">
         <div class="mega-wrap">
           <button class="mega-trigger" type="button" data-mega-toggle aria-expanded="false" aria-haspopup="true">
-            ${icon("grid")} All categories
+            ${icon("grid")} ${escapeHtml(t("allCategories"))}
           </button>
           <div class="mega-panel" hidden data-mega-panel>
             ${megaMenuHtml(categories, products, categoriesPage)}
           </div>
         </div>
-        <a class="cat-nav-link" href="${shops}">Stores</a>
-        <a class="cat-nav-link ${page === "reels" ? "is-active" : ""}" href="${reels}">Reels</a>
-        <a class="cat-nav-link ${page === "lives" ? "is-active" : ""}" href="${lives}">Live</a>
-        <a class="cat-nav-link ${page === "sell" ? "is-active" : ""}" href="${sell}">Sell on EME</a>
+        <a class="cat-nav-link" href="${shops}">${escapeHtml(t("stores"))}</a>
+        <a class="cat-nav-link ${page === "reels" ? "is-active" : ""}" href="${reels}">${escapeHtml(t("reels"))}</a>
+        <a class="cat-nav-link ${page === "lives" ? "is-active" : ""}" href="${lives}">${escapeHtml(t("live"))}</a>
+        <a class="cat-nav-link ${page === "sell" ? "is-active" : ""}" href="${sell}">${escapeHtml(t("sellOnEme"))}</a>
         ${roots.slice(0, 8).map((row) => `
           <a class="cat-nav-link desktop-only ${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
             ${escapeHtml(row.name)}
@@ -254,55 +261,53 @@ function renderChrome(profile, counts, page, categories) {
     <div class="footer-grid">
       <div class="footer-col">
         <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
-        <p>eme is a multi-vendor marketplace for everyday shopping in Bangladesh.</p>
-        <a href="${home}">Home</a>
-        <a href="${shops}">Browse stores</a>
-        <a href="${reels}">Reels</a>
-        <a href="${lives}">Live</a>
+        <p>${escapeHtml(t("about"))}</p>
+        <a href="${home}">${escapeHtml(t("home"))}</a>
+        <a href="${shops}">${escapeHtml(t("browseStores"))}</a>
+        <a href="${reels}">${escapeHtml(t("reels"))}</a>
+        <a href="${lives}">${escapeHtml(t("live"))}</a>
       </div>
       <div class="footer-col">
-        <h3>Customer service</h3>
-        <a href="${orders}">Track order</a>
-        <a href="${cart}">Your cart</a>
-        <a href="${wishlist}">Wishlist</a>
-        <a href="${products}">Browse products</a>
-        <a href="${help}">Help</a>
+        <h3>${escapeHtml(t("customerService"))}</h3>
+        <a href="${orders}">${escapeHtml(t("trackOrder"))}</a>
+        <a href="${cart}">${escapeHtml(t("yourCart"))}</a>
+        <a href="${wishlist}">${escapeHtml(t("wishlist"))}</a>
+        <a href="${products}">${escapeHtml(t("browseProducts"))}</a>
+        <a href="${help}">${escapeHtml(t("help"))}</a>
       </div>
       <div class="footer-col">
-        <h3>Sell on EME</h3>
-        <p>Open a shop and reach customers with products, reels, and live selling.</p>
-        <a href="${sell}">Seller landing</a>
-        <a href="${sell}#sell-apply">Apply to sell</a>
-        <a href="${register}">Create account</a>
+        <h3>${escapeHtml(t("sellOnEme"))}</h3>
+        <p>${escapeHtml(t("sellBlurb"))}</p>
+        <a href="${sell}">${escapeHtml(t("sellerLanding"))}</a>
+        <a href="${sell}#sell-apply">${escapeHtml(t("applyToSell"))}</a>
+        <a href="${register}">${escapeHtml(t("createAccount"))}</a>
       </div>
       <div class="footer-col">
-        <h3>Contact</h3>
+        <h3>${escapeHtml(t("contact"))}</h3>
         <p>support@eme.test</p>
         <p>Dhaka, Bangladesh</p>
       </div>
     </div>
     <div class="footer-bottom">
       <div class="trust-badges">
-        <span>bKash</span>
-        <span>Nagad</span>
-        <span>Card</span>
-        <span>Cash on delivery</span>
+        <span>${escapeHtml(t("cod"))}</span>
       </div>
       <p>© ${new Date().getFullYear()} EME. All rights reserved.</p>
     </div>
   `;
 
   bottom.innerHTML = `
-    <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>Home</span></a>
-    <a class="${page === "reels" ? "is-active" : ""}" href="${reels}">${icon("reels")}<span>Reels</span></a>
-    <a class="${page === "lives" ? "is-active" : ""}" href="${lives}">${icon("live")}<span>Live</span></a>
-    <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>Cart</span><span class="count-badge">${counts.cart}</span></a>
+    <a class="${page === "home" ? "is-active" : ""}" href="${home}">${icon("home")}<span>${escapeHtml(t("home"))}</span></a>
+    <a class="${page === "reels" ? "is-active" : ""}" href="${reels}">${icon("reels")}<span>${escapeHtml(t("reels"))}</span></a>
+    <a class="${page === "lives" ? "is-active" : ""}" href="${lives}">${icon("live")}<span>${escapeHtml(t("live"))}</span></a>
+    <a class="${page === "cart" || page === "checkout" ? "is-active" : ""}" href="${cart}">${icon("cart")}<span>${escapeHtml(t("cart"))}</span><span class="count-badge">${counts.cart}</span></a>
     <a class="${page === "login" || page === "register" || page === "wishlist" || page === "sell" || page === "account" || page === "categories" || page === "products" ? "is-active" : ""}" href="${profile ? url("pages/customer.html") : login}">
-      ${icon("user")}<span>Account</span>
+      ${icon("user")}<span>${escapeHtml(t("account"))}</span>
     </a>
   `;
 
   bindHeaderInteractions(header, home);
+  applyI18n(document);
 }
 
 /**
@@ -330,10 +335,19 @@ function bindHeaderInteractions(header, home) {
 
   header.querySelectorAll("[data-lang]").forEach((button) => {
     button.addEventListener("click", () => {
-      header.querySelectorAll("[data-lang]").forEach((node) => node.classList.remove("is-active"));
-      button.classList.add("is-active");
-      toast("Language switching comes in a later step.", "info");
+      const next = button.getAttribute("data-lang") === "bn" ? "bn" : "en";
+      setLang(next);
+      window.location.reload();
     });
+  });
+
+  header.querySelector("[data-theme-toggle]")?.addEventListener("click", () => {
+    toggleTheme();
+    const toggle = header.querySelector("[data-theme-toggle]");
+    if (toggle) {
+      toggle.setAttribute("aria-pressed", getTheme() === "dark" ? "true" : "false");
+      toggle.textContent = getTheme() === "dark" ? t("themeLight") : t("themeDark");
+    }
   });
 
   const megaWrap = header.querySelector(".mega-wrap");
@@ -465,20 +479,21 @@ function accountMenu(name, roleLabel, cart, wishlist) {
       <div class="account-menu">
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
-        <a href="${customer}">My account</a>
-        <a href="${profile}">Profile</a>
-        <a href="${admin}">Admin</a>
-        <a href="${orders}">Orders</a>
-        <a href="${following}">Following</a>
-        <a href="${messages}">Messages</a>
-        <a href="${vendorStudio}">Vendor studio</a>
-        <a href="${url("pages/vendor.html")}#live">Start live</a>
-        ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
-        ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}
-        <a href="${addresses}">Addresses</a>
-        <a href="${wishlist}">Wishlist</a>
-        <a href="${cart}">Cart</a>
-        <button class="button button-ghost" type="button" data-sign-out>Sign out</button>
+        <a href="${customer}">${escapeHtml(t("myAccount"))}</a>
+        <a href="${profile}">${escapeHtml(t("profile"))}</a>
+        <a href="${admin}">${escapeHtml(t("admin"))}</a>
+        <a href="${orders}">${escapeHtml(t("orders"))}</a>
+        <a href="${url("pages/account/transactions.html")}">${escapeHtml(t("transactions"))}</a>
+        <a href="${following}">${escapeHtml(t("following"))}</a>
+        <a href="${messages}">${escapeHtml(t("messages"))}</a>
+        <a href="${vendorStudio}">${escapeHtml(t("vendorStudio"))}</a>
+        <a href="${url("pages/vendor.html")}#live">${escapeHtml(t("startLive"))}</a>
+        ${isVendor ? `<a href="${vendorOrders}">${escapeHtml(t("shopOrders"))}</a>` : ""}
+        ${isVendor ? `<a href="${vendorReels}">${escapeHtml(t("yourReels"))}</a>` : ""}
+        <a href="${addresses}">${escapeHtml(t("addresses"))}</a>
+        <a href="${wishlist}">${escapeHtml(t("wishlist"))}</a>
+        <a href="${cart}">${escapeHtml(t("cart"))}</a>
+        <button class="button button-ghost" type="button" data-sign-out>${escapeHtml(t("signOut"))}</button>
       </div>
     </div>
   `;
@@ -492,17 +507,17 @@ function accountMenu(name, roleLabel, cart, wishlist) {
 function guestLinks(login, register) {
   return `
     <div class="guest-links">
-      <a class="button button-ghost" href="${login}">Login</a>
-      <a class="button button-primary" href="${register}">Register</a>
+      <a class="button button-ghost" href="${login}">${escapeHtml(t("login"))}</a>
+      <a class="button button-primary" href="${register}">${escapeHtml(t("register"))}</a>
     </div>
     <div class="account guest-menu">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
         ${icon("user")}
-        <span class="action-label">Account</span>
+        <span class="action-label">${escapeHtml(t("account"))}</span>
       </button>
       <div class="account-menu">
-        <a href="${login}">Login</a>
-        <a href="${register}">Create account</a>
+        <a href="${login}">${escapeHtml(t("login"))}</a>
+        <a href="${register}">${escapeHtml(t("createAccount"))}</a>
       </div>
     </div>
   `;

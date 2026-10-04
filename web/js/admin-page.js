@@ -1,5 +1,6 @@
 import {
   adminPanelAccess,
+  adminSnapshot,
   archiveProduct,
   createPayout,
   listAdminCategories,
@@ -23,42 +24,38 @@ import {
 } from "./api/adminApi.js";
 import { slugifyShopName } from "./api/shopsApi.js";
 import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js";
+import { mountShell, openModal, toast } from "./components.js?v=6";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
-import { loginRedirect, url } from "./paths.js";
+import { loginRedirect, url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
 mountShell({ page: "account" });
 
 const root = document.querySelector("#admin-root");
-/** @type {"vendors" | "moderation" | "orders" | "people" | "categories" | "settings" | "disputes" | "payouts"} */
-let tab = "vendors";
+/** @type {"dashboard" | "vendors" | "moderation" | "orders" | "people" | "categories" | "settings" | "disputes" | "payouts"} */
+let tab = "dashboard";
 
 const TABS = [
+  ["dashboard", "Dashboard"],
   ["vendors", "Vendors"],
   ["moderation", "Moderation"],
   ["orders", "Orders"],
-  ["people", "People"],
-  ["categories", "Categories"],
-  ["settings", "Settings"],
   ["disputes", "Disputes"],
   ["payouts", "Payouts"],
+  ["people", "People"],
+  ["categories", "Catalog"],
+  ["settings", "Settings"],
 ];
+
+/** @type {"all" | "pending" | "approved" | "suspended"} */
+let vendorFilter = "pending";
 
 let unlocked = false;
 
 document.querySelectorAll("#admin-tabs [data-tab]").forEach((button) => {
   button.addEventListener("click", () => {
-    const next = button.getAttribute("data-tab");
-    if (!TABS.some(([id]) => id === next)) return;
-    tab = /** @type {typeof tab} */ (next);
-    document.querySelectorAll("#admin-tabs [data-tab]").forEach((item) => {
-      const on = item.getAttribute("data-tab") === tab;
-      item.classList.toggle("is-active", on);
-      item.setAttribute("aria-selected", on ? "true" : "false");
-    });
-    if (unlocked) render();
+    selectTab(button.getAttribute("data-tab") || "dashboard");
   });
 });
 
@@ -159,7 +156,8 @@ async function render() {
   if (!(panel instanceof HTMLElement)) return;
 
   try {
-    if (tab === "vendors") await renderVendors(panel);
+    if (tab === "dashboard") await renderDashboard(panel);
+    else if (tab === "vendors") await renderVendors(panel);
     else if (tab === "moderation") await renderModeration(panel);
     else if (tab === "orders") await renderOrders(panel);
     else if (tab === "people") await renderPeople(panel);
@@ -178,17 +176,71 @@ async function render() {
 /**
  * @param {HTMLElement} panel
  */
-async function renderVendors(panel) {
-  const rows = await listVendorApplications();
+async function renderDashboard(panel) {
+  const snap = await adminSnapshot();
   panel.setAttribute("aria-busy", "false");
-  if (!rows.length) {
-    panel.innerHTML = `<p class="empty">No vendor applications yet.</p>`;
-    return;
-  }
-
+  const cards = [
+    ["pendingVendors", "Shops waiting", "Approve or reject new shops.", "vendors"],
+    ["approvedVendors", "Approved shops", "These shops can sell and go live.", "vendors"],
+    ["liveNow", "Live now", "Rooms that are on air.", "moderation"],
+    ["products", "Active products", "Published products customers can buy.", "moderation"],
+    ["reels", "Reels", "Published and draft reels.", "moderation"],
+    ["orders", "Orders", "Every customer order.", "orders"],
+    ["openDisputes", "Open disputes", "Cases that still need a decision.", "disputes"],
+    ["suspendedVendors", "Suspended shops", "Restore a shop from the Vendors tab.", "vendors"],
+  ];
   panel.innerHTML = `
+    <p class="muted">Work in this order: approve shops, check products and reels, then orders, disputes, and payouts. People and Settings are for accounts and fees.</p>
+    <div class="admin-stats">
+      ${cards.map(([key, title, hint, next]) => `
+        <button class="admin-stat" type="button" data-go="${next}" data-vendor-filter="${key === "pendingVendors" ? "pending" : key === "approvedVendors" ? "approved" : key === "suspendedVendors" ? "suspended" : ""}">
+          <strong>${escapeHtml(String(snap[key] ?? 0))}</strong>
+          <span>${escapeHtml(title)}</span>
+          <small>${escapeHtml(hint)}</small>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  panel.querySelectorAll("[data-go]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const next = button.getAttribute("data-go") || "dashboard";
+      const filter = button.getAttribute("data-vendor-filter") || "";
+      if (filter === "pending" || filter === "approved" || filter === "suspended") vendorFilter = filter;
+      selectTab(next);
+    });
+  });
+}
+
+/**
+ * @param {string} next
+ */
+function selectTab(next) {
+  if (!TABS.some(([id]) => id === next)) return;
+  tab = /** @type {typeof tab} */ (next);
+  document.querySelectorAll("#admin-tabs [data-tab]").forEach((item) => {
+    const on = item.getAttribute("data-tab") === tab;
+    item.classList.toggle("is-active", on);
+    item.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  if (unlocked) render();
+}
+
+/**
+ * @param {HTMLElement} panel
+ */
+async function renderVendors(panel) {
+  const rows = (await listVendorApplications()).filter((row) => vendorFilter === "all" || row.status === vendorFilter);
+  panel.setAttribute("aria-busy", "false");
+  const filters = ["pending", "approved", "suspended", "all"];
+  panel.innerHTML = `
+    <p class="muted">Pending shops are waiting. Approved shops can sell. Suspended shops are closed until you approve them again.</p>
+    <div class="admin-tabs" role="tablist">
+      ${filters.map((id) => `
+        <button type="button" data-vendor-filter="${id}" class="${vendorFilter === id ? "is-active" : ""}">${escapeHtml(id)}</button>
+      `).join("")}
+    </div>
     <div class="admin-list">
-      ${rows.map((row) => `
+      ${rows.length ? rows.map((row) => `
         <article class="order-card">
           <div class="address-card-head">
             <strong>${escapeHtml(row.shopName)}</strong>
@@ -196,15 +248,23 @@ async function renderVendors(panel) {
           </div>
           <p class="muted">${escapeHtml(row.applicant)} · ${escapeHtml(formatWhen(row.createdAt))}</p>
           <div class="order-actions">
-            <button class="button button-primary" type="button" data-vendor="${escapeHtml(row.id)}" data-status="approved">Approve</button>
-            <button class="button button-ghost" type="button" data-vendor="${escapeHtml(row.id)}" data-status="suspended" data-label="Reject">Reject</button>
-            <button class="button button-ghost" type="button" data-vendor="${escapeHtml(row.id)}" data-status="suspended">Suspend</button>
+            ${vendorActionButtons(row)}
+            <a class="button button-ghost" href="${url("pages/shop.html")}?slug=${encodeURIComponent(row.slug)}">Open shop</a>
           </div>
         </article>
-      `).join("")}
+      `).join("") : `<p class="empty">No shops in ${escapeHtml(vendorFilter)}.</p>`}
     </div>
-    <p class="muted">Reject and Suspend both set status to suspended. There is no rejected value.</p>
   `;
+
+  panel.querySelectorAll("[data-vendor-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const next = button.getAttribute("data-vendor-filter") || "pending";
+      if (next === "all" || next === "pending" || next === "approved" || next === "suspended") {
+        vendorFilter = next;
+      }
+      render();
+    });
+  });
 
   panel.querySelectorAll("[data-vendor]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -231,6 +291,26 @@ async function renderVendors(panel) {
       });
     });
   });
+}
+
+/**
+ * Approve only while the shop is not already approved.
+ * Suspend only while it is approved. Reject only while it is pending.
+ * @param {{ id: string, status: string }} row
+ * @returns {string}
+ */
+function vendorActionButtons(row) {
+  const id = escapeHtml(row.id);
+  if (row.status === "pending") {
+    return `
+      <button class="button button-primary" type="button" data-vendor="${id}" data-status="approved">Approve</button>
+      <button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended" data-label="Reject">Reject</button>
+    `;
+  }
+  if (row.status === "approved") {
+    return `<button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended">Suspend</button>`;
+  }
+  return `<button class="button button-primary" type="button" data-vendor="${id}" data-status="approved" data-label="Restore">Restore</button>`;
 }
 
 /**

@@ -5,10 +5,10 @@
 
 import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage } from "../auth.js?v=3";
-import { toast } from "../components.js";
+import { toast } from "../components.js?v=6";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
-import { url } from "../paths.js";
+import { url } from "../paths.js?v=4";
 
 /**
  * @param {HTMLElement} host

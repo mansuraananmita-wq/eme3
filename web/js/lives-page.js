@@ -4,10 +4,10 @@
 
 import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
 import { authErrorMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 import { showState, syncConfigBanner } from "./ui-state.js";
 import { shopHref, shopLogoHtml } from "./shopView.js";
 

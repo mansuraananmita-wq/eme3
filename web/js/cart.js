@@ -1,11 +1,11 @@
 import { listCart, removeFromCart, setCartQuantity } from "./api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { imageHtml, productHref, shopName } from "./productView.js";
 import { shopHref, shopLogoHtml } from "./shopView.js";
-import { loginRedirect, url } from "./paths.js";
+import { loginRedirect, url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
 mountShell({ page: "cart" });

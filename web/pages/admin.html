@@ -2,8 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          var stored = localStorage.getItem("eme-theme");
+          if (stored === "dark" || stored === "light") theme = stored;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light only">
+    
     <script>
       (function () {
         var path = location.pathname.replace(/\\/g, "/");
@@ -28,15 +39,17 @@
     <main id="main">
       <div class="wrap admin-wrap">
         <h1>Admin</h1>
+        <p class="muted">Dashboard first, then vendors, catalog, and orders.</p>
         <div class="admin-tabs" id="admin-tabs" role="tablist">
-          <button type="button" data-tab="vendors" class="is-active" role="tab" aria-selected="true">Vendors</button>
+          <button type="button" data-tab="dashboard" class="is-active" role="tab" aria-selected="true">Dashboard</button>
+          <button type="button" data-tab="vendors" role="tab" aria-selected="false">Vendors</button>
           <button type="button" data-tab="moderation" role="tab" aria-selected="false">Moderation</button>
           <button type="button" data-tab="orders" role="tab" aria-selected="false">Orders</button>
-          <button type="button" data-tab="people" role="tab" aria-selected="false">People</button>
-          <button type="button" data-tab="categories" role="tab" aria-selected="false">Categories</button>
-          <button type="button" data-tab="settings" role="tab" aria-selected="false">Settings</button>
           <button type="button" data-tab="disputes" role="tab" aria-selected="false">Disputes</button>
           <button type="button" data-tab="payouts" role="tab" aria-selected="false">Payouts</button>
+          <button type="button" data-tab="people" role="tab" aria-selected="false">People</button>
+          <button type="button" data-tab="categories" role="tab" aria-selected="false">Catalog</button>
+          <button type="button" data-tab="settings" role="tab" aria-selected="false">Settings</button>
         </div>
         <div id="admin-root" aria-busy="true">
           <div class="skeleton skeleton-card"></div>
@@ -47,6 +60,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/admin-page.js"></script>
+    <script type="module" src="../js/admin-page.js?v=6"></script>
   </body>
 </html>

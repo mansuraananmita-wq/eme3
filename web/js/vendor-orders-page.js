@@ -6,10 +6,10 @@ import {
   vendorSetItemStatus,
 } from "./api/ordersApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
 mountShell({ page: "account" });

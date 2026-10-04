@@ -527,3 +527,58 @@ export async function setPayoutStatus(payoutId, status, reference) {
     throw error;
   }
 }
+
+/**
+ * Counts for the admin dashboard. Uses tables the admin can already read.
+ * @returns {Promise<{ pendingVendors: number, approvedVendors: number, suspendedVendors: number, orders: number, openDisputes: number, liveNow: number, products: number, reels: number }>}
+ */
+export async function adminSnapshot() {
+  const supabase = getSupabase();
+
+  /**
+   * @param {string} table
+   * @param {string} column
+   * @param {(query: any) => any} [filter]
+   */
+  async function count(table, column, filter) {
+    let query = supabase.from(table).select(column, { count: "exact", head: true });
+    if (filter) query = filter(query);
+    const { count: total, error } = await query;
+    if (error) {
+      console.error(`admin count ${table}:`, error);
+      return 0;
+    }
+    return total ?? 0;
+  }
+
+  const [
+    pendingVendors,
+    approvedVendors,
+    suspendedVendors,
+    orders,
+    openDisputes,
+    liveNow,
+    products,
+    reels,
+  ] = await Promise.all([
+    count("vendor_profiles", "profile_id", (query) => query.eq("status", "pending")),
+    count("vendor_profiles", "profile_id", (query) => query.eq("status", "approved")),
+    count("vendor_profiles", "profile_id", (query) => query.eq("status", "suspended")),
+    count("orders", "id"),
+    count("disputes", "id", (query) => query.eq("status", "open")),
+    count("live_streams", "id", (query) => query.eq("status", "live")),
+    count("products", "id", (query) => query.eq("status", "active")),
+    count("reels", "id", (query) => query.neq("status", "removed")),
+  ]);
+
+  return {
+    pendingVendors,
+    approvedVendors,
+    suspendedVendors,
+    orders,
+    openDisputes,
+    liveNow,
+    products,
+    reels,
+  };
+}

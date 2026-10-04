@@ -1,5 +1,5 @@
 import { getSupabase } from "./supabaseClient.js";
-import { safeNext, url } from "./paths.js";
+import { safeNext, url } from "./paths.js?v=4";
 
 /** @typedef {'admin' | 'vendor' | 'customer'} UserRole */
 
@@ -23,7 +23,7 @@ let listenerReady = false;
  * @returns {string}
  */
 export function authErrorMessage(error) {
-  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const raw = readErrorText(error);
   const text = raw.toLowerCase();
 
   if (text.includes("invalid login credentials")) {
@@ -48,6 +48,20 @@ export function authErrorMessage(error) {
     return "Could not reach Supabase. Check your connection and the project URL.";
   }
   return raw || "Something went wrong. Try again.";
+}
+
+/**
+ * Supabase errors are objects with a message, not always Error instances.
+ * @param {unknown} error
+ * @returns {string}
+ */
+function readErrorText(error) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return "";
 }
 
 /**

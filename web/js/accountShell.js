@@ -3,25 +3,27 @@
  */
 
 import { signOut } from "./auth.js?v=3";
-import { openModal, toast } from "./components.js";
+import { openModal, toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
+import { t } from "./i18n.js";
 
 /**
  * Injects account navigation into #account-nav.
- * @param {"home" | "profile" | "addresses" | "orders" | "wishlist" | "following"} active
+ * @param {"home" | "profile" | "addresses" | "orders" | "wishlist" | "following" | "transactions"} active
  */
 export function mountAccountNav(active) {
   const root = document.querySelector("#account-nav");
   if (!root) return;
 
   const links = [
-    { id: "home", href: url("pages/customer.html"), label: "Account" },
-    { id: "profile", href: url("pages/account/profile.html"), label: "Profile" },
-    { id: "addresses", href: url("pages/account/addresses.html"), label: "Addresses" },
-    { id: "orders", href: url("pages/account/orders.html"), label: "Orders" },
-    { id: "following", href: url("pages/following.html"), label: "Following" },
-    { id: "wishlist", href: url("pages/wishlist.html"), label: "Wishlist" },
+    { id: "home", href: url("pages/customer.html"), label: t("account") },
+    { id: "profile", href: url("pages/account/profile.html"), label: t("profile") },
+    { id: "addresses", href: url("pages/account/addresses.html"), label: t("addresses") },
+    { id: "orders", href: url("pages/account/orders.html"), label: t("orders") },
+    { id: "transactions", href: url("pages/account/transactions.html"), label: t("transactions") },
+    { id: "following", href: url("pages/following.html"), label: t("following") },
+    { id: "wishlist", href: url("pages/wishlist.html"), label: t("wishlist") },
   ];
 
   root.innerHTML = `
@@ -29,7 +31,7 @@ export function mountAccountNav(active) {
       ${links.map((link) => `
         <a class="${link.id === active ? "is-active" : ""}" href="${link.href}">${escapeHtml(link.label)}</a>
       `).join("")}
-      <button class="account-tab-logout" type="button" data-account-logout>Logout</button>
+      <button class="account-tab-logout" type="button" data-account-logout>${escapeHtml(t("logout"))}</button>
     </nav>
   `;
 

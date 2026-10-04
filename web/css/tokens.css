@@ -1,13 +1,12 @@
 /* EME marketplace tokens. Orange commerce brand, neutral greys, Inter + Bangla. */
 
-/* Site is always light. Dark video chrome belongs only on immersive reels/live players. */
 html {
-  color-scheme: light only;
   font-size: 16px;
 }
 
-:root {
-  color-scheme: light only;
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
   --font-body: Inter, "Noto Sans Bengali", "Segoe UI", sans-serif;
 
   --color-bg: #f3f4f6;
@@ -77,10 +76,31 @@ html {
   --z-banner: 70;
 }
 
-/* Force light UI chrome even when the OS is in dark mode. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #101218;
+  --color-surface: #1a1d25;
+  --color-surface-muted: #242833;
+  --color-text: #f4f6f8;
+  --color-muted: #a3aab8;
+  --color-border: #343844;
+  --color-primary: #f57224;
+  --color-primary-strong: #fdba74;
+  --color-primary-soft: #3a2416;
+  --color-on-primary: #ffffff;
+  --color-accent: #fb7185;
+  --color-accent-soft: #3f1d28;
+  --color-success: #4ade80;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-danger-soft: #3f1d1d;
+  --color-success-soft: #14301f;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
 html,
 body {
-  color-scheme: light only;
   background-color: var(--color-bg);
   color: var(--color-text);
 }

@@ -1,11 +1,11 @@
 import { mountAccountNav } from "./accountShell.js";
 import { moveWishlistToCart, listWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js";
+import { mountShell, toast } from "./components.js?v=6";
 import { escapeHtml } from "./html.js";
 import { imageHtml, priceHtml, productHref } from "./productView.js";
 import { soldByHtml } from "./shopView.js";
-import { url } from "./paths.js";
+import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
 const root = document.querySelector("#wishlist-root");

@@ -2,9 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          var stored = localStorage.getItem("eme-theme");
+          if (stored === "dark" || stored === "light") theme = stored;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta name="color-scheme" content="light only">
+    
     <script>
       (function () {
         var path = location.pathname.replace(/\\/g, "/");
@@ -59,6 +70,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/vendor-page.js?v=3"></script>
+    <script type="module" src="../js/vendor-page.js?v=6"></script>
   </body>
 </html>

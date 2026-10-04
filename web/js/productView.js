@@ -1,11 +1,11 @@
 import { addToCart } from "./api/cartApi.js";
 import { addWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { toast } from "./components.js?v=14";
+import { toast } from "./components.js?v=16";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";
 import { icon } from "./icons.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { pickProductImage, productImageUrl } from "./media.js";
 import { loginRedirect, url } from "./paths.js?v=4";
 import { shopOf, soldByHtml } from "./shopView.js";

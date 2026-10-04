@@ -143,6 +143,50 @@ export async function listProducts(filters = {}) {
 }
 
 /**
+ * Active products for a short id list, in that order.
+ * @param {string[]} ids
+ * @returns {Promise<Array<object>>}
+ */
+export async function listProductsByIds(ids) {
+  const unique = [...new Set(ids)].filter(Boolean).slice(0, 12);
+  if (!unique.length) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("products")
+    .select(LIST_COLUMNS)
+    .in("id", unique)
+    .eq("status", "active")
+    .eq("vendor_profiles.status", "approved");
+  if (error) throw error;
+  const byId = new Map((data ?? []).map((row) => [row.id, row]));
+  return unique.map((id) => byId.get(id)).filter(Boolean);
+}
+
+/**
+ * Nearest catalog products for a question, from the text embedding index.
+ * Returns an empty list when that function is not on the database yet.
+ * @param {string} query
+ * @param {number} [limit]
+ * @returns {Promise<string[]>}
+ */
+export async function matchProductIds(query, limit = 8) {
+  const term = searchTerm(query);
+  if (term.length < 2) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc("match_product_ids", {
+    query: term,
+    match_count: limit,
+  });
+  if (error) {
+    if (error.code === "PGRST202") return [];
+    console.error("match_product_ids:", error);
+    return [];
+  }
+  if (!Array.isArray(data)) return [];
+  return data.map((row) => (typeof row === "string" ? row : row?.match_product_ids)).filter(Boolean);
+}
+
+/**
  * @param {{ id?: string | null, slug?: string | null }} key
  * @returns {Promise<object | null>}
  */

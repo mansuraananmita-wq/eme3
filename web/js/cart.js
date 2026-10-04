@@ -1,6 +1,6 @@
 import { listCart, removeFromCart, setCartQuantity } from "./api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { imageHtml, productHref, shopName } from "./productView.js?v=9";

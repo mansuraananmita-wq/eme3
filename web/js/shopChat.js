@@ -3,22 +3,16 @@
  * No extra API. It does not invent prices or shops.
  */
 
-import { listProducts } from "./api/productsApi.js";
+import { listProducts, listProductsByIds, matchProductIds } from "./api/productsApi.js";
+import { recordCatalogEvent } from "./api/eventsApi.js";
 import { listApprovedShops } from "./api/shopsApi.js";
+import { catalogTerms } from "./catalogTerms.js";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { icon } from "./icons.js";
 import { url } from "./paths.js?v=4";
 import { shopOf } from "./shopView.js";
-
-const STOP = new Set([
-  "the", "a", "an", "is", "are", "of", "for", "to", "and", "or", "in", "on",
-  "what", "which", "where", "how", "much", "price", "stock", "shop", "product",
-  "about", "please", "ki", "koto", "dam", "ache",
-  "কি", "কী", "কত", "দাম", "আছে", "পণ্য", "দোকান", "সম্পর্কে", "জানা", "জানতে",
-  "চাই", "এর", "এই", "একটা", "কোন", "কোথায়", "স্টক",
-]);
 
 /**
  * Mounts the corner chat once per page.
@@ -93,16 +87,18 @@ async function answerQuestion(question) {
     return `<p>${escapeHtml(t("chatLive"))} <a href="${url("pages/lives.html")}">${escapeHtml(t("live"))}</a></p>`;
   }
 
-  const words = question
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((word) => word.length > 1 && !STOP.has(word));
+  const words = catalogTerms(question);
   const term = words.join(" ") || question.trim();
   if (term.length < 2) return `<p>${escapeHtml(t("chatHint"))}</p>`;
+  recordCatalogEvent("search", "product", null, { q: term.slice(0, 120) });
 
   let products = (await listProducts({ q: term, limit: 3 })).rows;
   if (!products.length && words.length > 1) {
     products = (await listProducts({ q: words[0], limit: 3 })).rows;
+  }
+  if (!products.length) {
+    const ids = await matchProductIds(term, 3);
+    if (ids.length) products = await listProductsByIds(ids);
   }
   let shops = await listApprovedShops({ q: term, limit: 2 });
   if (!shops.length && words[0]) shops = await listApprovedShops({ q: words[0], limit: 2 });

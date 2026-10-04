@@ -3,7 +3,7 @@
  */
 
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { mountCarousel } from "./carousel.js";
 import {
   HERO_BANNERS,
@@ -13,7 +13,7 @@ import {
   isBannerActive,
 } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";
@@ -22,7 +22,8 @@ import { bindCatalogActions, productCardHtml } from "./productView.js?v=9";
 import { shopCardHtml, shopHref, shopLogoHtml } from "./shopView.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { listCategories } from "./api/categoriesApi.js";
-import { listDiscountedProducts, listProducts } from "./api/productsApi.js";
+import { listDiscountedProducts, listProducts, listProductsByIds } from "./api/productsApi.js";
+import { recentProductIds } from "./api/eventsApi.js";
 import { listFeaturedShops } from "./api/shopsApi.js";
 import { listPublishedReels } from "./api/reelsApi.js";
 import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
@@ -33,6 +34,8 @@ import { shopOf } from "./shopView.js";
 
 const categoryRoot = document.querySelector("#category-row");
 const trendingRoot = document.querySelector("#trending-grid");
+const forYouRoot = document.querySelector("#for-you-grid");
+const forYouSection = document.querySelector("#for-you-section");
 const arrivalsRoot = document.querySelector("#arrivals-grid");
 const featuredRoot = document.querySelector("#featured-shops");
 const reelsRoot = document.querySelector("#reels-row");
@@ -81,8 +84,9 @@ async function loadHome() {
     renderDealHero(flash, arrivals.rows);
     renderCategories(categories);
     renderFlash(flash, saved);
-    renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
-    renderProducts(arrivalsRoot, arrivals.rows, saved, "No new products yet.");
+    renderProducts(trendingRoot, trending.rows, saved, t("noTrending"));
+    await renderForYou(saved);
+    renderProducts(arrivalsRoot, arrivals.rows, saved, t("noNewProducts"));
     renderFeatured(featured);
     renderLivesHome(lives, upcoming);
     renderReels(reels.rows);
@@ -90,6 +94,23 @@ async function loadHome() {
     const message = authErrorMessage(error);
     toast(message, "error");
     endAll(message, true);
+  }
+}
+
+/**
+ * Products this browser opened recently.
+ * @param {Set<string>} saved
+ */
+async function renderForYou(saved) {
+  const ids = recentProductIds();
+  if (!ids.length || !(forYouSection instanceof HTMLElement)) return;
+  try {
+    const rows = await listProductsByIds(ids);
+    if (!rows.length) return;
+    forYouSection.hidden = false;
+    renderProducts(forYouRoot, rows, saved, "");
+  } catch (error) {
+    console.error("For you:", error);
   }
 }
 
@@ -196,6 +217,20 @@ function cutoutHeroPhotos(root) {
   });
 }
 
+const SCENE_REMOVAL_URL = "https://esm.sh/@imgly/background-removal@1.7.0";
+
+/** @type {Map<string, string | null>} */
+const sceneCutouts = new Map();
+
+/** @type {Map<string, Promise<string | null>>} */
+const sceneJobs = new Map();
+
+/** @type {Promise<unknown>} */
+let sceneChain = Promise.resolve();
+
+/** @type {Promise<{ removeBackground: Function }> | null} */
+let sceneModule = null;
+
 /**
  * @param {HTMLImageElement} img
  * @returns {Promise<void>}
@@ -204,6 +239,12 @@ async function isolateProduct(img) {
   if (!img.hasAttribute("data-cutout")) return;
   try {
     const source = img.currentSrc || img.src;
+    if (sceneCutouts.has(source)) {
+      const cached = sceneCutouts.get(source);
+      if (cached) applyCutoutUrl(img, cached);
+      else img.removeAttribute("data-cutout");
+      return;
+    }
     const loaded = await loadHeroImage(source);
     const maxEdge = 720;
     const scale = Math.min(1, maxEdge / Math.max(loaded.naturalWidth, loaded.naturalHeight));
@@ -221,23 +262,141 @@ async function isolateProduct(img) {
     const frame = context.getImageData(0, 0, width, height);
     const removed = clearStudioBackground(frame.data, width, height);
     const total = width * height;
-    if (removed < total * 0.12 || removed > total * 0.93) {
-      img.removeAttribute("data-cutout");
-      return;
+    if (removed >= total * 0.12 && removed <= total * 0.93) {
+      context.putImageData(frame, 0, 0);
+      const cropped = cropToSubject(canvas, frame.data, width, height);
+      if (cropped) {
+        applyCutoutUrl(img, cropped.toDataURL("image/png"));
+        return;
+      }
     }
-    context.putImageData(frame, 0, 0);
-    const cropped = cropToSubject(canvas, frame.data, width, height);
-    if (!cropped) {
-      img.removeAttribute("data-cutout");
-      return;
-    }
-    img.classList.add("is-cutout");
-    img.onload = () => img.removeAttribute("data-cutout");
-    img.src = cropped.toDataURL("image/png");
+    img.removeAttribute("data-cutout");
+    const cutout = await sceneCutoutFor(source, loaded);
+    if (cutout && img.isConnected) applyCutoutUrl(img, cutout);
   } catch (error) {
     console.error("Hero cutout:", error);
     img.removeAttribute("data-cutout");
   }
+}
+
+/**
+ * @param {HTMLImageElement} img
+ * @param {string} dataUrl
+ */
+function applyCutoutUrl(img, dataUrl) {
+  img.classList.add("is-cutout");
+  img.onload = () => img.removeAttribute("data-cutout");
+  img.src = dataUrl;
+}
+
+/**
+ * Room and wood-floor photos fail the flat-studio flood fill.
+ * A browser model lifts the product; the framed photo stays up until it finishes.
+ * @param {string} source
+ * @param {HTMLImageElement} loaded
+ * @returns {Promise<string | null>}
+ */
+function sceneCutoutFor(source, loaded) {
+  if (sceneCutouts.has(source)) return Promise.resolve(sceneCutouts.get(source) || null);
+  const pending = sceneJobs.get(source);
+  if (pending) return pending;
+
+  const job = sceneChain.then(() => runSceneCutout(source, loaded));
+  sceneJobs.set(source, job);
+  sceneChain = job.then(() => undefined, () => undefined);
+  return job;
+}
+
+/**
+ * @param {string} source
+ * @param {HTMLImageElement} loaded
+ * @returns {Promise<string | null>}
+ */
+async function runSceneCutout(source, loaded) {
+  try {
+    if (!sceneModule) sceneModule = import(SCENE_REMOVAL_URL);
+    const mod = await sceneModule;
+    const blob = await imageToBlob(loaded);
+    if (!blob) return null;
+    const cut = await withTimeout(mod.removeBackground(blob, {
+      device: "cpu",
+      model: "isnet_quint8",
+      output: { format: "image/png", quality: 0.8 },
+    }), 60000);
+    const url = await transparentPngUrl(cut);
+    sceneCutouts.set(source, url);
+    return url;
+  } catch (error) {
+    console.error("Scene cutout:", error);
+    sceneCutouts.set(source, null);
+    return null;
+  }
+}
+
+/**
+ * @param {Promise<Blob>} promise
+ * @param {number} ms
+ * @returns {Promise<Blob>}
+ */
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("Cutout timed out.")), ms);
+    promise.then((value) => {
+      window.clearTimeout(timer);
+      resolve(value);
+    }, (error) => {
+      window.clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
+/**
+ * @param {HTMLImageElement} image
+ * @returns {Promise<Blob | null>}
+ */
+function imageToBlob(image) {
+  const maxEdge = 640;
+  const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
+  });
+}
+
+/**
+ * @param {Blob} blob
+ * @returns {Promise<string | null>}
+ */
+async function transparentPngUrl(blob) {
+  const image = await blobToImage(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+  context.drawImage(image, 0, 0);
+  const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+  let clear = 0;
+  for (let index = 3; index < frame.data.length; index += 4) {
+    if (frame.data[index] < 16) clear += 1;
+  }
+  const total = canvas.width * canvas.height;
+  if (clear < total * 0.12 || clear > total * 0.93) return null;
+  const cropped = cropToSubject(canvas, frame.data, canvas.width, canvas.height);
+  return cropped ? cropped.toDataURL("image/png") : null;
+}
+
+/**
+ * @param {Blob} blob
+ * @returns {Promise<HTMLImageElement>}
+ */
+function blobToImage(blob) {
+  const url = URL.createObjectURL(blob);
+  return loadHeroImage(url).finally(() => URL.revokeObjectURL(url));
 }
 
 /**

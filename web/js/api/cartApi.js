@@ -1,6 +1,7 @@
 import { notifyCounts } from "./notify.js";
 import { getProduct } from "./productsApi.js";
 import { getCurrentProfile } from "../auth.js?v=3";
+import { recordCatalogEvent } from "./eventsApi.js";
 import { getSupabase } from "../supabaseClient.js";
 
 const GUEST_KEY = "eme-guest-cart";
@@ -100,6 +101,7 @@ export async function addToCart(productId, add = 1) {
     next.push({ product_id: productId, quantity: limited.quantity });
     writeGuestCart(next);
     notifyCounts();
+    recordCatalogEvent("add_to_cart", "product", productId);
     return { capped: limited.capped, stock: limited.stock };
   }
 
@@ -133,6 +135,7 @@ export async function addToCart(productId, add = 1) {
   }
 
   notifyCounts();
+  recordCatalogEvent("add_to_cart", "product", productId);
   return { capped: limited.capped, stock: limited.stock };
 }
 

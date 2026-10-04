@@ -21,11 +21,11 @@ import {
   uploadShopImage,
 } from "./api/vendorApi.js?v=3";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js?v=14";
+import { mountShell, openModal, toast } from "./components.js?v=16";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { productImageUrl } from "./media.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 

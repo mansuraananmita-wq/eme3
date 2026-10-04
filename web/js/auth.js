@@ -68,13 +68,13 @@ function readErrorText(error) {
  * @param {string} email
  * @param {string} password
  * @param {string} fullName
- * @param {'customer' | 'vendor' | 'admin'} [role]
+ * @param {'customer' | 'vendor'} [role]
  * @param {string} [shopName]
  * @returns {Promise<{ needsEmailConfirm: boolean }>}
  */
 export async function signUp(email, password, fullName, role = "customer", shopName = "") {
   const supabase = getSupabase();
-  const chosen = role === "vendor" || role === "admin" ? role : "customer";
+  const chosen = role === "vendor" ? "vendor" : "customer";
   /** @type {Record<string, string>} */
   const meta = { full_name: fullName, signup_role: chosen };
   if (chosen === "vendor" && shopName.trim()) meta.shop_name = shopName.trim();
@@ -93,10 +93,11 @@ export async function signUp(email, password, fullName, role = "customer", shopN
 }
 
 /**
- * Sets the signed-in account to customer, vendor, or admin.
+ * Sets the signed-in account to customer or vendor.
  * Vendor also creates or approves that user's shop.
+ * Admin cannot be claimed from the browser.
  * Needs supabase/f10_signup_roles.sql applied once.
- * @param {'customer' | 'vendor' | 'admin'} role
+ * @param {'customer' | 'vendor'} role
  * @param {string} [shopName]
  * @returns {Promise<void>}
  */
@@ -117,7 +118,7 @@ export function roleChangeMessage(error) {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
   const text = error instanceof Error ? error.message : String(error ?? "");
   if (code === "PGRST202" || /claim_account_role/i.test(text) || /schema cache/i.test(text)) {
-    return "Run supabase/f10_signup_roles.sql once in the Supabase SQL editor. After that, pick customer, vendor, or admin here. The email role update is not needed.";
+    return "Run supabase/f10_signup_roles.sql once in the Supabase SQL editor. After that, pick customer or vendor here. The email role update is not needed.";
   }
   return authErrorMessage(error);
 }

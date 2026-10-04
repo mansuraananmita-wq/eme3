@@ -2,17 +2,18 @@ import { listReviews, canReviewProduct, getProduct, productsFromShop, relatedPro
 import { getShop } from "./api/shopsApi.js";
 import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { addToCart } from "./api/cartApi.js";
+import { recordCatalogEvent } from "./api/eventsApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
 import { loginRedirect, url } from "./paths.js?v=4";
 import { bindCatalogActions, priceHtml, productCardHtml } from "./productView.js?v=9";
 import { shopHref, shopLogoHtml, shopOf, soldByHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 
 mountShell({ page: "product" });
 
@@ -45,6 +46,7 @@ async function load() {
     }
 
     document.title = `${product.title} — EME`;
+    recordCatalogEvent("view", "product", product.id);
     const saved = await isSaved(product.id);
     renderProduct(product, saved);
     await renderSeller(product);

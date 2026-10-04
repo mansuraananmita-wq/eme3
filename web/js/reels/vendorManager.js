@@ -13,9 +13,9 @@ import {
   updateReel,
   uploadReelThumbnail,
   uploadReelVideo,
-} from "../api/reelsApi.js?v=5";
+} from "../api/reelsApi.js?v=6";
 import { authErrorMessage } from "../auth.js?v=3";
-import { openModal, toast } from "../components.js?v=14";
+import { openModal, toast } from "../components.js?v=16";
 import { escapeHtml } from "../html.js";
 import { url } from "../paths.js?v=4";
 import { showState } from "../ui-state.js";

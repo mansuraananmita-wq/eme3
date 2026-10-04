@@ -1,6 +1,7 @@
 import { authErrorMessage, signUp } from "./auth.js?v=3";
 import { mergeGuestCart } from "./api/cartApi.js";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
+import { t } from "./i18n.js?v=16";
 import { safeNext, url } from "./paths.js?v=4";
 
 mountShell({ page: "register" });
@@ -14,7 +15,7 @@ form?.addEventListener("submit", async (event) => {
   const email = String(data.get("email") || "").trim();
   const password = String(data.get("password") || "");
   const roleValue = String(data.get("signup_role") || "customer");
-  const role = roleValue === "vendor" || roleValue === "admin" ? roleValue : "customer";
+  const role = roleValue === "vendor" ? "vendor" : "customer";
   const shopName = String(data.get("shop_name") || "").trim();
   const fields = {
     full_name: document.querySelector("#name-error"),
@@ -27,15 +28,15 @@ form?.addEventListener("submit", async (event) => {
 
   let valid = true;
   if (fullName.length < 1 || fullName.length > 120) {
-    if (fields.full_name) fields.full_name.textContent = "Name must be 1 to 120 characters.";
+    if (fields.full_name) fields.full_name.textContent = t("nameInvalid");
     valid = false;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    if (fields.email) fields.email.textContent = "Enter a valid email address.";
+    if (fields.email) fields.email.textContent = t("emailInvalid");
     valid = false;
   }
   if (password.length < 6) {
-    if (fields.password) fields.password.textContent = "Password must be at least 6 characters.";
+    if (fields.password) fields.password.textContent = t("passwordInvalid");
     valid = false;
   }
   const shopError = document.querySelector("#shop-error");

@@ -2,11 +2,11 @@
  * Comments bottom sheet for a reel.
  */
 
-import { listReelComments, postReelComment } from "../api/reelsApi.js?v=5";
+import { listReelComments, postReelComment } from "../api/reelsApi.js?v=6";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=14";
+import { toast } from "../components.js?v=16";
 import { escapeHtml } from "../html.js";
-import { t } from "../i18n.js?v=14";
+import { t } from "../i18n.js?v=16";
 import { loginRedirect } from "../paths.js?v=4";
 import { closeProductSheet } from "./productSheet.js";
 
@@ -19,24 +19,24 @@ export async function openCommentsSheet(host, reelId) {
   host.querySelectorAll("[data-reel-sheet='comments']").forEach((node) => node.remove());
 
   const sheet = document.createElement("div");
-  sheet.className = "reel-sheet";
+  sheet.className = "reel-sheet is-bottom";
   sheet.dataset.reelSheet = "comments";
   sheet.innerHTML = `
     <div class="reel-sheet-backdrop" data-close-sheet></div>
-    <div class="reel-sheet-panel" role="dialog" aria-modal="true" aria-label="Comments">
+    <div class="reel-sheet-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(t("comments"))}">
       <div class="reel-sheet-head">
-        <h2>Comments</h2>
+        <h2>${escapeHtml(t("comments"))}</h2>
         <button class="icon-button reel-sheet-close" type="button" data-close-sheet aria-label="Close">×</button>
       </div>
       <div class="reel-comments" data-comments-list aria-busy="true">
-        <p class="empty">Loading comments…</p>
+        <p class="empty">${escapeHtml(t("loadingComments"))}</p>
       </div>
       <form class="reel-comment-form" data-comment-form>
         <p class="reel-reply-target" data-reply-target hidden></p>
         <input type="hidden" name="parent_id" value="">
-        <label class="sr-only" for="reel-comment-input">Add a comment</label>
-        <input id="reel-comment-input" name="body" maxlength="2000" placeholder="Write a comment…" required>
-        <button class="button button-primary" type="submit">Post</button>
+        <label class="sr-only" for="reel-comment-input">${escapeHtml(t("addComment"))}</label>
+        <input id="reel-comment-input" name="body" maxlength="2000" placeholder="${escapeHtml(t("writeComment"))}" required>
+        <button class="button button-primary" type="submit">${escapeHtml(t("post"))}</button>
         <p class="reel-comment-error" data-comment-error hidden></p>
       </form>
     </div>
@@ -105,7 +105,7 @@ async function renderComments(list, reelId, form) {
     const threads = threadComments(rows);
     list.setAttribute("aria-busy", "false");
     if (!threads.length) {
-      list.innerHTML = `<p class="empty">No comments yet.</p>`;
+      list.innerHTML = `<p class="empty">${escapeHtml(t("noComments"))}</p>`;
       return;
     }
     list.innerHTML = threads.map((row) => `
@@ -113,7 +113,7 @@ async function renderComments(list, reelId, form) {
         <strong>${escapeHtml(row.author)}</strong>
         <p>${escapeHtml(row.body)}</p>
         <time datetime="${escapeHtml(row.created_at)}">${escapeHtml(formatWhen(row.created_at))}</time>
-        <button class="button button-ghost" type="button" data-reply="${escapeHtml(row.id)}" data-reply-name="${escapeHtml(row.author)}">Reply</button>
+        <button class="button button-ghost" type="button" data-reply="${escapeHtml(row.id)}" data-reply-name="${escapeHtml(row.author)}">${escapeHtml(t("reply"))}</button>
         ${row.replies.map((reply) => `
           <article class="reel-comment reel-reply">
             <strong>${escapeHtml(reply.author)}</strong>
@@ -131,12 +131,14 @@ async function renderComments(list, reelId, form) {
         const target = form.querySelector("[data-reply-target]");
         if (parent instanceof HTMLInputElement) parent.value = button.getAttribute("data-reply") || "";
         if (input instanceof HTMLInputElement) {
-          input.placeholder = `Reply to ${button.getAttribute("data-reply-name") || "comment"}`;
+          const name = button.getAttribute("data-reply-name") || "";
+          input.placeholder = name ? `${t("replyTo")} ${name}` : t("writeComment");
           input.focus();
         }
         if (target instanceof HTMLElement) {
           target.hidden = false;
-          target.textContent = `Replying to ${button.getAttribute("data-reply-name") || "comment"}`;
+          const name = button.getAttribute("data-reply-name") || "";
+          target.textContent = name ? `${t("replyingTo")} ${name}` : t("reply");
         }
       });
     });
@@ -186,7 +188,7 @@ function clearReply(form) {
   const input = form.querySelector("[name='body']");
   const target = form.querySelector("[data-reply-target]");
   if (parent instanceof HTMLInputElement) parent.value = "";
-  if (input instanceof HTMLInputElement) input.placeholder = "Write a comment…";
+  if (input instanceof HTMLInputElement) input.placeholder = t("writeComment");
   if (target instanceof HTMLElement) {
     target.hidden = true;
     target.textContent = "";

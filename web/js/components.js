@@ -9,7 +9,7 @@ import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
-import { applyI18n, getLang, setLang, t } from "./i18n.js?v=14";
+import { applyI18n, getLang, setLang, t } from "./i18n.js?v=16";
 import { icon } from "./icons.js";
 import { getTheme, toggleTheme } from "./theme.js";
 import { url } from "./paths.js?v=4";

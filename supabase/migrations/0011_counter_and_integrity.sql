@@ -344,7 +344,7 @@ begin
       where reel.id = target;
       perform set_config('eme.internal_write', '', true);
     exception
-      when sqlstate '27000' then
+      when others then
         perform set_config('eme.internal_write', '', true);
     end;
   end loop;

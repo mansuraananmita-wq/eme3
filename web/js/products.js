@@ -1,9 +1,10 @@
 import { listCategories } from "./api/categoriesApi.js";
 import { listProducts, PAGE_SIZE } from "./api/productsApi.js";
+import { recordCatalogEvent } from "./api/eventsApi.js";
 import { listApprovedShops } from "./api/shopsApi.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { escapeHtml } from "./html.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js?v=9";
 import { shopCardHtml } from "./shopView.js";
@@ -58,6 +59,7 @@ async function load() {
   const category = params.get("category") || "";
   const shop = params.get("shop") || "";
   const q = params.get("q") || "";
+  if (q.trim()) recordCatalogEvent("search", "product", null, { q: q.trim().slice(0, 120) });
   const sort = params.get("sort") || "newest";
   const tab = params.get("tab") === "stores" ? "stores" : "products";
   const min = readMoney(params.get("min"));

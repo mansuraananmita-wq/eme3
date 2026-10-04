@@ -726,9 +726,11 @@ export async function uploadReelVideo(reelId, file, onProgress) {
   const supabase = getSupabase();
 
   onProgress?.(5);
+  const contentType = file.type
+    || (ext === "webm" ? "video/webm" : ext === "mov" ? "video/quicktime" : "video/mp4");
   const { error: uploadError } = await supabase.storage.from("reel-videos").upload(path, file, {
     upsert: true,
-    contentType: file.type,
+    contentType,
   });
   if (uploadError) throw uploadError;
   onProgress?.(85);

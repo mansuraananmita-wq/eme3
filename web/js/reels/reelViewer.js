@@ -18,18 +18,18 @@ import {
   unfollowShop,
   unlikeReel,
   unsaveReel,
-} from "../api/reelsApi.js?v=5";
+} from "../api/reelsApi.js?v=6";
 import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=14";
+import { toast } from "../components.js?v=16";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";
-import { t } from "../i18n.js?v=14";
+import { t } from "../i18n.js?v=15";
 import { loginRedirect, url } from "../paths.js?v=4";
 import { shopHref, shopLogoHtml } from "../shopView.js";
 import { showState } from "../ui-state.js";
-import { openCommentsSheet } from "./commentsSheet.js?v=5";
+import { openCommentsSheet } from "./commentsSheet.js?v=7";
 import { closeProductSheet, openProductSheet } from "./productSheet.js";
 
 const MUTE_SESSION_KEY = "eme-reels-muted";
@@ -252,7 +252,7 @@ export async function mountReelViewer(root, options = {}) {
       slide.querySelector("[data-like]")?.addEventListener("click", () => toggleLike(reel, slide));
       slide.querySelector("[data-save]")?.addEventListener("click", () => toggleSave(reel, slide));
       slide.querySelector("[data-follow]")?.addEventListener("click", () => toggleFollow(reel, slide));
-      slide.querySelector("[data-share]")?.addEventListener("click", () => shareReel(reel));
+      slide.querySelector("[data-share]")?.addEventListener("click", () => shareReel(overlays, reel));
       slide.querySelector("[data-products]")?.addEventListener("click", () => {
         openProductSheet(overlays, reel.products, { title: "Shop this reel" });
       });
@@ -783,44 +783,72 @@ function retryVideo(slide) {
 }
 
 /**
+ * @param {HTMLElement} host
  * @param {object} reel
  */
-async function shareReel(reel) {
+function shareReel(host, reel) {
   const link = new URL(`${url("pages/reel.html")}?id=${encodeURIComponent(reel.id)}`, window.location.href).href;
-  let copied = false;
-  try {
-    if (navigator.share) {
+  host.querySelectorAll("[data-reel-sheet='share']").forEach((node) => node.remove());
+
+  const sheet = document.createElement("div");
+  sheet.className = "reel-sheet is-bottom";
+  sheet.dataset.reelSheet = "share";
+  const canShare = typeof navigator.share === "function";
+  sheet.innerHTML = `
+    <div class="reel-sheet-backdrop" data-close-sheet></div>
+    <div class="reel-sheet-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(t("shareReel"))}">
+      <div class="reel-sheet-head">
+        <h2>${escapeHtml(t("shareReel"))}</h2>
+        <button class="icon-button reel-sheet-close" type="button" data-close-sheet aria-label="Close">×</button>
+      </div>
+      <input class="reel-share-link" type="text" readonly value="${escapeHtml(link)}">
+      <div class="reel-share-actions">
+        <button class="button button-primary" type="button" data-copy-link>${escapeHtml(t("copyLink"))}</button>
+        ${canShare ? `<button class="button button-ghost" type="button" data-native-share>${escapeHtml(t("shareReel"))}</button>` : ""}
+      </div>
+      <p class="reel-comment-error" data-share-note hidden></p>
+    </div>
+  `;
+  host.append(sheet);
+  sheet.querySelectorAll("[data-close-sheet]").forEach((node) => {
+    node.addEventListener("click", () => sheet.remove());
+  });
+
+  const note = sheet.querySelector("[data-share-note]");
+  const showNote = (message) => {
+    if (!(note instanceof HTMLElement)) return;
+    note.hidden = false;
+    note.textContent = message;
+    note.style.color = "var(--color-text)";
+  };
+
+  sheet.querySelector("[data-copy-link]")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      showNote(t("reelLinkCopied"));
+      recordReelShare(reel.id).catch((shareError) => console.error("Record share:", shareError));
+    } catch (error) {
+      console.error("Copy reel link:", error);
+      const field = sheet.querySelector(".reel-share-link");
+      if (field instanceof HTMLInputElement) {
+        field.focus();
+        field.select();
+      }
+    }
+  });
+
+  sheet.querySelector("[data-native-share]")?.addEventListener("click", async () => {
+    try {
       await navigator.share({
         title: reel.shop?.shop_name || "EME",
         text: reel.caption || "EME reel",
         url: link,
       });
-      copied = true;
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return;
-  }
-  if (!copied) {
-    try {
-      await navigator.clipboard.writeText(link);
-      copied = true;
+      recordReelShare(reel.id).catch((shareError) => console.error("Record share:", shareError));
+      sheet.remove();
     } catch (error) {
-      console.error("Copy reel link:", error);
-      window.prompt(t("reelLinkCopied"), link);
-      copied = true;
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      console.error("Share reel:", error);
     }
-  }
-  const slide = document.querySelector(`[data-reel-id="${CSS.escape(reel.id)}"]`);
-  if (slide instanceof HTMLElement) {
-    slide.querySelector("[data-share-note]")?.remove();
-    const note = document.createElement("p");
-    note.className = "reel-share-note";
-    note.dataset.shareNote = "";
-    note.textContent = t("reelLinkCopied");
-    slide.append(note);
-    window.setTimeout(() => note.remove(), 2800);
-  } else {
-    toast(t("reelLinkCopied"), "success");
-  }
-  recordReelShare(reel.id).catch((error) => console.error("Record share:", error));
+  });
 }

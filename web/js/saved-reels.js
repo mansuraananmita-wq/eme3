@@ -1,9 +1,9 @@
 import { mountAccountNav } from "./accountShell.js";
 import { listSavedReels } from "./api/reelsApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 

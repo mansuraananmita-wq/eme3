@@ -9,7 +9,7 @@ Paste the SQL files into the Supabase SQL editor in the order at the bottom of t
 - Money is `numeric(12,2)`. The default currency is `BDT`.
 - Slugs are unique inside their own table and must match `^[a-z0-9]+(?:-[a-z0-9]+)*$`. The same slug may exist on a shop and on a product.
 - Foreign keys are indexed. Status, `created_at`, and slug are indexed where those columns exist.
-- `products.embedding`, `reels.embedding`, and `live_streams.embedding` are nullable `vector(768)`. The dimension may change when the embedding model is chosen. There is no ANN index yet.
+- `products.embedding`, `reels.embedding`, and `live_streams.embedding` are `vector(768)`. `supabase/f12_catalog_and_roles.sql` fills them from the title text with a hashed bag of words and adds a cosine HNSW index. `match_product_ids(query, match_count)` returns the nearest active products. This is not an outside language model.
 - `products.search_vector` is a generated `tsvector` of title (weight A) and description (weight B), with a GIN index. The `simple` config keeps Bangla tokens intact. `pg_trgm` indexes also cover product titles, shop names, and category names.
 
 ## Signup and roles
@@ -106,7 +106,7 @@ Unlimited tree through `parent_id`. Deleting a parent is blocked while children 
 
 ### products
 
-Belongs to one shop and one category. Both foreign keys are `ON DELETE RESTRICT`. `status` is `draft`, `active`, or `archived`. `price` and optional `compare_at_price` are `numeric(12,2)` and cannot be negative. A compare-at price must be at least the current price. `stock` cannot be negative. SKU is unique per shop when it is present. `search_vector` and `embedding` are on this table. `avg_rating`, `reviews_count`, and `sales_count` are guarded. Only the review trigger writes the first two. Nothing writes `sales_count` yet.
+Belongs to one shop and one category. Both foreign keys are `ON DELETE RESTRICT`. `status` is `draft`, `active`, or `archived`. `price` and optional `compare_at_price` are `numeric(12,2)` and cannot be negative. A compare-at price must be at least the current price. `stock` cannot be negative. SKU is unique per shop when it is present. `search_vector` and `embedding` are on this table. `avg_rating` and `reviews_count` are written by the review trigger. `sales_count` is written by `place_order` when a line is placed, and reduced again when that line is cancelled or refunded.
 
 ### product_images
 
@@ -148,7 +148,7 @@ A customer follows a shop. The pair is unique, and a shop cannot follow itself. 
 
 ### reels
 
-A shop's short video. `status` is `draft`, `published`, or `removed`. A published reel must have `video_path`. `likes_count`, `comments_count`, and `saves_count` follow their child tables. `views_count` and `shares_count` are locked at 0 until a later trusted writer. `embedding` is present and unindexed. Deleting the shop is blocked while reels exist.
+A shop's short video. `status` is `draft`, `published`, or `removed`. A published reel must have `video_path`. `likes_count`, `comments_count`, and `saves_count` follow their child tables. `views_count` and `shares_count` are increased by `record_reel_view` and `record_reel_share` in `supabase/f9_reel_engagement.sql` when that file has been run. `embedding` is a hashed caption vector with an HNSW index after `f12_catalog_and_roles.sql`. Deleting the shop is blocked while reels exist.
 
 ### reel_products
 
@@ -164,7 +164,7 @@ One like or save per user per reel. Deleting either side deletes the row and rec
 
 ### live_streams
 
-`status` is `scheduled`, `live`, `ended`, or `removed`. A scheduled stream must have `scheduled_at`. `livekit_room_name` is unique and is the LiveKit room name, not an API secret. `pinned_product_id` is optional and must belong to the same shop. `peak_viewers` is locked at 0 for now. `ended_at` cannot be earlier than `started_at`. `embedding` is present and unindexed.
+`status` is `scheduled`, `live`, `ended`, or `removed`. A scheduled stream must have `scheduled_at`. `livekit_room_name` is unique and is the LiveKit room name, not an API secret. `pinned_product_id` is optional and must belong to the same shop. `peak_viewers` is locked at 0 for now. `ended_at` cannot be earlier than `started_at`. `embedding` is a hashed title vector with an HNSW index after `f12_catalog_and_roles.sql`.
 
 ### live_stream_products
 
@@ -180,7 +180,7 @@ One conversation per customer and shop. `product_id` only records which product 
 
 ### user_events
 
-Append-only log for a later recommendation job. `user_id` is null for anonymous sessions and is set to null if that profile is deleted. `session_id` is required. `event_type` is `view`, `click`, `add_to_cart`, `purchase`, `like`, `save`, `search`, or `watch`. `entity_type` is `product`, `reel`, `live`, or `category`. `entity_id` is required except for `search`. This table does not update reel or product counters. Indexed by `(user_id, created_at)`.
+Append-only log for recommendations. `user_id` is null for anonymous sessions and is set to null if that profile is deleted. `session_id` is required. `event_type` is `view`, `click`, `add_to_cart`, `purchase`, `like`, `save`, `search`, or `watch`. `entity_type` is `product`, `reel`, `live`, or `category`. `entity_id` is required except for `search`. The shop writes product `view`, `add_to_cart`, `purchase`, and `search` from `web/js/api/eventsApi.js`. Reel view and share still go through `f9_reel_engagement.sql`. This table does not update reel or product counters. Indexed by `(user_id, created_at)`.
 
 ### disputes
 

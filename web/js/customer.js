@@ -4,10 +4,10 @@ import { listMyOrders } from "./api/ordersApi.js";
 import { listFollowedShops } from "./api/shopsApi.js";
 import { listWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=14";
+import { mountShell, toast } from "./components.js?v=16";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";
-import { t } from "./i18n.js?v=14";
+import { t } from "./i18n.js?v=16";
 import { url } from "./paths.js?v=4";
 
 const root = document.querySelector("#customer-root");
@@ -108,9 +108,6 @@ async function start() {
         </label>
         <button class="button button-primary" type="button" id="become-vendor">${escapeHtml(t("useAsVendor"))}</button>
       `}
-      ${profile.role === "admin" ? "" : `
-        <button class="button button-primary" type="button" id="become-admin">${escapeHtml(t("useAsAdmin"))}</button>
-      `}
     </section>
   `;
 
@@ -127,17 +124,6 @@ async function start() {
       window.location.assign(url("pages/vendor.html"));
     } catch (error) {
       console.error("claim vendor:", error);
-      toast(roleChangeMessage(error), "error");
-    }
-  });
-
-  root.querySelector("#become-admin")?.addEventListener("click", async () => {
-    try {
-      await claimAccountRole("admin");
-      toast(t("becameAdmin"), "success");
-      window.location.assign(url("pages/admin.html"));
-    } catch (error) {
-      console.error("claim admin:", error);
       toast(roleChangeMessage(error), "error");
     }
   });

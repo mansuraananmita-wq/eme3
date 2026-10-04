@@ -1,5 +1,5 @@
-import { mountShell } from "./components.js?v=14";
-import { mountReelViewer } from "./reels/reelViewer.js?v=5";
+import { mountShell } from "./components.js?v=16";
+import { mountReelViewer } from "./reels/reelViewer.js?v=9";
 import { showState } from "./ui-state.js";
 import { url } from "./paths.js?v=4";
 

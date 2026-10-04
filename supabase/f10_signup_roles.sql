@@ -69,7 +69,7 @@ declare
   n integer := 0;
 begin
   chosen := lower(btrim(coalesce(new.raw_user_meta_data ->> 'signup_role', 'customer')));
-  if chosen not in ('customer', 'vendor', 'admin') then
+  if chosen not in ('customer', 'vendor') then
     chosen := 'customer';
   end if;
 
@@ -134,7 +134,7 @@ end;
 $$;
 
 comment on function public.handle_new_user() is
-  'Creates the profile from signup. signup_role may be customer, vendor, or admin. Vendor signup also opens an approved shop so the studio and live hosting work.';
+  'Creates the profile from signup. signup_role may be customer or vendor. Admin cannot be chosen at signup. Vendor signup also opens an approved shop so the studio and live hosting work.';
 
 create or replace function public.claim_account_role(new_role text, shop_name text default null)
 returns void
@@ -155,8 +155,11 @@ begin
   end if;
 
   new_role := lower(btrim(coalesce(new_role, '')));
-  if new_role not in ('customer', 'vendor', 'admin') then
-    raise exception 'Pick customer, vendor, or admin';
+  if new_role = 'admin' then
+    raise exception 'Admin is not a self-serve role';
+  end if;
+  if new_role not in ('customer', 'vendor') then
+    raise exception 'Pick customer or vendor';
   end if;
 
   perform set_config('eme.allow_role_change', '1', true);
@@ -213,7 +216,7 @@ end;
 $$;
 
 comment on function public.claim_account_role(text, text) is
-  'Lets the signed-in user set their own role to customer, vendor, or admin. Vendor also opens or approves their shop. Before a public launch, revoke execute from authenticated.';
+  'Lets the signed-in user set their own role to customer or vendor. Vendor also opens or approves their shop. Admin cannot be claimed from the browser.';
 
 revoke all on function public.claim_account_role(text, text) from public, anon;
 grant execute on function public.claim_account_role(text, text) to authenticated;

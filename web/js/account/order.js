@@ -3,7 +3,7 @@ import { addToCart } from "../api/cartApi.js";
 import { cancelMyOrder, getMyOrder, requestOrderRefund } from "../api/ordersApi.js";
 import { refundOrder } from "../api/adminApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, openModal, toast } from "../components.js?v=14";
+import { mountShell, openModal, toast } from "../components.js?v=16";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { pickProductImage, productImageUrl } from "../media.js";

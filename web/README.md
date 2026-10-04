@@ -64,7 +64,7 @@ If the server is started from the repo root instead, [http://localhost:8770/](ht
 - `/pages/account/order.html?id=` — order details + Buy again
 - `/pages/wishlist.html` — wishlist inside the account layout
 
-Vendor reels/orders, LiveKit/Agora players, and paid gateway webhooks are not fully productized yet. Checkout uses the `place_order` RPC (COD).
+Vendor reels and vendor orders are in the studio. Checkout inserts the order through the `place_order` RPC (cash on delivery). Live rooms play video through the LiveKit player when secrets are set, and the host camera when they are not. Paid gateway webhooks are not connected.
 
 ## Banners and promotions
 

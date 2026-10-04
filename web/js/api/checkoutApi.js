@@ -4,6 +4,7 @@
  */
 
 import { listCart } from "./cartApi.js";
+import { recordCatalogEvent } from "./eventsApi.js";
 import { getAddress } from "./addressApi.js";
 import { getProduct } from "./productsApi.js";
 import { getSupabase } from "../supabaseClient.js";
@@ -223,6 +224,9 @@ export async function placeOrder(input) {
   }
 
   clearBuyNow();
+  for (const line of summary.lines) {
+    if (line.productId) recordCatalogEvent("purchase", "product", line.productId);
+  }
   try {
     await notifyCounts();
   } catch (notifyError) {

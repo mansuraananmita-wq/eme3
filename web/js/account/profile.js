@@ -1,7 +1,7 @@
 import { mountAccountNav } from "../accountShell.js";
 import { changePassword, getAccountProfile, updateProfile, uploadAvatar } from "../api/profileApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, toast } from "../components.js?v=8";
+import { mountShell, toast } from "../components.js?v=9";
 import { escapeHtml } from "../html.js";
 import { showState } from "../ui-state.js";
 

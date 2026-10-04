@@ -1,3 +1,3 @@
-import { mountShell } from "./components.js?v=8";
+import { mountShell } from "./components.js?v=9";
 
 mountShell({ page: "help" });

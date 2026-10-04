@@ -1,9 +1,9 @@
 import { mountAccountNav } from "./accountShell.js";
 import { moveWishlistToCart, listWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { escapeHtml } from "./html.js";
-import { imageHtml, priceHtml, productHref } from "./productView.js";
+import { imageHtml, priceHtml, productHref } from "./productView.js?v=9";
 import { soldByHtml } from "./shopView.js";
 import { url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";

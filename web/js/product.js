@@ -5,14 +5,14 @@ import { addToCart } from "./api/cartApi.js";
 import { setBuyNow } from "./api/checkoutApi.js";
 import { addWishlist, removeWishlist, wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { escapeHtml } from "./html.js";
 import { pickProductImage, productImageUrl } from "./media.js";
 import { loginRedirect, url } from "./paths.js?v=4";
-import { bindCatalogActions, priceHtml, productCardHtml } from "./productView.js";
+import { bindCatalogActions, priceHtml, productCardHtml } from "./productView.js?v=9";
 import { shopHref, shopLogoHtml, shopOf, soldByHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";
-import { t } from "./i18n.js?v=8";
+import { t } from "./i18n.js?v=9";
 
 mountShell({ page: "product" });
 

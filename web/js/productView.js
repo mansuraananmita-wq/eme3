@@ -1,11 +1,11 @@
 import { addToCart } from "./api/cartApi.js";
 import { addWishlist, removeWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { toast } from "./components.js?v=8";
+import { toast } from "./components.js?v=9";
 import { escapeHtml } from "./html.js";
 import { formatMoney } from "./format.js";
 import { icon } from "./icons.js";
-import { t } from "./i18n.js?v=8";
+import { t } from "./i18n.js?v=9";
 import { pickProductImage, productImageUrl } from "./media.js";
 import { loginRedirect, url } from "./paths.js?v=4";
 import { shopOf, soldByHtml } from "./shopView.js";
@@ -93,11 +93,11 @@ export function productCardHtml(product, options = {}) {
       <div class="product-copy">
         ${soldByHtml(product)}
         <h3><a href="${productHref(product)}">${escapeHtml(product.title)}</a></h3>
-        ${priceHtml(product)}
-        ${soldBar}
-        <div class="card-actions">
-          <button class="button button-primary" type="button" data-add-cart="${escapeHtml(product.id)}">${escapeHtml(t("addToCart"))}</button>
+        <div class="product-buy">
+          ${priceHtml(product)}
+          <button class="cart-on-card" type="button" data-add-cart="${escapeHtml(product.id)}" aria-label="${escapeHtml(t("addToCart"))}">${icon("cart")}</button>
         </div>
+        ${soldBar}
       </div>
     </article>
   `;

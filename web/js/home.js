@@ -3,7 +3,7 @@
  */
 
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { mountCarousel } from "./carousel.js";
 import {
   HERO_BANNERS,
@@ -13,19 +13,19 @@ import {
   isBannerActive,
 } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=8";
+import { t } from "./i18n.js?v=9";
 import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";
 import { showState, syncConfigBanner } from "./ui-state.js";
-import { bindCatalogActions, productCardHtml } from "./productView.js";
+import { bindCatalogActions, productCardHtml } from "./productView.js?v=9";
 import { shopCardHtml, shopHref, shopLogoHtml } from "./shopView.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { listCategories } from "./api/categoriesApi.js";
 import { listDiscountedProducts, listProducts } from "./api/productsApi.js";
 import { listFeaturedShops } from "./api/shopsApi.js";
 import { listPublishedReels } from "./api/reelsApi.js";
-import { listLiveNow } from "./api/liveApi.js";
+import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
 import { formatMoney } from "./format.js";
 import { icon } from "./icons.js";
 
@@ -63,13 +63,14 @@ async function loadHome() {
   }
 
   try {
-    const [categories, trending, arrivals, featured, reels, lives, flash, saved] = await Promise.all([
+    const [categories, trending, arrivals, featured, reels, lives, upcoming, flash, saved] = await Promise.all([
       listCategories(),
       listProducts({ sort: "trending", limit: 12, offset: 0 }),
       listProducts({ sort: "newest", limit: 12, offset: 0 }),
       listFeaturedShops(6),
       listPublishedReels({ limit: 12, offset: 0, sort: "newest" }),
-      listLiveNow({ limit: 12 }),
+      listLiveNow({ limit: 8 }),
+      listUpcomingLives({ limit: 8 }),
       listDiscountedProducts({ limit: 14 }),
       savedIds(),
     ]);
@@ -80,7 +81,7 @@ async function loadHome() {
     renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
     renderProducts(arrivalsRoot, arrivals.rows, saved, "No new products yet.");
     renderFeatured(featured);
-    renderLivesHome(lives);
+    renderLivesHome(lives, upcoming);
     renderReels(reels.rows);
   } catch (error) {
     const message = authErrorMessage(error);
@@ -312,10 +313,16 @@ function renderFeatured(shops) {
 
 /**
  * @param {Array<object>} lives
+ * @param {Array<object>} upcoming
  */
-function renderLivesHome(lives) {
+function renderLivesHome(lives, upcoming) {
   if (!(livesHomeSection instanceof HTMLElement) || !(livesHomeRow instanceof HTMLElement)) return;
-  if (!lives.length) {
+  const heading = livesHomeSection.querySelector("h2");
+  const liveCards = lives.map((stream) => liveThumb(stream, "live"));
+  const soonCards = upcoming.map((stream) => liveThumb(stream, "upcoming"));
+  const cards = [...liveCards, ...soonCards];
+  if (heading) heading.textContent = lives.length ? t("liveNowTitle") : t("upcomingLives");
+  if (!cards.length) {
     livesHomeSection.hidden = false;
     livesHomeRow.setAttribute("aria-busy", "false");
     livesHomeRow.innerHTML = `<p class="muted">${escapeHtml(t("noLiveHome"))}</p>`;
@@ -324,28 +331,41 @@ function renderLivesHome(lives) {
   livesHomeSection.hidden = false;
   livesHomeRow.setAttribute("aria-busy", "false");
   livesHomeRow.className = "live-thumb-row";
-  livesHomeRow.innerHTML = lives.map((stream) => liveThumb(stream)).join("");
+  livesHomeRow.innerHTML = cards.join("");
 }
 
 /**
  * Portrait live card, same shape as a reel thumb.
  * @param {object} stream
+ * @param {"live" | "upcoming"} mode
  * @returns {string}
  */
-function liveThumb(stream) {
+function liveThumb(stream, mode) {
   const href = `${url("pages/live.html")}?id=${encodeURIComponent(stream.id)}`;
   const shopName = stream.shop?.shop_name || stream.title || "Live";
   const thumb = stream.thumbnailUrl
     ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
     : `<span class="live-thumb-fallback">${escapeHtml(shopName.slice(0, 1))}</span>`;
+  const when = stream.scheduledAt ? formatWhen(stream.scheduledAt) : "";
+  const badge = mode === "live" ? "LIVE" : (when || t("upcomingLives"));
   return `
     <a class="live-thumb" href="${href}">
       ${thumb}
-      <span class="live-thumb-badge">LIVE</span>
+      <span class="live-thumb-badge${mode === "upcoming" ? " is-soon" : ""}">${escapeHtml(badge)}</span>
       <span class="live-thumb-play" aria-hidden="true">${icon("play")}</span>
       <span class="live-thumb-label">${escapeHtml(shopName)}</span>
     </a>
   `;
+}
+
+/**
+ * @param {string} iso
+ * @returns {string}
+ */
+function formatWhen(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 /**

@@ -18,7 +18,7 @@ import {
   unfollowShop,
 } from "../api/reelsApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=8";
+import { toast } from "../components.js?v=9";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";

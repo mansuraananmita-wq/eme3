@@ -2,7 +2,7 @@ import { mountAccountNav } from "./accountShell.js";
 import { listFollowedShops } from "./api/shopsApi.js";
 import { unfollowShop } from "./api/reelsApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js?v=4";
 import { shopHref } from "./shopView.js";

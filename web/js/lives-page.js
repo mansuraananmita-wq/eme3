@@ -4,7 +4,7 @@
 
 import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
 import { authErrorMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { escapeHtml } from "./html.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";

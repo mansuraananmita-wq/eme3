@@ -12,7 +12,7 @@ import {
   validateAddressInput,
 } from "./api/addressApi.js";
 import { authErrorMessage, requireUser } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=8";
+import { mountShell, toast } from "./components.js?v=9";
 import { formatMoney } from "./format.js";
 import { divisionChoices } from "./bdDivisions.js";
 import { escapeHtml } from "./html.js";

@@ -1,4 +1,4 @@
-import { mountShell } from "./components.js?v=8";
+import { mountShell } from "./components.js?v=9";
 import { mountLiveRoom } from "./live/liveRoom.js?v=3";
 import { showState } from "./ui-state.js";
 import { url } from "./paths.js?v=4";

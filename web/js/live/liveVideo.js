@@ -6,7 +6,7 @@
  * The API secret never reaches this file.
  */
 
-import { toast } from "../components.js?v=8";
+import { toast } from "../components.js?v=9";
 import { getSupabase } from "../supabaseClient.js";
 
 const LIVEKIT_CLIENT = "https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/+esm";

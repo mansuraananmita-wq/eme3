@@ -9,7 +9,7 @@ import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
-import { applyI18n, getLang, setLang, t } from "./i18n.js?v=8";
+import { applyI18n, getLang, setLang, t } from "./i18n.js?v=9";
 import { icon } from "./icons.js";
 import { getTheme, toggleTheme } from "./theme.js";
 import { url } from "./paths.js?v=4";
@@ -190,7 +190,7 @@ function renderChrome(profile, counts, page, categories) {
       </div>
     </div>
     <div class="header-main">
-      <a class="logo" href="${home}"><img src="${url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg")}" alt="eme" data-logo></a>
+      <a class="logo" href="${home}"><img src="${url("assets/logo-header-dark.svg")}" alt="eme" data-logo></a>
       <form class="search-form" action="${products}" method="get" role="search">
         <label class="sr-only" for="search-category">${escapeHtml(t("all"))}</label>
         <select id="search-category" name="category">
@@ -203,7 +203,7 @@ function renderChrome(profile, counts, page, categories) {
         </select>
         <label class="sr-only" for="site-search">${escapeHtml(t("searchProducts"))}</label>
         <input id="site-search" name="q" type="search" placeholder="${escapeHtml(t("searchInEme"))}" value="${escapeHtml(query)}" autocomplete="off">
-        <button class="button button-primary" type="submit" aria-label="${escapeHtml(t("search"))}">${icon("search")}</button>
+        <button class="button button-primary" type="submit" aria-label="${escapeHtml(t("search"))}">${icon("search")}<span>${escapeHtml(t("search"))}</span></button>
       </form>
       <div class="header-actions">
         <div class="header-tools">
@@ -259,7 +259,7 @@ function renderChrome(profile, counts, page, categories) {
   footer.innerHTML = `
     <div class="footer-grid">
       <div class="footer-col">
-        <a class="logo" href="${home}"><img src="${url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg")}" alt="eme" data-logo></a>
+        <a class="logo" href="${home}"><img src="${url("assets/logo-header-dark.svg")}" alt="eme" data-logo></a>
         <p>${escapeHtml(t("about"))}</p>
         <a href="${home}">${escapeHtml(t("home"))}</a>
         <a href="${shops}">${escapeHtml(t("browseStores"))}</a>
@@ -348,10 +348,6 @@ function bindHeaderInteractions(header, home) {
       toggle.setAttribute("aria-pressed", getTheme() === "dark" ? "true" : "false");
       toggle.textContent = getTheme() === "dark" ? t("themeLight") : t("themeDark");
     }
-    const logoSrc = url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg");
-    document.querySelectorAll("[data-logo]").forEach((img) => {
-      if (img instanceof HTMLImageElement) img.src = logoSrc;
-    });
   });
 
   const megaWrap = header.querySelector(".mega-wrap");

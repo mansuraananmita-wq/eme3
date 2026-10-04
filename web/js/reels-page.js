@@ -1,4 +1,4 @@
-import { mountShell } from "./components.js?v=8";
+import { mountShell } from "./components.js?v=9";
 import { mountReelViewer } from "./reels/reelViewer.js";
 
 mountShell({ page: "reels" });

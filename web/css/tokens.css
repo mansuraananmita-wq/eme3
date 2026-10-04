@@ -1,4 +1,4 @@
-/* EME marketplace tokens. Orange commerce brand, neutral greys, Inter + Bangla. */
+/* EME marketplace tokens. Teal storefront, Inter + Bangla. */
 
 html {
   font-size: 16px;
@@ -9,18 +9,20 @@ html[data-theme="light"] {
   color-scheme: light;
   --font-body: Inter, "Noto Sans Bengali", "Segoe UI", sans-serif;
 
-  --color-bg: #f3f4f6;
+  --color-bg: #e7f1f4;
   --color-surface: #ffffff;
-  --color-surface-muted: #eceff3;
-  --color-text: #111827;
-  --color-muted: #6b7280;
-  --color-border: #e5e7eb;
-  --color-primary: #f57224;
-  --color-primary-strong: #c2410c;
-  --color-primary-soft: #fff4eb;
+  --color-surface-muted: #f3fafb;
+  --color-text: #12343a;
+  --color-muted: #5d747a;
+  --color-border: #d5e4e8;
+  --color-primary: #0e7f8f;
+  --color-primary-strong: #0a6270;
+  --color-primary-soft: #e5f5f8;
   --color-on-primary: #ffffff;
-  --color-accent: #ee4d2d;
-  --color-accent-soft: #ffe8e3;
+  --color-header: #0c7c8c;
+  --color-header-deep: #086272;
+  --color-accent: #e11d48;
+  --color-accent-soft: #ffe4e9;
   --color-success: #15803d;
   --color-danger: #dc2626;
   --color-warning: #b45309;
@@ -78,16 +80,18 @@ html[data-theme="light"] {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #101218;
-  --color-surface: #1a1d25;
-  --color-surface-muted: #242833;
-  --color-text: #f4f6f8;
-  --color-muted: #a3aab8;
-  --color-border: #343844;
-  --color-primary: #f57224;
-  --color-primary-strong: #fdba74;
-  --color-primary-soft: #3a2416;
+  --color-bg: #071418;
+  --color-surface: #0f2228;
+  --color-surface-muted: #163038;
+  --color-text: #e8f4f6;
+  --color-muted: #9bb8c0;
+  --color-border: #1e4450;
+  --color-primary: #1aa3b5;
+  --color-primary-strong: #7fd7e2;
+  --color-primary-soft: #123840;
   --color-on-primary: #ffffff;
+  --color-header: #0a5f6c;
+  --color-header-deep: #084954;
   --color-accent: #fb7185;
   --color-accent-soft: #3f1d28;
   --color-success: #4ade80;

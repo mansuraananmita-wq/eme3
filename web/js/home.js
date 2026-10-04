@@ -3,7 +3,7 @@
  */
 
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=9";
+import { mountShell, toast } from "./components.js?v=11";
 import { mountCarousel } from "./carousel.js";
 import {
   HERO_BANNERS,
@@ -13,7 +13,7 @@ import {
   isBannerActive,
 } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=9";
+import { t } from "./i18n.js?v=11";
 import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";
@@ -28,6 +28,8 @@ import { listPublishedReels } from "./api/reelsApi.js";
 import { listLiveNow, listUpcomingLives } from "./api/liveApi.js";
 import { formatMoney } from "./format.js";
 import { icon } from "./icons.js";
+import { pickProductImage, productImageUrl } from "./media.js";
+import { shopOf } from "./shopView.js";
 
 const categoryRoot = document.querySelector("#category-row");
 const trendingRoot = document.querySelector("#trending-grid");
@@ -76,6 +78,7 @@ async function loadHome() {
     ]);
 
     renderHeroCats(categories);
+    renderDealHero(flash, arrivals.rows);
     renderCategories(categories);
     renderFlash(flash, saved);
     renderProducts(trendingRoot, trending.rows, saved, "No trending products yet.");
@@ -117,6 +120,98 @@ function endAll(message, retry) {
   if (livesHomeRow) showState(livesHomeRow, escapeHtml(message), onRetry);
   if (flashRail) showState(flashRail, escapeHtml(message), onRetry);
   if (heroCats) showState(heroCats, escapeHtml(message), onRetry);
+}
+
+/** @type {number} */
+let dealTimer = 0;
+
+/**
+ * @param {Array<object>} deals
+ * @param {Array<object>} arrivals
+ */
+function renderDealHero(deals, arrivals) {
+  const main = document.querySelector("#deal-main");
+  const arrival = document.querySelector("#deal-arrival");
+  const slides = (deals.length ? deals : arrivals).slice(0, 4);
+  if (main instanceof HTMLElement && slides.length) {
+    let index = 0;
+    const paint = () => {
+      main.setAttribute("aria-busy", "false");
+      main.innerHTML = dealMainHtml(slides[index]);
+    };
+    paint();
+    if (dealTimer) window.clearInterval(dealTimer);
+    if (slides.length > 1) {
+      dealTimer = window.setInterval(() => {
+        index = (index + 1) % slides.length;
+        paint();
+      }, 6000);
+    }
+  }
+  const fresh = arrivals[0];
+  if (arrival instanceof HTMLElement && fresh) {
+    arrival.innerHTML = arrivalHtml(fresh);
+  }
+}
+
+/**
+ * @param {object} product
+ * @returns {number | null}
+ */
+function discountOf(product) {
+  const compare = Number(product.compare_at_price);
+  const current = Number(product.price);
+  if (!Number.isFinite(compare) || !Number.isFinite(current) || compare <= current) return null;
+  return Math.round(((compare - current) / compare) * 100);
+}
+
+/**
+ * @param {object} product
+ * @returns {string}
+ */
+function heroImage(product) {
+  const image = pickProductImage(product.product_images);
+  const src = image ? productImageUrl(image.storage_path) : "";
+  if (!src) return "";
+  return `<img src="${escapeHtml(src)}" alt="" onerror="this.hidden=true">`;
+}
+
+/**
+ * @param {object} product
+ * @returns {string}
+ */
+function dealMainHtml(product) {
+  const href = `${url("pages/product.html")}?slug=${encodeURIComponent(product.slug)}`;
+  const discount = discountOf(product);
+  const shop = shopOf(product)?.shop_name || "";
+  return `
+    <div class="deal-copy">
+      <p class="deal-kicker">${escapeHtml(t("weeklyDrop"))}</p>
+      <h2>${escapeHtml(product.title)}</h2>
+      ${discount != null ? `<span class="deal-badge">${escapeHtml(t("uptoOff"))} ${discount}% ${escapeHtml(t("off"))}</span>` : ""}
+      <p class="deal-note">${escapeHtml(shop ? `${t("approvedShopLine")} · ${shop}` : t("approvedShopLine"))}</p>
+      <p class="deal-price">${escapeHtml(formatMoney(product.price, product.currency))}</p>
+      <a class="deal-cta" href="${href}">${escapeHtml(t("shopNow"))}</a>
+    </div>
+    <div class="deal-photo">${heroImage(product)}</div>
+  `;
+}
+
+/**
+ * @param {object} product
+ * @returns {string}
+ */
+function arrivalHtml(product) {
+  const href = `${url("pages/product.html")}?slug=${encodeURIComponent(product.slug)}`;
+  return `
+    <div class="deal-copy">
+      <p class="deal-kicker">${escapeHtml(t("justLanded"))}</p>
+      <h3>${escapeHtml(product.title)}</h3>
+      <p class="deal-price">${escapeHtml(formatMoney(product.price, product.currency))}</p>
+      <a class="deal-cta" href="${href}">${escapeHtml(t("shopNow"))}</a>
+    </div>
+    <div class="deal-photo">${heroImage(product)}</div>
+  `;
 }
 
 function renderStaticBanners() {

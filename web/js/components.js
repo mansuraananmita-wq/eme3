@@ -9,11 +9,12 @@ import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
-import { applyI18n, getLang, setLang, t } from "./i18n.js?v=9";
+import { applyI18n, getLang, setLang, t } from "./i18n.js?v=11";
 import { icon } from "./icons.js";
 import { getTheme, toggleTheme } from "./theme.js";
 import { url } from "./paths.js?v=4";
 import { syncConfigBanner } from "./ui-state.js";
+import { mountShopChat } from "./shopChat.js";
 
 /** @type {number} */
 let toastId = 0;
@@ -193,7 +194,7 @@ function renderChrome(profile, counts, page, categories) {
       <a class="logo" href="${home}"><img src="${url("assets/logo-header-dark.svg")}" alt="eme" data-logo></a>
       <form class="search-form" action="${products}" method="get" role="search">
         <label class="sr-only" for="search-category">${escapeHtml(t("all"))}</label>
-        <select id="search-category" name="category">
+        <select id="search-category" class="search-category" name="category">
           <option value="">${escapeHtml(t("all"))}</option>
           ${roots.map((row) => `
             <option value="${escapeHtml(row.slug)}" ${row.slug === category ? "selected" : ""}>
@@ -215,9 +216,6 @@ function renderChrome(profile, counts, page, categories) {
             ${escapeHtml(getTheme() === "dark" ? t("themeLight") : t("themeDark"))}
           </button>
         </div>
-        ${profile
-          ? accountMenu(name, roleLabel, cart, wishlist)
-          : guestLinks(login, register)}
         <a class="header-link" href="${wishlist}" aria-label="${escapeHtml(t("wishlist"))}, ${counts.wishlist}">
           ${icon("heart")}
           <span class="action-label">${escapeHtml(t("wishlist"))}</span>
@@ -228,30 +226,38 @@ function renderChrome(profile, counts, page, categories) {
           <span class="action-label">${escapeHtml(t("cart"))}</span>
           <span class="count-badge">${counts.cart}</span>
         </a>
+        ${profile
+          ? accountMenu(name, roleLabel, cart, wishlist)
+          : guestLinks(login, register)}
       </div>
     </div>
     <nav class="cat-nav" aria-label="Categories">
-      <div class="cat-nav-inner">
+      <div class="cat-icon-row">
         <div class="mega-wrap">
           <button class="mega-trigger" type="button" data-mega-toggle aria-expanded="false" aria-haspopup="true">
-            ${icon("grid")} ${escapeHtml(t("allCategories"))}
+            <span class="cat-round-icon">${icon("grid")}</span>
+            <span class="cat-round-label">${escapeHtml(t("all"))}</span>
           </button>
           <div class="mega-panel" hidden data-mega-panel>
             ${megaMenuHtml(categories, products, categoriesPage)}
           </div>
         </div>
-        <a class="cat-nav-link" href="${shops}">${escapeHtml(t("stores"))}</a>
-        <a class="cat-nav-link ${page === "reels" ? "is-active" : ""}" href="${reels}">${escapeHtml(t("reels"))}</a>
-        <a class="cat-nav-link ${page === "lives" ? "is-active" : ""}" href="${lives}">${escapeHtml(t("live"))}</a>
-        <a class="cat-nav-link ${page === "sell" ? "is-active" : ""}" href="${sell}">${escapeHtml(t("sellOnEme"))}</a>
-        ${roots.slice(0, 8).map((row) => `
-          <a class="cat-nav-link desktop-only ${row.slug === category ? "is-active" : ""}" href="${products}?category=${encodeURIComponent(row.slug)}">
-            ${escapeHtml(row.name)}
+        <div class="cat-round-strip" data-cat-strip>
+          <a class="cat-round" href="${shops}">
+            <span class="cat-round-icon">${icon("store")}</span>
+            <span class="cat-round-label">${escapeHtml(t("stores"))}</span>
           </a>
-        `).join("")}
-      </div>
-      <div class="cat-round-strip" aria-label="Browse categories">
-        ${roots.slice(0, 12).map((row) => categoryRoundHtml(row, products)).join("")}
+          <a class="cat-round" href="${reels}">
+            <span class="cat-round-icon">${icon("reels")}</span>
+            <span class="cat-round-label">${escapeHtml(t("reels"))}</span>
+          </a>
+          <a class="cat-round" href="${lives}">
+            <span class="cat-round-icon">${icon("live")}</span>
+            <span class="cat-round-label">${escapeHtml(t("live"))}</span>
+          </a>
+          ${roots.map((row) => categoryRoundHtml(row, products)).join("")}
+        </div>
+        <button class="cat-scroll" type="button" data-cat-scroll aria-label="${escapeHtml(t("allCategories"))}">${icon("chevronRight")}</button>
       </div>
     </nav>
   `;
@@ -307,6 +313,7 @@ function renderChrome(profile, counts, page, categories) {
 
   bindHeaderInteractions(header, home);
   applyI18n(document);
+  mountShopChat();
 }
 
 /**
@@ -323,6 +330,11 @@ function bindHeaderInteractions(header, home) {
       msg.textContent = t(announceKeys[announceIndex]);
     }, 4500);
   }
+
+  header.querySelector("[data-cat-scroll]")?.addEventListener("click", () => {
+    const strip = header.querySelector("[data-cat-strip]");
+    if (strip instanceof HTMLElement) strip.scrollBy({ left: 280, behavior: "smooth" });
+  });
 
   header.querySelector("[data-announce-close]")?.addEventListener("click", () => {
     header.querySelector("[data-announce]")?.classList.add("is-hidden");
@@ -507,8 +519,7 @@ function accountMenu(name, roleLabel, cart, wishlist) {
 function guestLinks(login, register) {
   return `
     <div class="guest-links">
-      <a class="button button-ghost" href="${login}">${escapeHtml(t("login"))}</a>
-      <a class="button button-primary" href="${register}">${escapeHtml(t("register"))}</a>
+      <a class="button header-login" href="${login}">${escapeHtml(t("login"))}</a>
     </div>
     <div class="account guest-menu">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">

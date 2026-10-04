@@ -1,6 +1,6 @@
 import { listApprovedShops } from "./api/shopsApi.js";
 import { authErrorMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=9";
+import { mountShell, toast } from "./components.js?v=11";
 import { escapeHtml } from "./html.js";
 import { shopCardHtml } from "./shopView.js";
 import { showState } from "./ui-state.js";

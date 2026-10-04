@@ -8,7 +8,7 @@ import {
   validateAddressInput,
 } from "../api/addressApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, openModal, toast } from "../components.js?v=9";
+import { mountShell, openModal, toast } from "../components.js?v=11";
 import { divisionChoices } from "../bdDivisions.js";
 import { escapeHtml } from "../html.js";
 import { showState } from "../ui-state.js";

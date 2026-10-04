@@ -4,7 +4,7 @@
 
 import { listReelComments, postReelComment } from "../api/reelsApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=9";
+import { toast } from "../components.js?v=11";
 import { escapeHtml } from "../html.js";
 import { loginRedirect } from "../paths.js?v=4";
 import { closeProductSheet } from "./productSheet.js";
@@ -28,7 +28,7 @@ export async function openCommentsSheet(host, reelId) {
         <button class="icon-button reel-sheet-close" type="button" data-close-sheet aria-label="Close">×</button>
       </div>
       <div class="reel-comments" data-comments-list aria-busy="true">
-        <div class="skeleton skeleton-card"></div>
+        <p class="empty">Loading comments…</p>
       </div>
       <form class="reel-comment-form" data-comment-form>
         <p class="reel-reply-target" data-reply-target hidden></p>
@@ -46,9 +46,8 @@ export async function openCommentsSheet(host, reelId) {
   });
 
   const list = sheet.querySelector("[data-comments-list]");
-  await renderComments(list, reelId, sheet.querySelector("[data-comment-form]"));
-
-  sheet.querySelector("[data-comment-form]")?.addEventListener("submit", async (event) => {
+  const form = sheet.querySelector("[data-comment-form]");
+  form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const profile = await getCurrentProfile();
     if (!profile) {
@@ -73,6 +72,8 @@ export async function openCommentsSheet(host, reelId) {
       if (button instanceof HTMLButtonElement) button.disabled = false;
     }
   });
+
+  await renderComments(list, reelId, form instanceof HTMLFormElement ? form : null);
 }
 
 /**

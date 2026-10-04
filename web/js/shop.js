@@ -3,7 +3,7 @@ import { getShop, listShopLives, listShopReels } from "./api/shopsApi.js";
 import { followShop, followedShopIds, unfollowShop } from "./api/reelsApi.js";
 import { wishlistIds } from "./api/wishlistApi.js";
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=9";
+import { mountShell, toast } from "./components.js?v=11";
 import { escapeHtml } from "./html.js";
 import { bindCatalogActions, productCardHtml } from "./productView.js?v=9";
 import { loginRedirect, url } from "./paths.js?v=4";

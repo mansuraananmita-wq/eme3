@@ -4,7 +4,7 @@
 
 import { PROMO_POPUP } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
-import { t } from "./i18n.js?v=9";
+import { t } from "./i18n.js?v=11";
 import { url } from "./paths.js?v=4";
 
 const STORAGE_KEY = "eme_promo_popup_day";

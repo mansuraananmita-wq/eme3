@@ -30,9 +30,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/tokens.css?v=9">
-    <link rel="stylesheet" href="css/base.css?v=9">
+    <link rel="stylesheet" href="css/base.css?v=11">
     <link rel="stylesheet" href="css/marketplace.css">
-    <link rel="stylesheet" href="css/home.css?v=9">
+    <link rel="stylesheet" href="css/home.css?v=12">
     <link rel="stylesheet" href="css/reels.css">
     <link rel="stylesheet" href="css/live.css?v=9">
     <link rel="stylesheet" href="css/reels.css">
@@ -43,21 +43,25 @@
     <main id="main">
       <div class="wrap home-page">
         <!-- 1. Hero block -->
-        <section class="home-hero" aria-label="Offers" id="home-hero">
-          <nav class="hero-cats" aria-label="Top categories" id="hero-cats">
-            <div class="skeleton skeleton-card" style="height:280px"></div>
-          </nav>
-          <div class="hero-carousel home-carousel" id="hero-carousel" aria-roledescription="carousel" aria-label="Sale banners">
-            <div class="hero-track" data-carousel-track id="hero-track" aria-busy="true">
-              <div class="skeleton skeleton-card hero-skeleton"></div>
-            </div>
-            <div class="hero-nav">
-              <button type="button" data-carousel-prev aria-label="Previous banner">‹</button>
-              <button type="button" data-carousel-next aria-label="Next banner">›</button>
-            </div>
-            <div class="hero-dots" data-carousel-dots id="hero-dots"></div>
+        <section class="deal-hero" aria-label="Offers" id="home-hero">
+          <article class="deal-main" id="deal-main" aria-busy="true">
+            <p class="deal-kicker" data-i18n="weeklyDrop">This week's drop</p>
+            <h2 data-i18n="shopDeals">Shop the latest deals</h2>
+            <a class="deal-cta" href="pages/products.html?sort=trending" data-i18n="shopNow">Shop now</a>
+          </article>
+          <div class="deal-side">
+            <article class="deal-arrival" id="deal-arrival">
+              <p class="deal-kicker" data-i18n="justLanded">Just landed</p>
+              <h3 data-i18n="newArrivals">New arrivals</h3>
+              <a class="deal-cta" href="pages/products.html?sort=newest" data-i18n="shopNow">Shop now</a>
+            </article>
+            <article class="deal-trust">
+              <p class="deal-kicker" data-i18n="whyEmeKicker">Approved shops</p>
+              <h3 data-i18n="whyEme">Why shop on EME</h3>
+              <p data-i18n="whyEmeBody">Approved shops, cash on delivery, and help after the order arrives.</p>
+              <a class="deal-cta deal-cta-light" href="pages/shops.html" data-i18n="allStores">All stores</a>
+            </article>
           </div>
-          <div class="hero-side" id="hero-side" aria-label="Promo banners"></div>
         </section>
 
         <!-- 2. Trust strip -->
@@ -189,7 +193,7 @@
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
     <noscript><p class="empty wrap">EME needs JavaScript to load the shop.</p></noscript>
-    <script type="module" src="js/home.js?v=9"></script>
+    <script type="module" src="js/home.js?v=12"></script>
     <script>
       setTimeout(function () {
         var header = document.getElementById("site-header");

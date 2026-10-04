@@ -444,34 +444,43 @@ body.reels-lock {
 
 .reels-overlays {
   position: relative;
-  z-index: 40;
+  z-index: 80;
 }
 
 /* Shared sheets */
 .reel-sheet {
   position: fixed;
   inset: 0;
-  z-index: 55;
-  display: grid;
-  align-items: end;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
 }
 
 .reel-sheet-backdrop {
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / 45%);
+  pointer-events: auto;
 }
 
 .reel-sheet-panel {
   position: relative;
-  max-height: min(70dvh, 560px);
-  overflow: auto;
+  width: min(400px, 100%);
+  height: auto;
+  max-height: min(420px, 58dvh);
+  overflow: hidden;
   background: var(--color-surface);
   color: var(--color-text);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: var(--space-4);
-  display: grid;
+  border-radius: 18px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
+  pointer-events: auto;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 35%);
 }
 
 .reel-sheet-head {
@@ -479,12 +488,26 @@ body.reels-lock {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
+  flex: 0 0 auto;
+}
+
+.reel-sheet-head h2 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .reel-sheet-list,
 .reel-comments {
   display: grid;
   gap: var(--space-3);
+  align-content: start;
+  min-height: 0;
+  overflow: auto;
+}
+
+.reel-comments {
+  flex: 1 1 auto;
+  max-height: 220px;
 }
 
 .reel-product-row {
@@ -536,6 +559,14 @@ body.reels-lock {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--space-2);
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.reel-comment-form .button {
+  width: auto;
+  min-height: 40px;
+  padding: 0 14px;
 }
 
 .reel-reply-target {

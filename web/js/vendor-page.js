@@ -21,7 +21,7 @@ import {
   uploadShopImage,
 } from "./api/vendorApi.js?v=3";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js?v=9";
+import { mountShell, openModal, toast } from "./components.js?v=11";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
 import { productImageUrl } from "./media.js";

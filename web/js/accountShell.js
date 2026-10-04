@@ -3,10 +3,10 @@
  */
 
 import { signOut } from "./auth.js?v=3";
-import { openModal, toast } from "./components.js?v=9";
+import { openModal, toast } from "./components.js?v=11";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js?v=4";
-import { t } from "./i18n.js?v=9";
+import { t } from "./i18n.js?v=11";
 
 /**
  * Injects account navigation into #account-nav.

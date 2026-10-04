@@ -295,6 +295,40 @@
   gap: var(--space-2);
 }
 
+.admin-wrap {
+  padding-bottom: var(--space-8);
+}
+
+.admin-tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin: var(--space-3) 0;
+}
+
+.admin-tabs button {
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-tabs button.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.admin-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .checkout-layout {
   display: grid;
   gap: var(--space-4);

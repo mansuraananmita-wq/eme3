@@ -73,7 +73,7 @@ export async function getMyOrder(id) {
   if (!profile) throw new Error("Sign in to view orders.");
 
   const supabase = getSupabase();
-  const { data, error } = await supabase
+  let query = supabase
     .from("orders")
     .select(`
       ${ORDER_COLUMNS},
@@ -89,9 +89,11 @@ export async function getMyOrder(id) {
         id, provider, provider_reference, amount, currency, status, created_at
       )
     `)
-    .eq("id", id)
-    .eq("customer_id", profile.id)
-    .maybeSingle();
+    .eq("id", id);
+
+  if (profile.role !== "admin") query = query.eq("customer_id", profile.id);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) throw error;
   if (!data) return null;

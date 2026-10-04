@@ -42,6 +42,7 @@ If you use Live Server from the repo root, open **`http://localhost:5500/web/`**
 - `/pages/account/orders.html` — customer order list
 - `/pages/account/order.html?id=` — order detail, timeline, cancel while pending
 - `/pages/vendor-orders.html` — **approved vendors**: own line items + status transitions
+- `/pages/admin.html` — **admins only** (`profiles.role = admin`): vendors, moderation, all orders
 - `/pages/reels.html` — full-screen reels feed (`?start=<id>` opens at that reel)
 - `/pages/reel.html?id=` — deep link into the same feed (scroll continues to next reels)
 - `/pages/vendor-reels.html` — **approved vendors only**: upload, tag products, publish, delete reels

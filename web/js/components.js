@@ -450,7 +450,9 @@ function accountMenu(name, roleLabel, cart, wishlist) {
   const orders = url("pages/account/orders.html");
   const vendorOrders = url("pages/vendor-orders.html");
   const vendorReels = url("pages/vendor-reels.html");
+  const admin = url("pages/admin.html");
   const isVendor = roleLabel === "Vendor";
+  const isAdmin = roleLabel === "Admin";
   return `
     <div class="account">
       <button class="header-link" type="button" data-account-toggle aria-expanded="false" aria-label="Account menu">
@@ -461,6 +463,7 @@ function accountMenu(name, roleLabel, cart, wishlist) {
         <p>${escapeHtml(name)}</p>
         <span class="badge">${escapeHtml(roleLabel)}</span>
         <a href="${profile}">Profile</a>
+        ${isAdmin ? `<a href="${admin}">Admin</a>` : ""}
         <a href="${orders}">Orders</a>
         ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
         ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}

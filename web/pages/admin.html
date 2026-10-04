@@ -28,6 +28,16 @@
     <main id="main">
       <div class="wrap admin-wrap">
         <h1>Admin</h1>
+        <div class="admin-tabs" id="admin-tabs" role="tablist">
+          <button type="button" data-tab="vendors" class="is-active" role="tab" aria-selected="true">Vendors</button>
+          <button type="button" data-tab="moderation" role="tab" aria-selected="false">Moderation</button>
+          <button type="button" data-tab="orders" role="tab" aria-selected="false">Orders</button>
+          <button type="button" data-tab="people" role="tab" aria-selected="false">People</button>
+          <button type="button" data-tab="categories" role="tab" aria-selected="false">Categories</button>
+          <button type="button" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+          <button type="button" data-tab="disputes" role="tab" aria-selected="false">Disputes</button>
+          <button type="button" data-tab="payouts" role="tab" aria-selected="false">Payouts</button>
+        </div>
         <div id="admin-root" aria-busy="true">
           <div class="skeleton skeleton-card"></div>
         </div>

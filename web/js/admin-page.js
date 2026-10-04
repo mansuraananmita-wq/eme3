@@ -46,6 +46,22 @@ const TABS = [
   ["payouts", "Payouts"],
 ];
 
+let unlocked = false;
+
+document.querySelectorAll("#admin-tabs [data-tab]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const next = button.getAttribute("data-tab");
+    if (!TABS.some(([id]) => id === next)) return;
+    tab = /** @type {typeof tab} */ (next);
+    document.querySelectorAll("#admin-tabs [data-tab]").forEach((item) => {
+      const on = item.getAttribute("data-tab") === tab;
+      item.classList.toggle("is-active", on);
+      item.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    if (unlocked) render();
+  });
+});
+
 boot();
 
 async function boot() {
@@ -89,6 +105,7 @@ async function boot() {
     }
   }
 
+  unlocked = true;
   await render();
 }
 
@@ -114,24 +131,7 @@ function showGate(message, href, label) {
 async function render() {
   if (!(root instanceof HTMLElement)) return;
   root.setAttribute("aria-busy", "true");
-  root.innerHTML = `
-    <div class="admin-tabs" role="tablist">
-      ${TABS.map(([id, label]) => `
-        <button type="button" data-tab="${id}" class="${tab === id ? "is-active" : ""}" role="tab" aria-selected="${tab === id}">${label}</button>
-      `).join("")}
-    </div>
-    <div id="admin-panel" aria-busy="true"><div class="skeleton skeleton-card"></div></div>
-  `;
-
-  root.querySelectorAll("[data-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const next = button.getAttribute("data-tab");
-      if (TABS.some(([id]) => id === next)) {
-        tab = /** @type {typeof tab} */ (next);
-        render();
-      }
-    });
-  });
+  root.innerHTML = `<div id="admin-panel" aria-busy="true"><div class="skeleton skeleton-card"></div></div>`;
 
   const panel = root.querySelector("#admin-panel");
   if (!(panel instanceof HTMLElement)) return;

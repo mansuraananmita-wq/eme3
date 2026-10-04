@@ -60,6 +60,8 @@ export function getSupabase() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // navigator.locks can leave getUser() pending, so the admin page never paints.
+        lock: async (_name, _acquireTimeout, fn) => fn(),
       },
     });
   }

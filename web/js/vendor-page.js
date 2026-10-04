@@ -2,6 +2,7 @@ import { listCategories } from "./api/categoriesApi.js";
 import { getMyShopApplication, slugifyShopName } from "./api/shopsApi.js";
 import {
   createScheduledLive,
+  startLiveNow,
   deleteProduct,
   deleteProductImage,
   listMyConversations,
@@ -36,7 +37,7 @@ let shop = null;
 /** @type {boolean} */
 let approved = false;
 /** @type {string} */
-let tab = "products";
+let tab = window.location.hash === "#live" ? "live" : "products";
 /** @type {Array<object>} */
 let categories = [];
 /** @type {string | null} */
@@ -81,7 +82,20 @@ async function boot() {
     }
     approved = shop.status === "approved";
     categories = await listCategories();
+    if (window.location.hash === "#live") tab = "live";
     render();
+    document.querySelector("[data-start-live]")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      tab = "live";
+      history.replaceState(null, "", "#live");
+      render();
+      document.getElementById("studio-panel")?.scrollIntoView({ block: "start" });
+    });
+    window.addEventListener("hashchange", () => {
+      if (window.location.hash !== "#live") return;
+      tab = "live";
+      render();
+    });
   } catch (error) {
     console.error("Vendor studio:", error);
     root.setAttribute("aria-busy", "false");
@@ -496,17 +510,40 @@ async function renderLives(panel) {
   const sellable = products.filter((product) => product.status === "active");
   panel.setAttribute("aria-busy", "false");
   panel.innerHTML = `
+    <form id="live-now-form" class="account-card" novalidate>
+      <h2>Start live now</h2>
+      <p class="muted">This room shows on the customer home page while you are on air. The next screen asks for the camera.</p>
+      <label class="field"><span>Live title</span><input name="title" required minlength="2" maxlength="140" placeholder="Evening sale"></label>
+      <button class="button button-primary" type="submit">Go live</button>
+    </form>
     <form id="live-form" class="account-card" novalidate>
-      <h2>Schedule a live</h2>
+      <h2>Schedule for later</h2>
       <label class="field"><span>Title</span><input name="title" required maxlength="140"></label>
       <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="500"></textarea></label>
       <label class="field"><span>Starts</span><input name="scheduled_at" type="datetime-local" required></label>
-      <button class="button button-primary" type="submit">Create scheduled live</button>
+      <button class="button button-ghost" type="submit">Create scheduled live</button>
     </form>
     <div class="admin-list">
       ${lives.map((stream) => liveCard(stream, sellable)).join("") || `<p class="muted">No live rooms yet.</p>`}
     </div>
   `;
+  panel.querySelector("#live-now-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!(form instanceof HTMLFormElement)) return;
+    const title = String(new FormData(form).get("title") || "");
+    const button = form.querySelector("button");
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+    try {
+      const id = await startLiveNow({ title });
+      toast("You are live. Allow the camera when the browser asks.", "success");
+      window.location.assign(`${url("pages/live.html")}?id=${encodeURIComponent(id)}`);
+    } catch (error) {
+      console.error("start live now:", error);
+      toast(authErrorMessage(error), "error");
+      if (button instanceof HTMLButtonElement) button.disabled = false;
+    }
+  });
   panel.querySelector("#live-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -590,7 +627,12 @@ function liveCard(stream, products) {
 async function changeLive(id, status, panel) {
   try {
     await setLiveStatus(id, status);
-    toast(status === "live" ? "You are live." : "Live ended.", "success");
+    if (status === "live") {
+      toast("You are live. Allow the camera if the browser asks.", "success");
+      window.location.assign(`${url("pages/live.html")}?id=${encodeURIComponent(id)}`);
+      return;
+    }
+    toast("Live ended.", "success");
     await renderLives(panel);
   } catch (error) {
     console.error("Live status:", error);

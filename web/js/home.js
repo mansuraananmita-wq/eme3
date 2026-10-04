@@ -317,38 +317,34 @@ function renderLivesHome(lives) {
   if (!lives.length) {
     livesHomeSection.hidden = false;
     livesHomeRow.setAttribute("aria-busy", "false");
-    livesHomeRow.innerHTML = `<p class="muted">No shop is live right now. Vendors start a room from Vendor studio, then it appears here and on <a href="${url("pages/lives.html")}">Live</a>.</p>`;
+    livesHomeRow.innerHTML = `<p class="muted">No shop is live right now. A live shop shows here the same way reels do.</p>`;
     return;
   }
   livesHomeSection.hidden = false;
   livesHomeRow.setAttribute("aria-busy", "false");
-  livesHomeRow.innerHTML = lives
-    .map((stream) => {
-      const href = `${url("pages/live.html")}?id=${encodeURIComponent(stream.id)}`;
-      const shop = stream.shop;
-      const thumb = stream.thumbnailUrl
-        ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
-        : "";
-      const peak =
-        Number(stream.peakViewers) > 0 ? ` · Peak ${escapeHtml(String(stream.peakViewers))}` : "";
-      return `
-        <article class="live-card">
-          <a class="live-card-media" href="${href}">
-            ${thumb}
-            <span class="live-badge is-live">LIVE</span>
-          </a>
-          <div class="live-card-body">
-            <a class="live-card-shop" href="${shop?.slug ? shopHref(shop.slug) : url("pages/shops.html")}">
-              ${shopLogoHtml(shop, "shop-logo-xs")}
-              <span>${escapeHtml(shop?.shop_name || "Shop")}</span>
-            </a>
-            <h3><a href="${href}">${escapeHtml(stream.title)}</a></h3>
-            <p class="live-card-meta">Live now${peak}</p>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  livesHomeRow.className = "live-thumb-row";
+  livesHomeRow.innerHTML = lives.map((stream) => liveThumb(stream)).join("");
+}
+
+/**
+ * Portrait live card, same shape as a reel thumb.
+ * @param {object} stream
+ * @returns {string}
+ */
+function liveThumb(stream) {
+  const href = `${url("pages/live.html")}?id=${encodeURIComponent(stream.id)}`;
+  const shopName = stream.shop?.shop_name || stream.title || "Live";
+  const thumb = stream.thumbnailUrl
+    ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`
+    : `<span class="live-thumb-fallback">${escapeHtml(shopName.slice(0, 1))}</span>`;
+  return `
+    <a class="live-thumb" href="${href}">
+      ${thumb}
+      <span class="live-thumb-badge">LIVE</span>
+      <span class="live-thumb-play" aria-hidden="true">${icon("play")}</span>
+      <span class="live-thumb-label">${escapeHtml(shopName)}</span>
+    </a>
+  `;
 }
 
 /**

@@ -22,7 +22,7 @@ supabase functions deploy livekit-token
 supabase secrets set LIVEKIT_URL=wss://YOUR.livekit.cloud LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=...
 ```
 
-সিক্রেট না থাকলে রুম, চ্যাট, পিন প্রোডাক্ট থাকে। ক্যামেরা আসে না।
+সিক্রেট না থাকলেও হোস্টের ক্যামেরা লাইভ রুমে খোলে এবং দর্শক সেই রুমে ভিডিও দেখে। অনেক দর্শক বা আলাদা নেটওয়ার্কের জন্য LiveKit সিক্রেট লাগে। না থাকলে রুম, চ্যাট, পিন প্রোডাক্ট থাকে।
 
 6. Supabase → Authentication → URL configuration। Site URL আর Redirect URLs-এ যোগ করতে হবে:
 

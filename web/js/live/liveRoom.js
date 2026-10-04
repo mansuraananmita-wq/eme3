@@ -10,6 +10,8 @@ import {
   subscribeLiveRoom,
 } from "../api/liveApi.js";
 import { addToCart } from "../api/cartApi.js";
+import { listProducts } from "../api/productsApi.js";
+import { setLiveStatus } from "../api/vendorApi.js";
 import {
   followShop,
   followedShopIds,
@@ -25,7 +27,7 @@ import { shopHref, shopLogoHtml } from "../shopView.js";
 import { showState } from "../ui-state.js";
 import { openProductSheet } from "../reels/productSheet.js";
 import { getSupabase } from "../supabaseClient.js";
-import { mountVideo } from "./liveVideo.js";
+import { pickProductImage, productImageUrl } from "../media.js";
 
 const MAX_BODY = 500;
 const SEND_GAP_MS = 1000;
@@ -80,6 +82,10 @@ export async function mountLiveRoom(root, streamId) {
 
     const profile = await getCurrentProfile();
     canPublish = Boolean(profile && profile.id === stream.vendorId);
+    if (!stream.products?.length && stream.vendorId) {
+      stream.products = await shopProducts(stream.vendorId);
+      stream.pinnedProduct = stream.pinnedProduct || stream.products[0] || null;
+    }
     const followed = stream.shop?.profile_id
       ? await followedShopIds([stream.shop.profile_id]).catch(() => new Set())
       : new Set();
@@ -133,10 +139,17 @@ export async function mountLiveRoom(root, streamId) {
         if (patch.status === "ended" || patch.status === "removed") {
           videoHandle?.destroy();
           videoHandle = null;
+          root.querySelector("[data-end-live]")?.remove();
           showEndedState(stream);
         } else {
-          updateStatusChrome(stream);
-          renderPinned(stream);
+          const peak = root.querySelector("[data-peak]");
+          if (peak instanceof HTMLElement) {
+            if (Number(stream.peakViewers) > 0) {
+              peak.hidden = false;
+              peak.textContent = `Peak ${stream.peakViewers}`;
+            }
+          }
+          if (patch.pinned_product_id) renderPinned(stream);
         }
       },
     });
@@ -171,12 +184,17 @@ export async function mountLiveRoom(root, streamId) {
             <span class="live-peak" data-peak ${Number(data.peakViewers) > 0 ? "" : "hidden"}>
               Peak ${escapeHtml(String(data.peakViewers || 0))}
             </span>
+            ${canPublish && data.status === "live" ? `<button class="button live-end" type="button" data-end-live>End live</button>` : ""}
           </div>
           <div class="live-player" data-player></div>
           <div class="live-mobile-pin" data-pin-mobile></div>
           <div class="live-ended" data-ended hidden></div>
         </section>
         <aside class="live-side">
+          <header class="live-side-head">
+            <strong>${escapeHtml(data.title || "Live")}</strong>
+            <span>${escapeHtml(shop?.shop_name || "Shop")} · live shopping</span>
+          </header>
           <div class="live-side-pin" data-pin-desktop></div>
           <div class="live-chat" data-chat>
             <div class="live-chat-list" data-chat-list role="log" aria-live="polite"></div>
@@ -191,13 +209,13 @@ export async function mountLiveRoom(root, streamId) {
             <p class="live-chat-hint" data-chat-hint hidden></p>
           </div>
           <div class="live-side-actions">
-            <button class="button button-ghost" type="button" data-open-products ${data.products?.length ? "" : "disabled"}>
-              Products${data.products?.length ? ` (${data.products.length})` : ""}
+            <button class="button button-primary" type="button" data-open-products>
+              Shop products${data.products?.length ? ` (${data.products.length})` : ""}
             </button>
           </div>
         </aside>
-        <div class="live-overlays" data-overlays></div>
       </div>
+      <div class="live-overlays" data-overlays></div>
     `;
 
     const player = root.querySelector("[data-player]");
@@ -207,6 +225,10 @@ export async function mountLiveRoom(root, streamId) {
 
     renderPinned(data);
     bindRoom(data, ui);
+    const chatInput = root.querySelector("#live-chat-input");
+    if (chatInput instanceof HTMLInputElement && !chatInput.closest("[hidden]") && data.status === "live") {
+      chatInput.focus();
+    }
 
     if (data.status === "ended" || data.status === "removed") {
       showEndedState(data);
@@ -253,7 +275,30 @@ export async function mountLiveRoom(root, streamId) {
 
     root.querySelector("[data-open-products]")?.addEventListener("click", () => {
       if (!(overlays instanceof HTMLElement)) return;
-      openProductSheet(overlays, data.products || [], { title: "Live products" });
+      const products = stream?.products?.length ? stream.products : data.products || [];
+      if (!products.length) {
+        toast("This shop has no products for sale yet.", "info");
+        return;
+      }
+      openProductSheet(overlays, products, { title: "Shop products" });
+    });
+
+    root.querySelector("[data-end-live]")?.addEventListener("click", async () => {
+      const button = root.querySelector("[data-end-live]");
+      if (button instanceof HTMLButtonElement) button.disabled = true;
+      try {
+        await setLiveStatus(data.id, "ended");
+        videoHandle?.destroy();
+        videoHandle = null;
+        if (stream) stream.status = "ended";
+        button?.remove();
+        showEndedState({ ...data, status: "ended" });
+        toast("Live ended.", "success");
+      } catch (error) {
+        console.error("End live:", error);
+        toast(authErrorMessage(error), "error");
+        if (button instanceof HTMLButtonElement) button.disabled = false;
+      }
     });
 
     const form = root.querySelector("[data-chat-form]");
@@ -368,26 +413,6 @@ export async function mountLiveRoom(root, streamId) {
   /**
    * @param {object} data
    */
-  function updateStatusChrome(data) {
-    const peak = root.querySelector("[data-peak]");
-    if (peak instanceof HTMLElement) {
-      if (Number(data.peakViewers) > 0) {
-        peak.hidden = false;
-        peak.textContent = `Peak ${data.peakViewers}`;
-      } else {
-        peak.hidden = true;
-      }
-    }
-    const player = root.querySelector("[data-player]");
-    if (player instanceof HTMLElement) {
-      videoHandle?.destroy();
-      videoHandle = mountVideo(player, data, { publish: canPublish });
-    }
-  }
-
-  /**
-   * @param {object} data
-   */
   function showEndedState(data) {
     const panel = root.querySelector("[data-ended]");
     if (!(panel instanceof HTMLElement)) return;
@@ -474,6 +499,33 @@ export async function mountLiveRoom(root, streamId) {
     } catch {
       /* ignore */
     }
+  }
+}
+
+/**
+ * Active products from the shop when the live room has none attached.
+ * @param {string} vendorId
+ * @returns {Promise<Array<object>>}
+ */
+async function shopProducts(vendorId) {
+  try {
+    const page = await listProducts({ vendorId, limit: 12 });
+    return (page.rows || []).map((row) => {
+      const image = pickProductImage(row.product_images);
+      return {
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        price: row.price,
+        compare_at_price: row.compare_at_price,
+        currency: row.currency,
+        stock: row.stock,
+        imageUrl: image ? productImageUrl(image.storage_path) : "",
+      };
+    });
+  } catch (error) {
+    console.error("Live shop products:", error);
+    return [];
   }
 }
 

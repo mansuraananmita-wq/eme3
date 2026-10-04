@@ -346,6 +346,38 @@ export async function createScheduledLive(input) {
 }
 
 /**
+ * Opens a live room immediately and returns its id.
+ * @param {{ title: string, description?: string }} input
+ * @returns {Promise<string>}
+ */
+export async function startLiveNow(input) {
+  const profile = await requireProfile();
+  const title = String(input.title || "").trim();
+  if (title.length < 2 || title.length > 140) throw new Error("Title must be 2 to 140 characters.");
+  const now = new Date().toISOString();
+  const room = `eme-${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("live_streams")
+    .insert({
+      vendor_id: profile.id,
+      title,
+      description: String(input.description || "").trim() || null,
+      status: "live",
+      scheduled_at: now,
+      started_at: now,
+      livekit_room_name: room,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("start live:", error);
+    throw error;
+  }
+  return data.id;
+}
+
+/**
  * @param {string} streamId
  * @param {"live" | "ended"} status
  * @returns {Promise<void>}

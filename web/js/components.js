@@ -472,6 +472,7 @@ function accountMenu(name, roleLabel, cart, wishlist) {
         <a href="${following}">Following</a>
         <a href="${messages}">Messages</a>
         <a href="${vendorStudio}">Vendor studio</a>
+        <a href="${url("pages/vendor.html")}#live">Start live</a>
         ${isVendor ? `<a href="${vendorOrders}">Shop orders</a>` : ""}
         ${isVendor ? `<a href="${vendorReels}">Your reels</a>` : ""}
         <a href="${addresses}">Addresses</a>

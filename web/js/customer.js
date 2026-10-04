@@ -6,6 +6,7 @@ import { listWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js";
 import { mountShell, toast } from "./components.js";
 import { escapeHtml } from "./html.js";
+import { icon } from "./icons.js";
 import { url } from "./paths.js";
 
 const root = document.querySelector("#customer-root");
@@ -57,18 +58,17 @@ async function start() {
 
   const liveCards = lives.map((stream) => {
     const href = `${url("pages/live.html")}?id=${encodeURIComponent(stream.id)}`;
-    const shopName = stream.shop?.shop_name || "Shop";
+    const shopName = stream.shop?.shop_name || stream.title || "Live";
+    const thumb = stream.thumbnailUrl
+      ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy">`
+      : `<span class="live-thumb-fallback">${escapeHtml(shopName.slice(0, 1))}</span>`;
     return `
-      <article class="live-card">
-        <a class="live-card-media" href="${href}">
-          ${stream.thumbnailUrl ? `<img src="${escapeHtml(stream.thumbnailUrl)}" alt="" loading="lazy">` : ""}
-          <span class="live-badge is-live">LIVE</span>
-        </a>
-        <div class="live-card-body">
-          <h3><a href="${href}">${escapeHtml(stream.title || "Live")}</a></h3>
-          <p class="live-card-meta">${escapeHtml(shopName)}</p>
-        </div>
-      </article>
+      <a class="live-thumb" href="${href}">
+        ${thumb}
+        <span class="live-thumb-badge">LIVE</span>
+        <span class="live-thumb-play" aria-hidden="true">${icon("play")}</span>
+        <span class="live-thumb-label">${escapeHtml(shopName)}</span>
+      </a>
     `;
   }).join("");
 
@@ -89,8 +89,8 @@ async function start() {
         <a href="${url("pages/lives.html")}">All lives</a>
       </div>
       ${liveCards
-        ? `<div class="lives-home-row">${liveCards}</div>`
-        : `<p class="muted">No shop is live right now. When a vendor presses Go live in the studio, the room shows up here and on the Live page. You can watch without being a vendor.</p>`}
+        ? `<div class="live-thumb-row">${liveCards}</div>`
+        : `<p class="muted">No shop is live right now. When a shop goes live, it shows here like a reel.</p>`}
     </section>
     <section class="account-card">
       <h2>Use this same account</h2>

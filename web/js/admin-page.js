@@ -56,48 +56,59 @@ async function boot() {
     profile = await getCurrentProfile();
   } catch (error) {
     console.error("Admin profile:", error);
-    deny(authErrorMessage(error), url("index.html"));
+    showGate(authErrorMessage(error), url("index.html"), "Back home");
     return;
   }
 
   if (!profile) {
-    deny("Not allowed. Sign in with an admin account.", loginRedirect());
+    showGate(
+      "Sign in with an admin account to open Vendors, Moderation, and Orders.",
+      loginRedirect(),
+      "Sign in",
+    );
     return;
   }
 
-  let allowed = false;
+  if (profile.role !== "admin") {
+    showGate("This account is not an admin.", url("index.html"), "Back home");
+    return;
+  }
+
   try {
-    allowed = profile.role === "admin" && (await adminPanelAccess());
+    const allowed = await adminPanelAccess();
+    if (!allowed) {
+      showGate("This account is not an admin.", url("index.html"), "Back home");
+      return;
+    }
   } catch (error) {
     console.error("Admin access:", error);
-    deny(authErrorMessage(error), url("index.html"));
-    return;
-  }
-
-  if (!allowed) {
-    deny("Not allowed.", url("index.html"));
-    return;
+    const missingRpc = error && typeof error === "object" && "code" in error && error.code === "PGRST202";
+    if (!missingRpc) {
+      showGate(authErrorMessage(error), url("index.html"), "Back home");
+      return;
+    }
   }
 
   await render();
 }
 
 /**
+ * Stays on the admin page. A timed redirect was sending people to login
+ * before the Vendors, Moderation, and Orders tabs could render.
  * @param {string} message
- * @param {string} next
+ * @param {string} href
+ * @param {string} label
  */
-function deny(message, next) {
+function showGate(message, href, label) {
   if (!(root instanceof HTMLElement)) return;
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
     <div class="state-panel">
-      <p>Not allowed</p>
+      <p>Admin</p>
       <p class="muted">${escapeHtml(message)}</p>
+      <p><a class="button button-primary" href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>
     </div>
   `;
-  window.setTimeout(() => {
-    window.location.assign(next);
-  }, 1200);
 }
 
 async function render() {

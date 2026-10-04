@@ -108,14 +108,19 @@ export async function getSession() {
  */
 export async function getCurrentProfile() {
   const supabase = getSupabase();
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw sessionError;
-  if (!sessionData.session?.user) return null;
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    const missing = userError.name === "AuthSessionMissingError"
+      || /session missing/i.test(String(userError.message || ""));
+    if (missing) return null;
+    throw userError;
+  }
+  if (!userData.user) return null;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("id, role, full_name, phone, avatar_url, created_at, updated_at")
-    .eq("id", sessionData.session.user.id)
+    .eq("id", userData.user.id)
     .maybeSingle();
 
   if (error) throw error;
@@ -139,11 +144,13 @@ function ensureAuthListener() {
   try {
     const supabase = getSupabase();
     supabase.auth.onAuthStateChange(() => {
-      getCurrentProfile()
-        .catch(() => null)
-        .then((profile) => {
-          for (const listener of listeners) listener(profile);
-        });
+      window.setTimeout(() => {
+        getCurrentProfile()
+          .catch(() => null)
+          .then((profile) => {
+            for (const listener of listeners) listener(profile);
+          });
+      }, 0);
     });
   } catch {
     listenerReady = false;

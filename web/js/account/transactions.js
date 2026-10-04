@@ -1,10 +1,10 @@
 import { mountAccountNav } from "../accountShell.js";
 import { listMyTransactions } from "../api/ordersApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, toast } from "../components.js?v=6";
+import { mountShell, toast } from "../components.js?v=8";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
-import { t } from "../i18n.js";
+import { t } from "../i18n.js?v=8";
 import { url } from "../paths.js?v=4";
 import { showState } from "../ui-state.js";
 

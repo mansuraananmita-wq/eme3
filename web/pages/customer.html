@@ -29,7 +29,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/tokens.css">
-    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/base.css?v=8">
     <link rel="stylesheet" href="../css/marketplace.css">
     <link rel="stylesheet" href="../css/account.css">
     <link rel="stylesheet" href="../css/live.css">
@@ -41,7 +41,7 @@
       <div class="wrap account-layout">
         <aside id="account-nav"></aside>
         <div class="account-main">
-          <h1>My account</h1>
+          <h1 data-i18n="myAccount">My account</h1>
           <p class="muted">Customer home. Orders, saved shops, and messages stay here. Selling and admin are separate pages.</p>
           <div id="customer-root" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
@@ -53,6 +53,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/customer.js?v=6"></script>
+    <script type="module" src="../js/customer.js?v=7"></script>
   </body>
 </html>

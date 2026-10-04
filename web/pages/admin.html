@@ -29,7 +29,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/tokens.css">
-    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/base.css?v=8">
     <link rel="stylesheet" href="../css/marketplace.css">
     <link rel="stylesheet" href="../css/account.css">
   </head>
@@ -38,18 +38,18 @@
     <header class="site-header" id="site-header"></header>
     <main id="main">
       <div class="wrap admin-wrap">
-        <h1>Admin</h1>
-        <p class="muted">Dashboard first, then vendors, catalog, and orders.</p>
+        <h1 data-i18n="admin">Admin</h1>
+        <p class="muted" data-i18n="dashLead">Dashboard first, then vendors, catalog, and orders.</p>
         <div class="admin-tabs" id="admin-tabs" role="tablist">
-          <button type="button" data-tab="dashboard" class="is-active" role="tab" aria-selected="true">Dashboard</button>
-          <button type="button" data-tab="vendors" role="tab" aria-selected="false">Vendors</button>
-          <button type="button" data-tab="moderation" role="tab" aria-selected="false">Moderation</button>
-          <button type="button" data-tab="orders" role="tab" aria-selected="false">Orders</button>
-          <button type="button" data-tab="disputes" role="tab" aria-selected="false">Disputes</button>
-          <button type="button" data-tab="payouts" role="tab" aria-selected="false">Payouts</button>
-          <button type="button" data-tab="people" role="tab" aria-selected="false">People</button>
-          <button type="button" data-tab="categories" role="tab" aria-selected="false">Catalog</button>
-          <button type="button" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+          <button type="button" data-tab="dashboard" class="is-active" role="tab" aria-selected="true" data-i18n="dashboard">Dashboard</button>
+          <button type="button" data-tab="vendors" role="tab" aria-selected="false" data-i18n="vendors">Vendors</button>
+          <button type="button" data-tab="moderation" role="tab" aria-selected="false" data-i18n="moderation">Moderation</button>
+          <button type="button" data-tab="orders" role="tab" aria-selected="false" data-i18n="orders">Orders</button>
+          <button type="button" data-tab="disputes" role="tab" aria-selected="false" data-i18n="disputes">Disputes</button>
+          <button type="button" data-tab="payouts" role="tab" aria-selected="false" data-i18n="payouts">Payouts</button>
+          <button type="button" data-tab="people" role="tab" aria-selected="false" data-i18n="people">People</button>
+          <button type="button" data-tab="categories" role="tab" aria-selected="false" data-i18n="catalog">Catalog</button>
+          <button type="button" data-tab="settings" role="tab" aria-selected="false" data-i18n="settings">Settings</button>
         </div>
         <div id="admin-root" aria-busy="true">
           <div class="skeleton skeleton-card"></div>
@@ -60,6 +60,6 @@
     <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile"></nav>
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
-    <script type="module" src="../js/admin-page.js?v=6"></script>
+    <script type="module" src="../js/admin-page.js?v=8"></script>
   </body>
 </html>

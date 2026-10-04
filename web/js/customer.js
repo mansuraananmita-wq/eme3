@@ -4,9 +4,10 @@ import { listMyOrders } from "./api/ordersApi.js";
 import { listFollowedShops } from "./api/shopsApi.js";
 import { listWishlist } from "./api/wishlistApi.js";
 import { authErrorMessage, claimAccountRole, requireUser, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=6";
+import { mountShell, toast } from "./components.js?v=8";
 import { escapeHtml } from "./html.js";
 import { icon } from "./icons.js";
+import { t } from "./i18n.js?v=8";
 import { url } from "./paths.js?v=4";
 
 const root = document.querySelector("#customer-root");
@@ -36,17 +37,18 @@ async function start() {
     toast(authErrorMessage(error), "error");
   }
 
-  const name = profile.full_name?.trim() || "there";
+  const name = profile.full_name?.trim() || t("account");
+  const roleKey = profile.role === "admin" ? "roleAdmin" : profile.role === "vendor" ? "roleVendor" : "roleCustomer";
   const cards = [
-    ["Orders", `${orders} orders`, url("pages/account/orders.html")],
-    ["Wishlist", `${saved} saved products`, url("pages/wishlist.html")],
-    ["Following", `${shops} shops`, url("pages/following.html")],
-    ["Messages", "Chat with a shop", url("pages/chat.html")],
-    ["Live", "Watch shops that are live", url("pages/lives.html")],
-    ["Addresses", "Delivery addresses", url("pages/account/addresses.html")],
-    ["Profile", "Name, photo, password", url("pages/account/profile.html")],
-    ["Vendor studio", "Products, shop, and go live", url("pages/vendor.html")],
-    ["Admin", "Vendors, orders, payouts", url("pages/admin.html")],
+    [t("orders"), `${orders} ${t("ordersCount")}`, url("pages/account/orders.html")],
+    [t("wishlist"), `${saved} ${t("savedProducts")}`, url("pages/wishlist.html")],
+    [t("following"), `${shops} ${t("shopsCount")}`, url("pages/following.html")],
+    [t("messages"), t("chatWithShop"), url("pages/chat.html")],
+    [t("live"), t("watchLiveShops"), url("pages/lives.html")],
+    [t("addresses"), t("deliveryAddresses"), url("pages/account/addresses.html")],
+    [t("profile"), t("profileHint"), url("pages/account/profile.html")],
+    [t("vendorStudio"), t("vendorStudioHint"), url("pages/vendor.html")],
+    [t("admin"), t("adminHint"), url("pages/admin.html")],
   ];
 
   let lives = [];
@@ -74,7 +76,7 @@ async function start() {
 
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
-    <p>Hello, ${escapeHtml(name)}. This login is <strong>${escapeHtml(profile.role)}</strong>.</p>
+    <p>${escapeHtml(t("hello"))}, ${escapeHtml(name)}. ${escapeHtml(t("loginIs"))} <strong>${escapeHtml(t(roleKey))}</strong>.</p>
     <div class="hub-grid">
       ${cards.map(([title, detail, href]) => `
         <a class="hub-card" href="${href}">
@@ -85,25 +87,25 @@ async function start() {
     </div>
     <section class="account-card">
       <div class="vendor-orders-head">
-        <h2>Live now</h2>
-        <a href="${url("pages/lives.html")}">All lives</a>
+        <h2>${escapeHtml(t("liveNowTitle"))}</h2>
+        <a href="${url("pages/lives.html")}">${escapeHtml(t("allLives"))}</a>
       </div>
       ${liveCards
         ? `<div class="live-thumb-row">${liveCards}</div>`
-        : `<p class="muted">No shop is live right now. When a shop goes live, it shows here like a reel.</p>`}
+        : `<p class="muted">${escapeHtml(t("noLiveHome"))}</p>`}
     </section>
     <section class="account-card">
-      <h2>Use this same account</h2>
-      <p class="muted">Vendor studio and Admin are real pages. Switch this login if you want to open them. A new account can also pick the role on the register page.</p>
+      <h2>${escapeHtml(t("sameAccount"))}</h2>
+      <p class="muted">${escapeHtml(t("sameAccountHint"))}</p>
       ${profile.role === "vendor" ? "" : `
         <label class="field">
-          <span>Shop name</span>
-          <input id="claim-shop-name" maxlength="80" placeholder="My shop">
+          <span>${escapeHtml(t("shopName"))}</span>
+          <input id="claim-shop-name" maxlength="80" placeholder="${escapeHtml(t("myShop"))}">
         </label>
-        <button class="button button-primary" type="button" id="become-vendor">Use this account as vendor</button>
+        <button class="button button-primary" type="button" id="become-vendor">${escapeHtml(t("useAsVendor"))}</button>
       `}
       ${profile.role === "admin" ? "" : `
-        <button class="button button-primary" type="button" id="become-admin">Use this account as admin</button>
+        <button class="button button-primary" type="button" id="become-admin">${escapeHtml(t("useAsAdmin"))}</button>
       `}
     </section>
   `;
@@ -112,12 +114,12 @@ async function start() {
     const input = root.querySelector("#claim-shop-name");
     const shopName = input instanceof HTMLInputElement ? input.value.trim() : "";
     if (shopName && (shopName.length < 2 || shopName.length > 80)) {
-      toast("Shop name must be 2 to 80 characters.", "error");
+      toast(t("shopNameInvalid"), "error");
       return;
     }
     try {
       await claimAccountRole("vendor", shopName);
-      toast("This account is a vendor. Opening the studio.", "success");
+      toast(t("becameVendor"), "success");
       window.location.assign(url("pages/vendor.html"));
     } catch (error) {
       console.error("claim vendor:", error);
@@ -128,7 +130,7 @@ async function start() {
   root.querySelector("#become-admin")?.addEventListener("click", async () => {
     try {
       await claimAccountRole("admin");
-      toast("This account is an admin. Opening the admin desk.", "success");
+      toast(t("becameAdmin"), "success");
       window.location.assign(url("pages/admin.html"));
     } catch (error) {
       console.error("claim admin:", error);

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="148" height="44" viewBox="0 0 148 44" role="img" aria-label="eme">
+  <g transform="translate(0,1) scale(0.19)">
+    <path d="M 65 80 C 65 35, 135 35, 135 80" fill="none" stroke="#E66A00" stroke-width="14" stroke-linecap="round"/>
+    <path d="M 30 75 L 170 75 C 182 75, 190 86, 187 98 L 168 200 C 166 210, 157 218, 147 218 L 53 218 C 43 218, 34 210, 32 200 L 13 98 C 10 86, 18 75, 30 75 Z" fill="#F57224"/>
+    <path d="M 46 110 Q 75 160 100 115 Q 125 160 154 110" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="100" cy="165" r="9" fill="#FFFFFF"/>
+    <circle cx="65" cy="160" r="5" fill="#FFE2C7"/>
+    <circle cx="135" cy="160" r="5" fill="#FFE2C7"/>
+    <line x1="65" y1="160" x2="100" y2="165" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="3,3"/>
+    <line x1="135" y1="160" x2="100" y2="165" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="3,3"/>
+  </g>
+  <text x="46" y="30" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="800" letter-spacing="-0.6" fill="#F4F6F8">e<tspan fill="#F57224">m</tspan>e</text>
+  <circle cx="108" cy="10" r="3" fill="#F57224"/>
+</svg>

@@ -21,12 +21,13 @@ import {
   setPayoutStatus,
   setUserRole,
   setVendorStatus,
-} from "./api/adminApi.js";
+} from "./api/adminApi.js?v=7";
 import { slugifyShopName } from "./api/shopsApi.js";
 import { authErrorMessage, claimAccountRole, getCurrentProfile, roleChangeMessage } from "./auth.js?v=3";
-import { mountShell, openModal, toast } from "./components.js?v=6";
+import { mountShell, openModal, toast } from "./components.js?v=8";
 import { formatMoney } from "./format.js";
 import { escapeHtml } from "./html.js";
+import { t } from "./i18n.js?v=8";
 import { loginRedirect, url } from "./paths.js?v=4";
 import { showState } from "./ui-state.js";
 
@@ -69,24 +70,24 @@ async function boot() {
     profile = await getCurrentProfile();
   } catch (error) {
     console.error("Admin profile:", error);
-    showGate(authErrorMessage(error), url("index.html"), "Back home");
+    showGate(authErrorMessage(error), url("index.html"), t("backHome"));
     return;
   }
 
   if (!profile) {
     showGate(
-      "Sign in with an admin account to open Vendors, Moderation, and Orders.",
+      t("adminSignIn"),
       loginRedirect(),
-      "Sign in",
+      t("signIn"),
     );
     return;
   }
 
   if (profile.role !== "admin") {
     showGate(
-      "This page is the admin desk. This login is not an admin yet. Use the button to switch this same account, or register a new account and pick Admin.",
+      t("adminNotYet"),
       url("pages/customer.html"),
-      "My account",
+      t("myAccount"),
       "admin",
     );
     return;
@@ -95,14 +96,14 @@ async function boot() {
   try {
     const allowed = await adminPanelAccess();
     if (!allowed) {
-      showGate("This account is not an admin.", url("index.html"), "Back home");
+      showGate(t("adminNotYet"), url("index.html"), t("backHome"));
       return;
     }
   } catch (error) {
     console.error("Admin access:", error);
     const missingRpc = error && typeof error === "object" && "code" in error && error.code === "PGRST202";
     if (!missingRpc) {
-      showGate(authErrorMessage(error), url("index.html"), "Back home");
+      showGate(authErrorMessage(error), url("index.html"), t("backHome"));
       return;
     }
   }
@@ -129,16 +130,16 @@ function showGate(message, href, label, claimRole = "") {
   root.setAttribute("aria-busy", "false");
   root.innerHTML = `
     <div class="state-panel">
-      <p>Admin</p>
+      <p>${escapeHtml(t("admin"))}</p>
       <p class="muted">${escapeHtml(message)}</p>
-      ${claimRole ? `<p><button class="button button-primary" type="button" id="claim-role">Use this account as ${escapeHtml(claimRole)}</button></p>` : ""}
+      ${claimRole ? `<p><button class="button button-primary" type="button" id="claim-role">${escapeHtml(t("useAsAdmin"))}</button></p>` : ""}
       <p><a class="button button-ghost" href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>
     </div>
   `;
   root.querySelector("#claim-role")?.addEventListener("click", async () => {
     try {
       await claimAccountRole("admin");
-      toast("This account is an admin.", "success");
+      toast(t("becameAdmin"), "success");
       window.location.reload();
     } catch (error) {
       console.error("claim admin:", error);
@@ -180,17 +181,17 @@ async function renderDashboard(panel) {
   const snap = await adminSnapshot();
   panel.setAttribute("aria-busy", "false");
   const cards = [
-    ["pendingVendors", "Shops waiting", "Approve or reject new shops.", "vendors"],
-    ["approvedVendors", "Approved shops", "These shops can sell and go live.", "vendors"],
-    ["liveNow", "Live now", "Rooms that are on air.", "moderation"],
-    ["products", "Active products", "Published products customers can buy.", "moderation"],
-    ["reels", "Reels", "Published and draft reels.", "moderation"],
-    ["orders", "Orders", "Every customer order.", "orders"],
-    ["openDisputes", "Open disputes", "Cases that still need a decision.", "disputes"],
-    ["suspendedVendors", "Suspended shops", "Restore a shop from the Vendors tab.", "vendors"],
+    ["pendingVendors", t("shopsWaiting"), t("shopsWaitingHint"), "vendors"],
+    ["approvedVendors", t("approvedShops"), t("approvedShopsHint"), "vendors"],
+    ["liveNow", t("liveNowTitle"), t("liveNowHint"), "moderation"],
+    ["products", t("activeProducts"), t("activeProductsHint"), "moderation"],
+    ["reels", t("reels"), t("reelsHint"), "moderation"],
+    ["orders", t("orders"), t("ordersHint"), "orders"],
+    ["openDisputes", t("openDisputes"), t("openDisputesHint"), "disputes"],
+    ["suspendedVendors", t("suspendedShops"), t("suspendedShopsHint"), "vendors"],
   ];
   panel.innerHTML = `
-    <p class="muted">Work in this order: approve shops, check products and reels, then orders, disputes, and payouts. People and Settings are for accounts and fees.</p>
+    <p class="muted">${escapeHtml(t("dashIntro"))}</p>
     <div class="admin-stats">
       ${cards.map(([key, title, hint, next]) => `
         <button class="admin-stat" type="button" data-go="${next}" data-vendor-filter="${key === "pendingVendors" ? "pending" : key === "approvedVendors" ? "approved" : key === "suspendedVendors" ? "suspended" : ""}">
@@ -233,10 +234,10 @@ async function renderVendors(panel) {
   panel.setAttribute("aria-busy", "false");
   const filters = ["pending", "approved", "suspended", "all"];
   panel.innerHTML = `
-    <p class="muted">Pending shops are waiting. Approved shops can sell. Suspended shops are closed until you approve them again.</p>
+    <p class="muted">${escapeHtml(t("vendorFilterHint"))}</p>
     <div class="admin-tabs" role="tablist">
       ${filters.map((id) => `
-        <button type="button" data-vendor-filter="${id}" class="${vendorFilter === id ? "is-active" : ""}">${escapeHtml(id)}</button>
+        <button type="button" data-vendor-filter="${id}" class="${vendorFilter === id ? "is-active" : ""}">${escapeHtml(t(id))}</button>
       `).join("")}
     </div>
     <div class="admin-list">
@@ -244,15 +245,15 @@ async function renderVendors(panel) {
         <article class="order-card">
           <div class="address-card-head">
             <strong>${escapeHtml(row.shopName)}</strong>
-            <span class="status-badge is-${escapeHtml(row.status)}">${escapeHtml(row.status)}</span>
+            <span class="status-badge is-${escapeHtml(row.status)}">${escapeHtml(t(row.status))}</span>
           </div>
           <p class="muted">${escapeHtml(row.applicant)} · ${escapeHtml(formatWhen(row.createdAt))}</p>
           <div class="order-actions">
             ${vendorActionButtons(row)}
-            <a class="button button-ghost" href="${url("pages/shop.html")}?slug=${encodeURIComponent(row.slug)}">Open shop</a>
+            <a class="button button-ghost" href="${url("pages/shop.html")}?slug=${encodeURIComponent(row.slug)}">${escapeHtml(t("openShop"))}</a>
           </div>
         </article>
-      `).join("") : `<p class="empty">No shops in ${escapeHtml(vendorFilter)}.</p>`}
+      `).join("") : `<p class="empty">${escapeHtml(t("noShopsIn"))}</p>`}
     </div>
   `;
 
@@ -303,14 +304,14 @@ function vendorActionButtons(row) {
   const id = escapeHtml(row.id);
   if (row.status === "pending") {
     return `
-      <button class="button button-primary" type="button" data-vendor="${id}" data-status="approved">Approve</button>
-      <button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended" data-label="Reject">Reject</button>
+      <button class="button button-primary" type="button" data-vendor="${id}" data-status="approved">${escapeHtml(t("approve"))}</button>
+      <button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended" data-label="Reject">${escapeHtml(t("reject"))}</button>
     `;
   }
   if (row.status === "approved") {
-    return `<button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended">Suspend</button>`;
+    return `<button class="button button-ghost" type="button" data-vendor="${id}" data-status="suspended">${escapeHtml(t("suspend"))}</button>`;
   }
-  return `<button class="button button-primary" type="button" data-vendor="${id}" data-status="approved" data-label="Restore">Restore</button>`;
+  return `<button class="button button-primary" type="button" data-vendor="${id}" data-status="approved" data-label="Restore">${escapeHtml(t("restore"))}</button>`;
 }
 
 /**

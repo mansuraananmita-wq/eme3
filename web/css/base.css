@@ -268,7 +268,7 @@ p {
   height: auto;
   padding: 12px 0;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 148px minmax(0, 1fr);
   gap: var(--space-3);
   align-items: center;
 }
@@ -276,13 +276,18 @@ p {
 .logo {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
+  width: 148px;
   text-decoration: none;
   line-height: 0;
 }
 
 .logo img {
   height: 40px;
-  width: auto;
+  width: 148px;
+  max-width: none;
+  object-fit: contain;
+  object-position: left center;
   display: block;
 }
 
@@ -1370,17 +1375,21 @@ textarea {
   }
 
   .header-main {
-    grid-template-columns: auto minmax(280px, 1fr) auto;
+    grid-template-columns: 160px minmax(240px, 1fr) auto;
+    align-items: center;
     gap: var(--space-4);
   }
 
   .search-form {
     grid-column: auto;
+    align-self: center;
   }
 
   .header-actions {
     grid-column: auto;
     gap: var(--space-2);
+    align-items: center;
+    flex-wrap: nowrap;
   }
 
   .action-label {

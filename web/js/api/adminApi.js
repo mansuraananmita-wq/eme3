@@ -543,12 +543,22 @@ export async function adminSnapshot() {
   async function count(table, column, filter) {
     let query = supabase.from(table).select(column, { count: "exact", head: true });
     if (filter) query = filter(query);
-    const { count: total, error } = await query;
-    if (error) {
+    const pending = query.then(({ count: total, error }) => {
+      if (error) {
+        console.error(`admin count ${table}:`, error);
+        return 0;
+      }
+      return total ?? 0;
+    });
+    const timeout = new Promise((resolve) => {
+      window.setTimeout(() => resolve(0), 6000);
+    });
+    try {
+      return await Promise.race([pending, timeout]);
+    } catch (error) {
       console.error(`admin count ${table}:`, error);
       return 0;
     }
-    return total ?? 0;
   }
 
   const [

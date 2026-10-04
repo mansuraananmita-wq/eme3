@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/tokens.css">
-    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/base.css?v=8">
     <link rel="stylesheet" href="css/marketplace.css">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/reels.css">
@@ -64,19 +64,19 @@
         <section class="trust-strip" aria-label="Why shop with EME">
           <div class="trust-item">
             <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h13l3 4v6h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 7v4h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            <div><strong>Free delivery</strong><span>On orders over ৳999</span></div>
+            <div><strong data-i18n="freeDelivery">Free delivery</strong><span data-i18n="freeDeliveryHint">On orders over ৳999</span></div>
           </div>
           <div class="trust-item">
             <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            <div><strong>Secure payment</strong><span>bKash, Nagad, card, COD</span></div>
+            <div><strong data-i18n="securePay">Cash on delivery</strong><span data-i18n="securePayHint">Pay when the order arrives</span></div>
           </div>
           <div class="trust-item">
             <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7l-2 8 11-10h-7l2-8z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            <div><strong>Easy returns</strong><span>Hassle-free support</span></div>
+            <div><strong data-i18n="easyReturns">Easy returns</strong><span data-i18n="easyReturnsHint">Support after delivery</span></div>
           </div>
           <div class="trust-item">
             <svg class="trust-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            <div><strong>24/7 support</strong><span>We’re here to help</span></div>
+            <div><strong data-i18n="support247">Support</strong><span data-i18n="supportHint">Help is on this site</span></div>
           </div>
         </section>
 
@@ -84,7 +84,7 @@
         <section class="section" aria-labelledby="category-heading">
           <div class="section-head">
             <h2 id="category-heading" data-i18n="shopByCategory">Shop by category</h2>
-            <a href="pages/categories.html">All categories</a>
+            <a href="pages/categories.html" data-i18n="allCategories">All categories</a>
           </div>
           <div class="category-icons" id="category-row" aria-busy="true">
             <div class="skeleton skeleton-chip"></div>
@@ -102,7 +102,7 @@
               <h2 id="flash-heading" data-i18n="flashSale">Flash Sale</h2>
               <div class="flash-countdown" id="flash-countdown" aria-live="polite"></div>
             </div>
-            <a href="pages/products.html?sort=trending">View all</a>
+            <a href="pages/products.html?sort=trending" data-i18n="viewAll">View all</a>
           </div>
           <div class="product-rail" id="flash-rail" aria-busy="true"></div>
         </section>
@@ -111,7 +111,7 @@
         <section class="section" aria-labelledby="trending-heading">
           <div class="section-head">
             <h2 id="trending-heading" data-i18n="trending">Trending</h2>
-            <a href="pages/products.html?sort=trending">View all</a>
+            <a href="pages/products.html?sort=trending" data-i18n="viewAll">View all</a>
           </div>
           <div class="product-grid" id="trending-grid" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
@@ -128,7 +128,7 @@
         <section class="section" aria-labelledby="lives-home-heading" id="lives-home-section">
           <div class="section-head">
             <h2 id="lives-home-heading" data-i18n="liveNow">Live now</h2>
-            <a href="pages/lives.html">All lives</a>
+            <a href="pages/lives.html" data-i18n="allLives">All lives</a>
           </div>
           <div class="lives-home-row" id="lives-home-row" aria-busy="true"></div>
         </section>
@@ -137,7 +137,7 @@
         <section class="section" aria-labelledby="reels-heading">
           <div class="section-head">
             <h2 id="reels-heading" data-i18n="reels">Reels</h2>
-            <a href="pages/reels.html">Watch all</a>
+            <a href="pages/reels.html" data-i18n="watchAll">Watch all</a>
           </div>
           <div class="reels-row" id="reels-row" aria-busy="true">
             <div class="skeleton skeleton-chip"></div>
@@ -151,7 +151,7 @@
         <section class="section" aria-labelledby="featured-heading">
           <div class="section-head">
             <h2 id="featured-heading" data-i18n="featuredStores">Featured stores</h2>
-            <a href="pages/shops.html">All stores</a>
+            <a href="pages/shops.html" data-i18n="allStores">All stores</a>
           </div>
           <div class="featured-shops" id="featured-shops" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
@@ -164,7 +164,7 @@
         <section class="section" aria-labelledby="arrivals-heading">
           <div class="section-head">
             <h2 id="arrivals-heading" data-i18n="newArrivals">New arrivals</h2>
-            <a href="pages/products.html?sort=newest">View all</a>
+            <a href="pages/products.html?sort=newest" data-i18n="viewAll">View all</a>
           </div>
           <div class="product-grid" id="arrivals-grid" aria-busy="true">
             <div class="skeleton skeleton-card"></div>
@@ -189,7 +189,7 @@
     <div class="toast-root" id="toast-root"></div>
     <div class="modal-root" id="modal-root"></div>
     <noscript><p class="empty wrap">EME needs JavaScript to load the shop.</p></noscript>
-    <script type="module" src="js/home.js?v=6"></script>
+    <script type="module" src="js/home.js?v=8"></script>
     <script>
       setTimeout(function () {
         var header = document.getElementById("site-header");

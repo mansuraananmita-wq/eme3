@@ -4,6 +4,7 @@
 
 import { PROMO_POPUP } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
+import { t } from "./i18n.js?v=8";
 import { url } from "./paths.js?v=4";
 
 const STORAGE_KEY = "eme_promo_popup_day";
@@ -63,15 +64,15 @@ export function maybeShowPromoPopup() {
   root.innerHTML = `
     <div class="modal-backdrop promo-popup" data-promo-close>
       <div class="modal promo-popup-card" role="dialog" aria-modal="true" aria-labelledby="promo-title">
-        <button class="icon-button promo-popup-x" type="button" data-promo-close aria-label="Close">×</button>
+        <button class="icon-button promo-popup-x" type="button" data-promo-close aria-label="${escapeHtml(t("close"))}">×</button>
         <img src="${escapeHtml(image)}" alt="" width="600" height="200" loading="lazy">
-        <h2 id="promo-title">${escapeHtml(PROMO_POPUP.title)}</h2>
-        <p>${escapeHtml(PROMO_POPUP.body)}</p>
+        <h2 id="promo-title">${escapeHtml(t("promoTitle"))}</h2>
+        <p>${escapeHtml(t("promoBody"))}</p>
         <div class="promo-popup-actions">
-          <a class="button button-primary" href="${href}">${escapeHtml(PROMO_POPUP.ctaLabel)}</a>
+          <a class="button button-primary" href="${href}">${escapeHtml(t("promoCta"))}</a>
           <label class="promo-popup-check">
             <input type="checkbox" data-promo-hide checked>
-            Don’t show again today
+            ${escapeHtml(t("promoHide"))}
           </label>
         </div>
       </div>

@@ -7,10 +7,9 @@ import {
 import { cartCount, mergeGuestCart } from "./api/cartApi.js";
 import { listCategories } from "./api/categoriesApi.js";
 import { wishlistCount } from "./api/wishlistApi.js";
-import { ANNOUNCEMENTS } from "./data/banners.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { escapeHtml } from "./html.js";
-import { applyI18n, getLang, setLang, t } from "./i18n.js";
+import { applyI18n, getLang, setLang, t } from "./i18n.js?v=8";
 import { icon } from "./icons.js";
 import { getTheme, toggleTheme } from "./theme.js";
 import { url } from "./paths.js?v=4";
@@ -182,7 +181,7 @@ function renderChrome(profile, counts, page, categories) {
     <div class="announce-bar${announceHidden ? " is-hidden" : ""}" data-announce>
       <div class="announce-bar-inner">
         <button class="announce-close" type="button" data-announce-close aria-label="Close announcement">×</button>
-        <p class="announce-msg" data-announce-msg>${escapeHtml(ANNOUNCEMENTS[0] || "")}</p>
+        <p class="announce-msg" data-announce-msg>${escapeHtml(t("announceDelivery"))}</p>
         <div class="announce-links">
           <a href="${orders}">${escapeHtml(t("trackOrder"))}</a>
           <a href="${sell}">${escapeHtml(t("sellOnEme"))}</a>
@@ -191,7 +190,7 @@ function renderChrome(profile, counts, page, categories) {
       </div>
     </div>
     <div class="header-main">
-      <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
+      <a class="logo" href="${home}"><img src="${url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg")}" alt="eme" data-logo></a>
       <form class="search-form" action="${products}" method="get" role="search">
         <label class="sr-only" for="search-category">${escapeHtml(t("all"))}</label>
         <select id="search-category" name="category">
@@ -260,7 +259,7 @@ function renderChrome(profile, counts, page, categories) {
   footer.innerHTML = `
     <div class="footer-grid">
       <div class="footer-col">
-        <a class="logo" href="${home}"><img src="${url("assets/logo-header.svg")}" alt="eme"></a>
+        <a class="logo" href="${home}"><img src="${url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg")}" alt="eme" data-logo></a>
         <p>${escapeHtml(t("about"))}</p>
         <a href="${home}">${escapeHtml(t("home"))}</a>
         <a href="${shops}">${escapeHtml(t("browseStores"))}</a>
@@ -315,12 +314,13 @@ function renderChrome(profile, counts, page, categories) {
  * @param {string} home
  */
 function bindHeaderInteractions(header, home) {
+  const announceKeys = ["announceDelivery", "announceSale", "announceSell"];
   let announceIndex = 0;
   const msg = header.querySelector("[data-announce-msg]");
-  if (msg && ANNOUNCEMENTS.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (msg && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     window.setInterval(() => {
-      announceIndex = (announceIndex + 1) % ANNOUNCEMENTS.length;
-      msg.textContent = ANNOUNCEMENTS[announceIndex];
+      announceIndex = (announceIndex + 1) % announceKeys.length;
+      msg.textContent = t(announceKeys[announceIndex]);
     }, 4500);
   }
 
@@ -348,6 +348,10 @@ function bindHeaderInteractions(header, home) {
       toggle.setAttribute("aria-pressed", getTheme() === "dark" ? "true" : "false");
       toggle.textContent = getTheme() === "dark" ? t("themeLight") : t("themeDark");
     }
+    const logoSrc = url(getTheme() === "dark" ? "assets/logo-header-dark.svg" : "assets/logo-header.svg");
+    document.querySelectorAll("[data-logo]").forEach((img) => {
+      if (img instanceof HTMLImageElement) img.src = logoSrc;
+    });
   });
 
   const megaWrap = header.querySelector(".mega-wrap");

@@ -3,7 +3,7 @@
  */
 
 import { authErrorMessage, getCurrentProfile } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=6";
+import { mountShell, toast } from "./components.js?v=8";
 import { mountCarousel } from "./carousel.js";
 import {
   HERO_BANNERS,
@@ -13,6 +13,7 @@ import {
   isBannerActive,
 } from "./data/banners.js";
 import { escapeHtml } from "./html.js";
+import { t } from "./i18n.js?v=8";
 import { maybeShowPromoPopup } from "./promoPopup.js";
 import { isSupabaseConfigured } from "./supabaseClient.js";
 import { url } from "./paths.js?v=4";
@@ -260,7 +261,7 @@ function startFlashCountdown() {
   const tick = () => {
     const diff = ends.getTime() - Date.now();
     if (diff <= 0) {
-      flashCountdown.textContent = "Ended";
+      flashCountdown.textContent = t("ended");
       return;
     }
     const hours = Math.floor(diff / 3_600_000);
@@ -301,7 +302,7 @@ function renderFeatured(shops) {
   if (!featuredRoot) return;
   featuredRoot.setAttribute("aria-busy", "false");
   if (!shops.length) {
-    showState(featuredRoot, "No approved stores yet.");
+    showState(featuredRoot, t("noStores"));
     return;
   }
   featuredRoot.innerHTML = shops
@@ -317,7 +318,7 @@ function renderLivesHome(lives) {
   if (!lives.length) {
     livesHomeSection.hidden = false;
     livesHomeRow.setAttribute("aria-busy", "false");
-    livesHomeRow.innerHTML = `<p class="muted">No shop is live right now. A live shop shows here the same way reels do.</p>`;
+    livesHomeRow.innerHTML = `<p class="muted">${escapeHtml(t("noLiveHome"))}</p>`;
     return;
   }
   livesHomeSection.hidden = false;

@@ -21,7 +21,7 @@ import {
 } from "../api/reelsApi.js";
 import { addToCart } from "../api/cartApi.js";
 import { authErrorMessage, getCurrentProfile } from "../auth.js?v=3";
-import { toast } from "../components.js?v=6";
+import { toast } from "../components.js?v=8";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { icon } from "../icons.js";

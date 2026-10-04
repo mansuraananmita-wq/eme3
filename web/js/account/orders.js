@@ -1,7 +1,7 @@
 import { mountAccountNav } from "../accountShell.js";
 import { listMyOrders, ORDERS_PAGE_SIZE } from "../api/ordersApi.js";
 import { authErrorMessage, requireUser } from "../auth.js?v=3";
-import { mountShell, toast } from "../components.js?v=6";
+import { mountShell, toast } from "../components.js?v=8";
 import { formatMoney } from "../format.js";
 import { escapeHtml } from "../html.js";
 import { url } from "../paths.js?v=4";

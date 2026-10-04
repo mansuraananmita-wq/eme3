@@ -1,6 +1,6 @@
 import { listCategories } from "./api/categoriesApi.js";
 import { authErrorMessage } from "./auth.js?v=3";
-import { mountShell, toast } from "./components.js?v=6";
+import { mountShell, toast } from "./components.js?v=8";
 import { escapeHtml } from "./html.js";
 import { url } from "./paths.js?v=4";
 

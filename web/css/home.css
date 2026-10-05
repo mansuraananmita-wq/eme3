@@ -176,57 +176,25 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 140px;
-  display: grid;
-  place-items: center;
+  min-height: 160px;
+  overflow: hidden;
+  border-radius: 18px;
   pointer-events: none;
 }
 
 .deal-main .deal-photo {
-  min-height: 300px;
-  place-items: center;
+  min-height: 320px;
+  border-radius: 22px;
 }
 
-.deal-photo img {
-  width: 100%;
-  height: 148px;
-  object-fit: cover;
-  object-position: center;
-  border-radius: 16px;
-  mix-blend-mode: normal;
-  filter: drop-shadow(0 12px 14px rgb(0 0 0 / 22%));
-}
-
-.deal-photo img[data-cutout] {
-  opacity: 0;
-}
-
-.deal-photo img.is-cutout {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 160px;
-  object-fit: contain;
-  border-radius: 0;
-  filter: drop-shadow(0 18px 14px rgb(0 0 0 / 26%));
-}
-
+.deal-photo img,
 .deal-main .deal-photo img {
   width: 100%;
-  height: 260px;
-  max-height: none;
-  border-radius: 18px;
+  height: 100%;
+  min-height: inherit;
   object-fit: cover;
   object-position: center;
-}
-
-.deal-main .deal-photo img.is-cutout {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 380px;
-  object-fit: contain;
-  border-radius: 0;
+  border-radius: inherit;
 }
 
 .home-hero {
@@ -679,11 +647,6 @@
   .deal-main,
   .deal-main .deal-photo {
     min-height: 440px;
-  }
-
-  .deal-main .deal-photo img.is-cutout {
-    height: auto;
-    max-height: 400px;
   }
 
   .deal-side {

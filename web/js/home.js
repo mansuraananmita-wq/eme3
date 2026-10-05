@@ -159,7 +159,6 @@ function renderDealHero(deals, arrivals) {
     const paint = () => {
       main.setAttribute("aria-busy", "false");
       main.innerHTML = dealMainHtml(slides[index]);
-      cutoutHeroPhotos(main);
     };
     paint();
     if (dealTimer) window.clearInterval(dealTimer);
@@ -173,7 +172,6 @@ function renderDealHero(deals, arrivals) {
   const fresh = arrivals[0];
   if (arrival instanceof HTMLElement && fresh) {
     arrival.innerHTML = arrivalHtml(fresh);
-    cutoutHeroPhotos(arrival);
   }
 }
 
@@ -196,7 +194,7 @@ function heroImage(product) {
   const image = pickProductImage(product.product_images);
   const src = image ? productImageUrl(image.storage_path) : "";
   if (!src) return "";
-  return `<img data-cutout src="${escapeHtml(src)}" alt="" crossorigin="anonymous" onerror="this.hidden=true">`;
+  return `<img src="${escapeHtml(src)}" alt="" onerror="this.hidden=true">`;
 }
 
 /**
